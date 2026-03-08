@@ -52,11 +52,11 @@ export default function AdminPage() {
   async function handleSubmit() {
     if (!form.name || !form.id) return setMessage("Name and ID are required.");
     if (editing) {
-      const { error } = await supabase.from("organizations").update(form).eq("id", editing);
+      const { error } = await supabase.from("organizations").update(form as any).eq("id", editing);
       if (error) return setMessage("Error: " + error.message);
       setMessage("Organization updated!");
     } else {
-      const { error } = await supabase.from("organizations").insert([form]);
+      const { error } = await supabase.from("organizations").insert([form as any]);
       if (error) return setMessage("Error: " + error.message);
       setMessage("Organization added!");
     }
