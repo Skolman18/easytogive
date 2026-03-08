@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Download,
   Heart,
@@ -10,13 +11,15 @@ import {
   Settings,
   FileText,
   TrendingUp,
-  ChevronRight,
   CheckCircle,
   Bell,
   CreditCard,
   Shield,
   User,
+  Loader2,
 } from "lucide-react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import {
   GIVING_HISTORY,
   ORGANIZATIONS,
@@ -42,10 +45,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   local: "#f97316",
 };
 
-const totalGiven = GIVING_HISTORY.reduce((s, g) => s + g.amount, 0);
-const orgsSupported = new Set(GIVING_HISTORY.map((g) => g.orgId)).size;
-const yearsGiving = 2;
-
 // Group history by receipt
 function groupByReceipt(records: typeof GIVING_HISTORY) {
   const groups: Record<string, typeof GIVING_HISTORY> = {};
@@ -58,8 +57,6 @@ function groupByReceipt(records: typeof GIVING_HISTORY) {
   );
 }
 
-const receiptGroups = groupByReceipt(GIVING_HISTORY);
-
 const TAX_DOCS = [
   { year: 2025, type: "Annual Giving Summary", size: "124 KB", ready: true },
   { year: 2025, type: "Charitable Contribution Receipt", size: "87 KB", ready: true },
@@ -71,13 +68,46 @@ const TAX_DOCS = [
 const WATCHLIST_ORGS = ORGANIZATIONS.filter((o) => WATCHLIST_IDS.includes(o.id));
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("history");
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [notifications, setNotifications] = useState({
     newOrgs: true,
     receipts: true,
     impact: false,
     newsletter: true,
   });
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        router.push("/auth/signin?redirectTo=/profile");
+      } else {
+        setUser(user);
+        setLoadingUser(false);
+      }
+    });
+  }, [router]);
+
+  // Derive display values from real user or fall back to placeholder
+  const displayEmail = user?.email ?? "alex.johnson@email.com";
+  const memberSince = user?.created_at
+    ? new Date(user.created_at).getFullYear()
+    : 2024;
+  const initials = displayEmail.slice(0, 2).toUpperCase();
+
+  const totalGiven = GIVING_HISTORY.reduce((s, g) => s + g.amount, 0);
+  const orgsSupported = new Set(GIVING_HISTORY.map((g) => g.orgId)).size;
+  const receiptGroups = groupByReceipt(GIVING_HISTORY);
+
+  if (loadingUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#faf9f6" }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: "#faf9f6" }} className="min-h-screen">
@@ -90,13 +120,13 @@ export default function ProfilePage() {
               className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white flex-shrink-0"
               style={{ backgroundColor: "#1a7a4a" }}
             >
-              AJ
+              {initials}
             </div>
             <div>
               <h1 className="font-display text-3xl font-bold text-white">
-                Alex Johnson
+                {displayEmail}
               </h1>
-              <p className="text-gray-400 text-sm">alex.johnson@email.com · Member since 2024</p>
+              <p className="text-gray-400 text-sm">Member since {memberSince}</p>
             </div>
           </div>
 
@@ -105,7 +135,7 @@ export default function ProfilePage() {
             {[
               { label: "Total Given", value: formatCurrency(totalGiven) },
               { label: "Orgs Supported", value: orgsSupported.toString() },
-              { label: "Years Giving", value: yearsGiving.toString() },
+              { label: "Member Since", value: memberSince.toString() },
             ].map((s) => (
               <div key={s.label}>
                 <div
@@ -463,9 +493,8 @@ export default function ProfilePage() {
               </div>
               <div className="px-6 py-5 space-y-4">
                 {[
-                  { label: "Full Name", value: "Alex Johnson", type: "text" },
-                  { label: "Email Address", value: "alex.johnson@email.com", type: "email" },
-                  { label: "Phone", value: "(555) 012-3456", type: "tel" },
+                  { label: "Email Address", value: displayEmail, type: "email" },
+                  { label: "Phone", value: "", type: "tel" },
                 ].map((field) => (
                   <div key={field.label}>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">

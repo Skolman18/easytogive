@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Menu, X, Heart, ChevronDown } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Menu, X, Heart, LogOut, User } from "lucide-react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 const NAV_LINKS = [
   { href: "/discover", label: "Discover" },
@@ -13,7 +15,31 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
+
+  const initials = user?.email
+    ? user.email.slice(0, 2).toUpperCase()
+    : null;
 
   return (
     <nav
@@ -30,9 +56,7 @@ export default function Navbar() {
             >
               <Heart className="w-4 h-4 text-white fill-white" />
             </div>
-            <span
-              className="font-display text-xl font-semibold tracking-tight text-white"
-            >
+            <span className="font-display text-xl font-semibold tracking-tight text-white">
               EasyToGive
             </span>
           </Link>
@@ -56,19 +80,45 @@ export default function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/profile"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/portfolio"
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
-              style={{ backgroundColor: "#1a7a4a" }}
-            >
-              Start Giving
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    {initials}
+                  </div>
+                  <span className="max-w-[160px] truncate">{user.email}</span>
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth/signin"
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+                  style={{ backgroundColor: "#1a7a4a" }}
+                >
+                  Start Giving
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -102,15 +152,48 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <div className="pt-3 border-t" style={{ borderColor: "#1e2530" }}>
-            <Link
-              href="/portfolio"
-              onClick={() => setMobileOpen(false)}
-              className="block w-full text-center px-4 py-2.5 rounded-lg text-sm font-semibold text-white"
-              style={{ backgroundColor: "#1a7a4a" }}
-            >
-              Start Giving
-            </Link>
+          <div className="pt-3 border-t space-y-2" style={{ borderColor: "#1e2530" }}>
+            {user ? (
+              <>
+                <div className="flex items-center gap-2 px-4 py-2">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    {initials}
+                  </div>
+                  <span className="text-sm text-gray-400 truncate">{user.email}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setMobileOpen(false);
+                    handleSignOut();
+                  }}
+                  className="flex items-center gap-2 w-full px-4 py-2.5 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth/signin"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-2.5 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  onClick={() => setMobileOpen(false)}
+                  className="block w-full text-center px-4 py-2.5 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: "#1a7a4a" }}
+                >
+                  Start Giving
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
