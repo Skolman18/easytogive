@@ -52,11 +52,11 @@ export default function AdminPage() {
     await supabase.from("organizations").delete().eq("id", id);
     setMessage("Deleted.");
     loadOrgs();
-  }
+  }const { error } = await supabase.from("organizations").update(form as any).eq("id", editing);
 
   function handleEdit(org: any) { setForm(org); setEditing(org.id); window.scrollTo(0,0); }
 
-  if (!authorized) return <div className="p-8 text-white">Checking access...</div>;
+ const { error } = await supabase.from("organizations").insert([form] as any);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-8">
