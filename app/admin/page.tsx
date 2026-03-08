@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-```
 
 const ADMIN_EMAIL = "sethmitzel@gmail.com";
 const CATEGORIES = ["nonprofits","education","health","environment","arts","community","animals","international"];
