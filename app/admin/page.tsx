@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+```
 
 const ADMIN_EMAIL = "sethmitzel@gmail.com";
 const CATEGORIES = ["nonprofits","education","health","environment","arts","community","animals","international"];
@@ -33,11 +35,11 @@ export default function AdminPage() {
     const supabase = createClient();
     if (!form.name || !form.id) return setMessage("Name and ID are required.");
     if (editing) {
-      const { error } = await supabase.from("organizations").update(form as any).eq("id", editing);
+    const { error } = await supabase.from("organizations").update(form).eq("id", editing);
       if (error) return setMessage("Error: " + error.message);
       setMessage("Organization updated!");
     } else {
-      const { error } = await supabase.from("organizations").insert([form] as any);
+     const { error } = await supabase.from("organizations").insert([form]);
       if (error) return setMessage("Error: " + error.message);
       setMessage("Organization added!");
     }
