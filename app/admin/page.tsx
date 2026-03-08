@@ -39,7 +39,7 @@ export default function AdminPage() {
       if (error) return setMessage("Error: " + error.message);
       setMessage("Organization updated!");
     } else {
-     const { error } = await supabase.from("organizations").insert([form]);
+     const { error } = await (supabase as any).from("organizations").insert([form]);
       if (error) return setMessage("Error: " + error.message);
       setMessage("Organization added!");
     }
