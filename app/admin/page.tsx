@@ -34,7 +34,7 @@ export default function AdminPage() {
     const supabase = createClient();
     if (!form.name || !form.id) return setMessage("Name and ID are required.");
     if (editing) {
-    const { error } = await supabase.from("organizations").update(form).eq("id", editing);
+    const { error } = await supabase.from("organizations").update(form as any).eq("id", editing);
       if (error) return setMessage("Error: " + error.message);
       setMessage("Organization updated!");
     } else {
