@@ -2,12 +2,11 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Heart, Loader2, AlertCircle } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-browser";
 
 function SignInForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/discover";
 
@@ -21,14 +20,16 @@ function SignInForm() {
     setLoading(true);
     setError(null);
 
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push(redirectTo);
-      router.refresh();
+      // Hard navigation: ensures cookies are sent with the next request and
+      // avoids router.push + router.refresh() conflicts in Next.js App Router.
+      window.location.href = redirectTo;
     }
   }
 
