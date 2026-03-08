@@ -6,7 +6,6 @@ import {
   Calendar,
   Users,
   ArrowLeft,
-  Heart,
   Share2,
   Bookmark,
   ExternalLink,
@@ -18,7 +17,7 @@ import {
   formatCurrency,
   getProgressPercent,
 } from "@/lib/placeholder-data";
-import QuickDonateButtons from "@/components/QuickDonateButtons";
+import OrgDonateSidebar from "@/components/OrgDonateSidebar";
 
 const CATEGORY_LABELS: Record<string, string> = {
   churches: "Church",
@@ -51,11 +50,9 @@ export default async function OrgPage({
   const org = ORGANIZATIONS.find((o) => o.id === id);
   if (!org) notFound();
 
-  const progress = getProgressPercent(org.raised, org.goal);
   const categoryColor = CATEGORY_COLORS[org.category] || "#1a7a4a";
   const categoryLabel = CATEGORY_LABELS[org.category] || org.category;
 
-  // Related orgs (same category, not self)
   const related = ORGANIZATIONS.filter(
     (o) => o.category === org.category && o.id !== org.id
   ).slice(0, 3);
@@ -69,10 +66,8 @@ export default async function OrgPage({
           alt={org.name}
           className="w-full h-full object-cover opacity-70"
         />
-        {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-        {/* Back button */}
         <div className="absolute top-4 left-4">
           <Link
             href="/discover"
@@ -84,7 +79,6 @@ export default async function OrgPage({
           </Link>
         </div>
 
-        {/* Action buttons */}
         <div className="absolute top-4 right-4 flex gap-2">
           <button
             className="p-2.5 rounded-lg text-white transition-colors hover:bg-white/20"
@@ -102,7 +96,6 @@ export default async function OrgPage({
           </button>
         </div>
 
-        {/* Category badge over image */}
         <div className="absolute bottom-4 left-4 md:left-8">
           <span
             className="px-3 py-1 rounded-full text-sm font-semibold text-white"
@@ -117,7 +110,6 @@ export default async function OrgPage({
         <div className="grid lg:grid-cols-3 gap-8 py-10">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Header */}
             <div>
               <div className="flex items-start gap-3 mb-2 flex-wrap">
                 <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900">
@@ -137,7 +129,6 @@ export default async function OrgPage({
                 {org.tagline}
               </p>
 
-              {/* Meta row */}
               <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                 <span className="flex items-center gap-1.5">
                   <MapPin className="w-4 h-4" />
@@ -202,7 +193,7 @@ export default async function OrgPage({
               </div>
             </div>
 
-            {/* Verification info */}
+            {/* Verification */}
             <div
               className="rounded-2xl border p-6"
               style={{ borderColor: "#86efac", backgroundColor: "#f0fdf4" }}
@@ -233,94 +224,22 @@ export default async function OrgPage({
             </div>
 
             {/* Tags */}
-            <div>
-              <div className="flex flex-wrap gap-2">
-                {org.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 rounded-full text-sm text-gray-600"
-                    style={{ backgroundColor: "#e5e1d8" }}
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-2">
+              {org.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 rounded-full text-sm text-gray-600"
+                  style={{ backgroundColor: "#e5e1d8" }}
+                >
+                  #{tag}
+                </span>
+              ))}
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-5">
-            {/* Donation card */}
-            <div
-              className="bg-white rounded-2xl border p-6 sticky top-20"
-              style={{ borderColor: "#e5e1d8" }}
-            >
-              {/* Progress */}
-              <div className="mb-6">
-                <div className="flex items-end justify-between mb-2">
-                  <div>
-                    <div
-                      className="font-display text-3xl font-bold"
-                      style={{ color: "#1a7a4a" }}
-                    >
-                      {formatCurrency(org.raised)}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      raised of {formatCurrency(org.goal)} goal
-                    </div>
-                  </div>
-                  <div
-                    className="text-2xl font-bold font-display"
-                    style={{ color: "#1a7a4a" }}
-                  >
-                    {progress}%
-                  </div>
-                </div>
-                <div
-                  className="w-full rounded-full h-3"
-                  style={{ backgroundColor: "#e5e1d8" }}
-                >
-                  <div
-                    className="h-3 rounded-full transition-all duration-700"
-                    style={{ width: `${progress}%`, backgroundColor: "#1a7a4a" }}
-                  />
-                </div>
-                <div className="flex items-center justify-between mt-2 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" />
-                    {org.donors.toLocaleString()} donors
-                  </span>
-                  <span>{100 - progress}% to go</span>
-                </div>
-              </div>
-
-              {/* Quick donate amounts */}
-              <QuickDonateButtons />
-
-              <Link
-                href="/portfolio"
-                className="w-full py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2 mb-3"
-                style={{ backgroundColor: "#1a7a4a" }}
-              >
-                <Heart className="w-4 h-4 fill-white" />
-                Donate Now
-              </Link>
-
-              <Link
-                href="/portfolio"
-                className="w-full py-3 rounded-xl font-semibold text-center block transition-all hover:opacity-80 text-sm"
-                style={{
-                  backgroundColor: "#e8f5ee",
-                  color: "#1a7a4a",
-                }}
-              >
-                Add to My Portfolio
-              </Link>
-
-              <p className="text-xs text-gray-400 text-center mt-3">
-                100% tax-deductible · Secured by Stripe
-              </p>
-            </div>
+          {/* Sidebar — client component handles all donation interactivity */}
+          <div>
+            <OrgDonateSidebar org={org} />
           </div>
         </div>
 
