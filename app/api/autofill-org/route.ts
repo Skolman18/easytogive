@@ -1,9 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// Valid categories in our DB enum
 const VALID_CATEGORIES = [
   "nonprofits",
   "education",
@@ -45,7 +41,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Strip HTML tags and truncate so we stay within token limits
+    // Strip HTML tags and truncate
     const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -80,19 +76,34 @@ Rules:
 - category MUST be one of the listed values; pick the closest match.
 - tags should describe the cause area (e.g. "hunger", "youth", "veterans", "climate").`;
 
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
+    // Call Grok API
+    const response = await fetch("https://api.x.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.GROK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "grok-3-latest",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
+      }),
     });
 
-    const raw =
-      message.content[0].type === "text" ? message.content[0].text.trim() : "";
+    if (!response.ok) {
+      const errText = await response.text();
+      return NextResponse.json(
+        { error: `Grok API error: ${errText}` },
+        { status: 502 }
+      );
+    }
 
-    // Parse the JSON Claude returned
+    const data = await response.json();
+    const raw = data.choices?.[0]?.message?.content?.trim() ?? "";
+
+    // Parse the JSON Grok returned
     let parsed: Record<string, unknown>;
     try {
-      // Strip markdown code fences if Claude wrapped it anyway
       const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
       parsed = JSON.parse(cleaned);
     } catch {
