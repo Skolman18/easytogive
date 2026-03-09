@@ -15,6 +15,9 @@ export default function AdminPage() {
   const [form, setForm] = useState<any>({ id:"", name:"", tagline:"", description:"", category:"nonprofits", location:"", ein:"", founded:2020, website:"", goal:50000, tags:[], verified:false, featured:false, image_url:"" });
   const [editing, setEditing] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [autofillUrl, setAutofillUrl] = useState("");
+  const [autofilling, setAutofilling] = useState(false);
+  const [autofillError, setAutofillError] = useState("");
 
   useEffect(() => {
     const supabase = createClient();
@@ -58,6 +61,37 @@ export default function AdminPage() {
 
   function handleEdit(org: any) { setForm(org); setEditing(org.id); window.scrollTo(0,0); }
 
+  async function handleAutofill() {
+    if (!autofillUrl) return;
+    setAutofilling(true);
+    setAutofillError("");
+    try {
+      const res = await fetch("/api/autofill-org", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: autofillUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Autofill failed");
+      setForm((prev: any) => ({
+        ...prev,
+        name: data.name ?? prev.name,
+        tagline: data.tagline ?? prev.tagline,
+        description: data.description ?? prev.description,
+        category: data.category ?? prev.category,
+        location: data.location ?? prev.location,
+        ein: data.ein ?? prev.ein,
+        founded: data.founded ?? prev.founded,
+        website: data.website ?? prev.website,
+        tags: data.tags?.length ? data.tags : prev.tags,
+      }));
+    } catch (err: any) {
+      setAutofillError(err.message ?? "Something went wrong. Please try again.");
+    } finally {
+      setAutofilling(false);
+    }
+  }
+
   if (!authorized) return <div className="p-8 text-white">Checking access...</div>;
 
   return (
@@ -66,6 +100,46 @@ export default function AdminPage() {
       {message && <div className="mb-4 p-3 bg-green-800 rounded">{message}</div>}
       <div className="bg-gray-900 rounded-xl p-6 mb-10">
         <h2 className="text-xl font-semibold mb-4">{editing ? "Edit Organization" : "Add Organization"}</h2>
+
+        {/* AI Autofill */}
+        <div className="mb-6 p-4 rounded-lg bg-gray-800 border border-gray-700">
+          <p className="text-sm text-gray-300 font-medium mb-2">✨ Autofill with AI</p>
+          <div className="flex gap-2">
+            <input
+              className="flex-1 p-2 rounded bg-gray-700 text-white text-sm placeholder-gray-500 border border-gray-600 focus:outline-none focus:border-green-500"
+              placeholder="https://example-nonprofit.org"
+              value={autofillUrl}
+              onChange={e => setAutofillUrl(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleAutofill()}
+              disabled={autofilling}
+            />
+            <button
+              onClick={handleAutofill}
+              disabled={autofilling || !autofillUrl}
+              className="px-4 py-2 bg-green-700 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed rounded font-semibold text-sm flex items-center gap-2 whitespace-nowrap"
+            >
+              {autofilling ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  </svg>
+                  Analyzing…
+                </>
+              ) : "Autofill with AI"}
+            </button>
+          </div>
+          {autofillError && (
+            <p className="mt-2 text-sm text-red-400">⚠ {autofillError}</p>
+          )}
+          {!autofilling && !autofillError && autofillUrl && (
+            <p className="mt-2 text-xs text-gray-500">Paste the nonprofit&apos;s homepage URL and click Autofill — Claude will extract all fields automatically.</p>
+          )}
+          {!autofillUrl && (
+            <p className="mt-2 text-xs text-gray-500">Paste the nonprofit&apos;s homepage URL and click Autofill — Claude will extract all fields automatically.</p>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           {[["ID (url-slug)","id"],["Name","name"],["Tagline","tagline"],["Location","location"],["EIN","ein"],["Website","website"],["Image URL","image_url"]].map(([label,key]) => (
             <div key={key}>
