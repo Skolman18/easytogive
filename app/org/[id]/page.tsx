@@ -95,12 +95,12 @@ export default async function OrgPage({
   // Fetch recommended_orgs and display settings from Supabase
   let recommendedOrgs: typeof ORGANIZATIONS = [];
   let displaySettings = {
-    show_goal: true,
-    show_donors: true,
-    show_raised: true,
-    show_recommendations: true,
-    show_impact_stats: true,
-    show_related_orgs: true,
+    show_goal: false,
+    show_donors: false,
+    show_raised: false,
+    show_recommendations: false,
+    show_impact_stats: false,
+    show_related_orgs: false,
   };
 
   try {
