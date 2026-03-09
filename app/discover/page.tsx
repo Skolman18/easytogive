@@ -34,16 +34,17 @@ async function getOrganizations(): Promise<Organization[]> {
   const { data, error } = await supabase
     .from("organizations")
     .select("*")
-    .eq("visible", true)
     .order("sort_order", { ascending: true })
     .order("name");
 
   if (error || !data || data.length === 0) {
-    // Graceful fallback: return placeholder data so the UI never breaks
     return ORGANIZATIONS;
   }
 
-  return data.map(rowToOrg);
+  // Filter out hidden orgs if the visible column exists
+  return data
+    .filter((row: any) => row.visible !== false)
+    .map(rowToOrg);
 }
 
 export default async function DiscoverPage() {

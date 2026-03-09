@@ -91,13 +91,15 @@ function SortableRow({ org, onToggle }: { org: any; onToggle: (id: string, field
 
       {/* Toggles */}
       <div className="flex items-center gap-4 flex-shrink-0">
-        <label className="flex flex-col items-center gap-1">
-          <span className="text-[10px] text-gray-400 uppercase tracking-wide">Visible</span>
-          <Toggle
-            checked={org.visible ?? true}
-            onChange={(v) => onToggle(org.id, "visible", v)}
-          />
-        </label>
+        {"visible" in org && (
+          <label className="flex flex-col items-center gap-1">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Visible</span>
+            <Toggle
+              checked={(org as any).visible ?? true}
+              onChange={(v) => onToggle(org.id, "visible", v)}
+            />
+          </label>
+        )}
         <label className="flex flex-col items-center gap-1">
           <span className="text-[10px] text-gray-400 uppercase tracking-wide">Featured</span>
           <Toggle
@@ -132,7 +134,7 @@ export default function OrgOrderingTab() {
   async function loadOrgs() {
     const { data } = await (createClient() as any)
       .from("organizations")
-      .select("id, name, category, image_url, visible, featured, verified, sort_order")
+      .select("id, name, category, image_url, featured, verified, sort_order")
       .order("sort_order", { ascending: true })
       .order("name");
     if (data) setOrgs(data);
