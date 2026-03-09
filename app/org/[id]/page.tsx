@@ -53,7 +53,7 @@ export default async function OrgPage({
 
   // Try Supabase first, fall back to placeholder data
   const supabaseMain = await createClient();
-  const { data: supabaseOrg } = await supabaseMain
+  const { data: supabaseOrg }: { data: any } = await supabaseMain
     .from("organizations")
     .select("*")
     .eq("id", id)
