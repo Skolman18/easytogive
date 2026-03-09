@@ -14,11 +14,24 @@ const EMPTY_FORM = {
   category: "nonprofits", location: "", ein: "",
   founded: 2020, website: "", goal: 50000,
   tags: [] as string[], verified: false, featured: false,
-  image_url: "", sort_order: 0,
+  image_url: "", cover_url: "", sort_order: 0,
   recommended_orgs: [] as string[],
 };
 
-export default function AdminPanel() {
+const DEFAULT_DISPLAY_SETTINGS = {
+  show_goal: true,
+  show_donors: true,
+  show_raised: true,
+  show_recommendations: true,
+  show_impact_stats: true,
+  show_related_orgs: true,
+};
+
+interface Props {
+  editOrgId?: string;
+}
+
+export default function AdminPanel({ editOrgId }: Props = {}) {
   const [orgs, setOrgs] = useState<any[]>([]);
   const [form, setForm] = useState<any>({ ...EMPTY_FORM });
   const [editing, setEditing] = useState<string | null>(null);
@@ -27,8 +40,23 @@ export default function AdminPanel() {
   const [autofillUrl, setAutofillUrl] = useState("");
   const [autofilling, setAutofilling] = useState(false);
   const [autofillError, setAutofillError] = useState("");
+  const [displaySettings, setDisplaySettings] = useState({ ...DEFAULT_DISPLAY_SETTINGS });
 
-  useEffect(() => { loadOrgs(); }, []);
+  useEffect(() => {
+    loadOrgs().then(() => {
+      if (editOrgId) {
+        // Pre-load the org for editing after orgs are fetched
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When editOrgId is provided and orgs have loaded, trigger edit
+  useEffect(() => {
+    if (editOrgId && orgs.length > 0) {
+      const target = orgs.find((o) => o.id === editOrgId);
+      if (target) handleEdit(target);
+    }
+  }, [editOrgId, orgs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadOrgs() {
     const { data } = await createClient()
@@ -55,13 +83,20 @@ export default function AdminPanel() {
     if (editing) {
       const { error } = await (supabase as any).from("organizations").update(payload).eq("id", editing);
       if (error) return setMsg("Error: " + error.message, "err");
-      setMsg("Organization updated!");
     } else {
       const { error } = await (supabase as any).from("organizations").insert([payload]);
       if (error) return setMsg("Error: " + error.message, "err");
-      setMsg("Organization added!");
     }
+    // Save display settings (graceful — table may not exist yet)
+    try {
+      await (supabase as any).from("org_display_settings").upsert({
+        org_id: form.id,
+        ...displaySettings,
+      });
+    } catch {}
+    setMsg(editing ? "Organization updated!" : "Organization added!");
     setForm({ ...EMPTY_FORM });
+    setDisplaySettings({ ...DEFAULT_DISPLAY_SETTINGS });
     setEditing(null);
     loadOrgs();
   }
@@ -87,7 +122,7 @@ export default function AdminPanel() {
     loadOrgs();
   }
 
-  function handleEdit(org: any) {
+  async function handleEdit(org: any) {
     setForm({
       ...org,
       tags: org.tags ?? [],
@@ -95,6 +130,17 @@ export default function AdminPanel() {
       sort_order: org.sort_order ?? 0,
     });
     setEditing(org.id);
+    // Load display settings for this org
+    try {
+      const { data } = await (createClient() as any)
+        .from("org_display_settings")
+        .select("*")
+        .eq("org_id", org.id)
+        .single();
+      setDisplaySettings(data ? { ...DEFAULT_DISPLAY_SETTINGS, ...data } : { ...DEFAULT_DISPLAY_SETTINGS });
+    } catch {
+      setDisplaySettings({ ...DEFAULT_DISPLAY_SETTINGS });
+    }
     document.getElementById("admin-form-top")?.scrollIntoView({ behavior: "smooth" });
   }
 
@@ -208,7 +254,6 @@ export default function AdminPanel() {
           {[
             ["ID (url-slug)", "id"], ["Name", "name"], ["Tagline", "tagline"],
             ["Location", "location"], ["EIN", "ein"], ["Website", "website"],
-            ["Image URL", "image_url"],
           ].map(([label, key]) => (
             <div key={key}>
               <label className="text-xs text-gray-400 uppercase tracking-wide">{label}</label>
@@ -220,6 +265,52 @@ export default function AdminPanel() {
               />
             </div>
           ))}
+
+          {/* Image URL with preview */}
+          <div className="col-span-2">
+            <label className="text-xs text-gray-400 uppercase tracking-wide">Card Image URL</label>
+            <p className="text-xs text-gray-500 mb-1">Use a direct image URL from unsplash.com or imgur.com</p>
+            <input
+              className="w-full mt-1 p-2 rounded bg-gray-800 text-white text-sm border border-gray-700 focus:outline-none focus:border-green-500"
+              value={form.image_url || ""}
+              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+              placeholder="https://images.unsplash.com/..."
+            />
+            {form.image_url && (
+              <div className="mt-2 flex items-center gap-3">
+                <img
+                  src={form.image_url}
+                  alt="Preview"
+                  className="w-24 h-16 object-cover rounded-lg border border-gray-600"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                <span className="text-xs text-gray-400">Card image preview</span>
+              </div>
+            )}
+          </div>
+
+          {/* Cover URL with preview */}
+          <div className="col-span-2">
+            <label className="text-xs text-gray-400 uppercase tracking-wide">Cover / Banner Image URL</label>
+            <p className="text-xs text-gray-500 mb-1">Wide banner shown at top of org page. Use a direct image URL.</p>
+            <input
+              className="w-full mt-1 p-2 rounded bg-gray-800 text-white text-sm border border-gray-700 focus:outline-none focus:border-green-500"
+              value={form.cover_url || ""}
+              onChange={(e) => setForm({ ...form, cover_url: e.target.value })}
+              placeholder="https://images.unsplash.com/..."
+            />
+            {form.cover_url && (
+              <div className="mt-2 flex items-center gap-3">
+                <img
+                  src={form.cover_url}
+                  alt="Cover preview"
+                  className="w-48 h-16 object-cover rounded-lg border border-gray-600"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                <span className="text-xs text-gray-400">Cover banner preview</span>
+              </div>
+            )}
+          </div>
 
           <div>
             <label className="text-xs text-gray-400 uppercase tracking-wide">Founded Year</label>
@@ -301,6 +392,38 @@ export default function AdminPanel() {
           )}
         </div>
 
+        {/* Display Settings */}
+        <div className="mt-5 pt-5 border-t border-gray-700">
+          <label className="text-xs text-gray-400 uppercase tracking-wide block mb-3">
+            Display Settings — control what appears on the org&apos;s public page
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {([
+              ["show_raised", "Show raised amount"],
+              ["show_goal", "Show goal & progress bar"],
+              ["show_donors", "Show donor count"],
+              ["show_impact_stats", "Show impact stats"],
+              ["show_recommendations", "Show \"We Recommend\""],
+              ["show_related_orgs", "Show related orgs"],
+            ] as [keyof typeof DEFAULT_DISPLAY_SETTINGS, string][]).map(([key, label]) => (
+              <label key={key} className="flex items-center gap-2 text-sm cursor-pointer hover:text-green-400 transition-colors">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={displaySettings[key]}
+                  onClick={() => setDisplaySettings((prev) => ({ ...prev, [key]: !prev[key] }))}
+                  className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${displaySettings[key] ? "bg-green-600" : "bg-gray-600"}`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${displaySettings[key] ? "translate-x-4" : "translate-x-0.5"}`}
+                  />
+                </button>
+                <span className="text-gray-300">{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         <div className="mt-5 flex gap-3">
           <button
             onClick={handleSubmit}
@@ -310,7 +433,18 @@ export default function AdminPanel() {
           </button>
           {editing && (
             <button
-              onClick={() => { setForm({ ...EMPTY_FORM }); setEditing(null); }}
+              onClick={() => window.open(`/org/${editing}`, "_blank")}
+              className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm flex items-center gap-2"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Preview
+            </button>
+          )}
+          {editing && (
+            <button
+              onClick={() => { setForm({ ...EMPTY_FORM }); setDisplaySettings({ ...DEFAULT_DISPLAY_SETTINGS }); setEditing(null); }}
               className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm"
             >
               Cancel
@@ -344,7 +478,21 @@ export default function AdminPanel() {
                   className={`border-b ${i % 2 === 0 ? "bg-white" : ""} hover:bg-gray-50 transition-colors`}
                   style={{ borderColor: "#f0ede6" }}
                 >
-                  <td className="px-4 py-3 font-medium text-gray-900">{org.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {org.image_url ? (
+                        <img
+                          src={org.image_url}
+                          alt=""
+                          className="w-8 h-8 rounded-md object-cover flex-shrink-0"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-md bg-gray-100 flex-shrink-0" />
+                      )}
+                      <span className="font-medium text-gray-900">{org.name}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{org.category}</td>
                   <td className="px-4 py-3 text-gray-500 max-w-[140px] truncate">{org.location}</td>
                   <td className="px-4 py-3 text-center">{org.verified ? "✅" : "—"}</td>
@@ -401,12 +549,22 @@ export default function AdminPanel() {
         className="p-4 rounded-xl border text-sm text-amber-700"
         style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a" }}
       >
-        <strong>DB migration required</strong> for new columns. Run this in{" "}
+        <strong>DB migrations required.</strong> Run these in{" "}
         <strong>Supabase Dashboard → SQL Editor</strong>:
         <pre className="mt-2 text-xs bg-amber-50 p-2 rounded overflow-x-auto">
 {`ALTER TABLE organizations
   ADD COLUMN IF NOT EXISTS recommended_orgs text[] DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;`}
+  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS org_display_settings (
+  org_id text primary key references organizations(id) on delete cascade,
+  show_goal boolean default true,
+  show_donors boolean default true,
+  show_raised boolean default true,
+  show_recommendations boolean default true,
+  show_impact_stats boolean default true,
+  show_related_orgs boolean default true
+);`}
         </pre>
       </div>
     </div>

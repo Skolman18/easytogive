@@ -18,14 +18,34 @@ export default function Navbar() {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profileName, setProfileName] = useState<string | null>(null);
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
 
   useEffect(() => {
-    createClient().auth.getUser().then(({ data: { user } }) => setUser(user));
-    const { data: { subscription } } = createClient().auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user ?? null)
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      if (user) loadProfile(user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) loadProfile(session.user.id);
+        else { setProfileName(null); setProfileAvatar(null); }
+      }
     );
     return () => subscription.unsubscribe();
   }, []);
+
+  async function loadProfile(userId: string) {
+    const { data } = await (createClient() as any)
+      .from("users")
+      .select("full_name, avatar_url")
+      .eq("id", userId)
+      .single();
+    if (data?.full_name) setProfileName(data.full_name);
+    if (data?.avatar_url) setProfileAvatar(data.avatar_url);
+  }
 
   async function handleSignOut() {
     await createClient().auth.signOut();
@@ -33,6 +53,7 @@ export default function Navbar() {
     router.refresh();
   }
 
+  const displayName = profileName || user?.email || null;
   const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : null;
 
   return (
@@ -79,12 +100,14 @@ export default function Navbar() {
                   className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 overflow-hidden"
                     style={{ backgroundColor: "#1a7a4a" }}
                   >
-                    {initials}
+                    {profileAvatar
+                      ? <img src={profileAvatar} alt="" className="w-full h-full object-cover" />
+                      : initials}
                   </div>
-                  <span className="max-w-[140px] truncate">{user.email}</span>
+                  <span className="max-w-[140px] truncate">{displayName}</span>
                 </Link>
                 <button
                   onClick={handleSignOut}
@@ -146,12 +169,14 @@ export default function Navbar() {
               <>
                 <div className="flex items-center gap-2 px-4 py-2">
                   <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 overflow-hidden"
                     style={{ backgroundColor: "#1a7a4a" }}
                   >
-                    {initials}
+                    {profileAvatar
+                      ? <img src={profileAvatar} alt="" className="w-full h-full object-cover" />
+                      : initials}
                   </div>
-                  <span className="text-sm text-gray-600 truncate">{user.email}</span>
+                  <span className="text-sm text-gray-600 truncate">{displayName}</span>
                 </div>
                 <button
                   onClick={() => { setMobileOpen(false); handleSignOut(); }}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Download,
   Heart,
@@ -18,6 +18,9 @@ import {
   User,
   Loader2,
   LayoutDashboard,
+  ArrowUp,
+  ArrowDown,
+  AlertCircle,
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-browser";
@@ -33,13 +36,33 @@ import {
 
 const ADMIN_EMAIL = "sethmitzel@gmail.com";
 
-const BASE_TABS = [
+const ALL_BASE_TABS = [
   { id: "history", label: "Giving History", icon: Clock },
   { id: "tax", label: "Tax Documents", icon: FileText },
   { id: "watchlist", label: "Watchlist", icon: Bookmark },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 const ADMIN_TAB = { id: "admin", label: "Admin", icon: LayoutDashboard };
+
+const DASH_PREFS_KEY = "etg_dashboard_prefs";
+
+interface DashPrefs {
+  tabOrder: string[];
+  hiddenTabs: string[];
+  defaultTab: string;
+}
+
+function loadDashPrefs(): DashPrefs {
+  try {
+    const raw = localStorage.getItem(DASH_PREFS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { tabOrder: ALL_BASE_TABS.map((t) => t.id), hiddenTabs: [], defaultTab: "history" };
+}
+
+function saveDashPrefs(prefs: DashPrefs) {
+  localStorage.setItem(DASH_PREFS_KEY, JSON.stringify(prefs));
+}
 
 const CATEGORY_COLORS: Record<string, string> = {
   churches: "#7c3aed",
@@ -50,7 +73,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   local: "#f97316",
 };
 
-// Group history by receipt
 function groupByReceipt(records: typeof GIVING_HISTORY) {
   const groups: Record<string, typeof GIVING_HISTORY> = {};
   for (const r of records) {
@@ -73,10 +95,38 @@ const TAX_DOCS = [
 const WATCHLIST_ORGS = ORGANIZATIONS.filter((o) => WATCHLIST_IDS.includes(o.id));
 
 export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#faf9f6" }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} />
+      </div>
+    }>
+      <ProfilePageInner />
+    </Suspense>
+  );
+}
+
+function ProfilePageInner() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("history");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const editOrgParam = searchParams.get("editOrg");
+
+  const [activeTab, setActiveTab] = useState(tabParam || "history");
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+
+  // Profile data
+  const [profile, setProfile] = useState({
+    full_name: "",
+    bio: "",
+    avatar_url: "",
+    location: "",
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  // Notification prefs
   const [notifications, setNotifications] = useState({
     newOrgs: true,
     receipts: true,
@@ -84,30 +134,120 @@ export default function ProfilePage() {
     newsletter: true,
   });
 
+  // Dashboard customization
+  const [dashPrefs, setDashPrefs] = useState<DashPrefs>({
+    tabOrder: ALL_BASE_TABS.map((t) => t.id),
+    hiddenTabs: [],
+    defaultTab: "history",
+  });
+
   useEffect(() => {
+    const prefs = loadDashPrefs();
+    setDashPrefs(prefs);
+    // URL param overrides localStorage default
+    setActiveTab(tabParam || prefs.defaultTab || "history");
+
     createClient().auth.getUser().then(({ data: { user } }) => {
       if (!user) {
         router.push("/auth/signin?redirectTo=/profile");
       } else {
         setUser(user);
+        loadProfile(user.id);
         setLoadingUser(false);
       }
     });
   }, [router]);
 
-  // Derive display values from real user or fall back to placeholder
-  const displayEmail = user?.email ?? "alex.johnson@email.com";
+  async function loadProfile(userId: string) {
+    const { data } = await (createClient() as any)
+      .from("users")
+      .select("full_name, bio, avatar_url, location")
+      .eq("id", userId)
+      .single();
+    if (data) {
+      setProfile({
+        full_name: data.full_name || "",
+        bio: data.bio || "",
+        avatar_url: data.avatar_url || "",
+        location: data.location || "",
+      });
+    }
+  }
+
+  async function saveProfile() {
+    if (!user) return;
+    setProfileSaving(true);
+    setProfileMsg(null);
+    const { error } = await (createClient() as any)
+      .from("users")
+      .upsert({
+        id: user.id,
+        email: user.email,
+        full_name: profile.full_name,
+        bio: profile.bio,
+        avatar_url: profile.avatar_url,
+        location: profile.location,
+      });
+    setProfileSaving(false);
+    if (error) {
+      setProfileMsg({ text: "Error saving: " + error.message, ok: false });
+    } else {
+      setProfileMsg({ text: "Profile saved!", ok: true });
+      setTimeout(() => setProfileMsg(null), 3000);
+    }
+  }
+
+  // Derived display values
+  const displayName = profile.full_name || user?.email || "";
   const memberSince = user?.created_at
     ? new Date(user.created_at).getFullYear()
     : 2024;
-  const initials = displayEmail.slice(0, 2).toUpperCase();
-
+  const initials = (user?.email ?? "??").slice(0, 2).toUpperCase();
   const isAdmin = user?.email === ADMIN_EMAIL;
-  const TABS = isAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS;
+
+  // Build ordered visible tabs
+  const orderedBaseTabs = dashPrefs.tabOrder
+    .map((id) => ALL_BASE_TABS.find((t) => t.id === id))
+    .filter(Boolean)
+    .filter((t) => !dashPrefs.hiddenTabs.includes(t!.id)) as typeof ALL_BASE_TABS;
+  const settingsTab = ALL_BASE_TABS.find((t) => t.id === "settings")!;
+  const visibleTabs = orderedBaseTabs.includes(settingsTab)
+    ? orderedBaseTabs
+    : [...orderedBaseTabs, settingsTab];
+  const TABS = isAdmin ? [...visibleTabs, ADMIN_TAB] : visibleTabs;
 
   const totalGiven = GIVING_HISTORY.reduce((s, g) => s + g.amount, 0);
   const orgsSupported = new Set(GIVING_HISTORY.map((g) => g.orgId)).size;
   const receiptGroups = groupByReceipt(GIVING_HISTORY);
+
+  // Dashboard pref helpers
+  function updateDashPrefs(updates: Partial<DashPrefs>) {
+    const next = { ...dashPrefs, ...updates };
+    setDashPrefs(next);
+    saveDashPrefs(next);
+  }
+
+  function moveTab(id: string, direction: -1 | 1) {
+    const order = [...dashPrefs.tabOrder];
+    const idx = order.indexOf(id);
+    if (idx < 0) return;
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= order.length) return;
+    [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+    updateDashPrefs({ tabOrder: order });
+  }
+
+  function toggleHideTab(id: string) {
+    if (id === "settings") return; // settings always visible
+    const hidden = dashPrefs.hiddenTabs.includes(id)
+      ? dashPrefs.hiddenTabs.filter((h) => h !== id)
+      : [...dashPrefs.hiddenTabs, id];
+    let defaultTab = dashPrefs.defaultTab;
+    if (hidden.includes(defaultTab)) {
+      defaultTab = dashPrefs.tabOrder.find((t) => !hidden.includes(t)) || "settings";
+    }
+    updateDashPrefs({ hiddenTabs: hidden, defaultTab });
+  }
 
   if (loadingUser) {
     return (
@@ -122,21 +262,38 @@ export default function ProfilePage() {
       {/* Header */}
       <div style={{ backgroundColor: "#0d1117" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
-          <div className="flex items-center gap-5 mb-8">
+          <div className="flex items-center gap-5 mb-6">
             {/* Avatar */}
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white flex-shrink-0"
+              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white flex-shrink-0 overflow-hidden"
               style={{ backgroundColor: "#1a7a4a" }}
             >
-              {initials}
+              {profile.avatar_url
+                ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                : initials}
             </div>
             <div>
               <h1 className="font-display text-3xl font-bold text-white">
-                {displayEmail}
+                {displayName}
               </h1>
-              <p className="text-gray-400 text-sm">Member since {memberSince}</p>
+              {profile.location && (
+                <p className="text-gray-400 text-sm">{profile.location}</p>
+              )}
+              <p className="text-gray-500 text-sm">Member since {memberSince}</p>
             </div>
           </div>
+
+          {/* Complete profile prompt */}
+          {!profile.full_name && (
+            <button
+              onClick={() => setActiveTab("settings")}
+              className="flex items-center gap-2 mb-6 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+              style={{ backgroundColor: "#1a3d28", color: "#4ade80" }}
+            >
+              <AlertCircle className="w-4 h-4" />
+              Complete your profile — add your name, bio, and photo
+            </button>
+          )}
 
           {/* Stats row */}
           <div className="grid grid-cols-3 gap-6 md:gap-12 max-w-lg">
@@ -189,7 +346,6 @@ export default function ProfilePage() {
         {/* ── Giving History tab ── */}
         {activeTab === "history" && (
           <div className="space-y-6">
-            {/* Impact summary */}
             <div
               className="rounded-2xl border bg-white p-6"
               style={{ borderColor: "#e5e1d8" }}
@@ -219,7 +375,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Transaction list */}
             <div>
               <h2 className="font-display text-xl font-semibold text-gray-900 mb-4">
                 Donation History
@@ -233,13 +388,9 @@ export default function ProfilePage() {
                       className="bg-white rounded-2xl border overflow-hidden"
                       style={{ borderColor: "#e5e1d8" }}
                     >
-                      {/* Receipt header */}
                       <div
                         className="px-5 py-3 flex items-center justify-between border-b"
-                        style={{
-                          backgroundColor: "#faf9f6",
-                          borderColor: "#e5e1d8",
-                        }}
+                        style={{ backgroundColor: "#faf9f6", borderColor: "#e5e1d8" }}
                       >
                         <div className="flex items-center gap-3">
                           <CheckCircle className="w-4 h-4" style={{ color: "#1a7a4a" }} />
@@ -265,8 +416,6 @@ export default function ProfilePage() {
                           </button>
                         </div>
                       </div>
-
-                      {/* Donations */}
                       {records.map((record, i) => (
                         <div
                           key={record.id}
@@ -278,9 +427,7 @@ export default function ProfilePage() {
                           <div className="flex items-center gap-3 min-w-0">
                             <div
                               className="w-2 h-2 rounded-full flex-shrink-0"
-                              style={{
-                                backgroundColor: CATEGORY_COLORS[record.category] || "#1a7a4a",
-                              }}
+                              style={{ backgroundColor: CATEGORY_COLORS[record.category] || "#1a7a4a" }}
                             />
                             <Link
                               href={`/org/${record.orgId}`}
@@ -329,9 +476,7 @@ export default function ProfilePage() {
                 className="px-6 py-4 border-b"
                 style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
               >
-                <h2 className="font-display font-semibold text-gray-900">
-                  Tax Documents
-                </h2>
+                <h2 className="font-display font-semibold text-gray-900">Tax Documents</h2>
               </div>
               {TAX_DOCS.map((doc, i) => (
                 <div
@@ -483,14 +628,12 @@ export default function ProfilePage() {
         )}
 
         {/* ── Admin tab ── */}
-        {activeTab === "admin" && isAdmin && (
-          <AdminPanel />
-        )}
+        {activeTab === "admin" && isAdmin && <AdminPanel editOrgId={editOrgParam ?? undefined} />}
 
         {/* ── Settings tab ── */}
         {activeTab === "settings" && (
           <div className="space-y-6 max-w-2xl">
-            {/* Profile */}
+            {/* Profile Information */}
             <div
               className="bg-white rounded-2xl border overflow-hidden"
               style={{ borderColor: "#e5e1d8" }}
@@ -500,33 +643,209 @@ export default function ProfilePage() {
                 style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
               >
                 <User className="w-4 h-4 text-gray-500" />
-                <h2 className="font-display font-semibold text-gray-900">
-                  Profile Information
-                </h2>
+                <h2 className="font-display font-semibold text-gray-900">Profile Information</h2>
               </div>
               <div className="px-6 py-5 space-y-4">
-                {[
-                  { label: "Email Address", value: displayEmail, type: "email" },
-                  { label: "Phone", value: "", type: "tel" },
-                ].map((field) => (
-                  <div key={field.label}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {field.label}
-                    </label>
-                    <input
-                      type={field.type}
-                      defaultValue={field.value}
-                      className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
-                      style={{ borderColor: "#e5e1d8" }}
-                    />
+                {/* Avatar preview */}
+                <div className="flex items-center gap-4 pb-2">
+                  <div
+                    className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white flex-shrink-0 overflow-hidden"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    {profile.avatar_url
+                      ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      : initials}
                   </div>
-                ))}
+                  <div className="text-sm text-gray-500">
+                    {profile.avatar_url
+                      ? "Profile picture set"
+                      : "No profile picture — paste an image URL below"}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.full_name}
+                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                    className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                    style={{ borderColor: "#e5e1d8" }}
+                    placeholder="Jane Smith"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Profile Picture URL
+                  </label>
+                  <input
+                    type="url"
+                    value={profile.avatar_url}
+                    onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
+                    className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                    style={{ borderColor: "#e5e1d8" }}
+                    placeholder="https://..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Bio
+                  </label>
+                  <textarea
+                    value={profile.bio}
+                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors resize-none"
+                    style={{ borderColor: "#e5e1d8" }}
+                    placeholder="Tell us a little about yourself and why you give…"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.location}
+                    onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                    className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                    style={{ borderColor: "#e5e1d8" }}
+                    placeholder="Denver, CO"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    defaultValue={user?.email ?? ""}
+                    readOnly
+                    className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-400 bg-gray-50 outline-none"
+                    style={{ borderColor: "#e5e1d8" }}
+                  />
+                </div>
+
+                {profileMsg && (
+                  <div
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                      profileMsg.ok
+                        ? "bg-green-50 text-green-700 border border-green-200"
+                        : "bg-red-50 text-red-700 border border-red-200"
+                    }`}
+                  >
+                    {profileMsg.ok
+                      ? <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                      : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+                    {profileMsg.text}
+                  </div>
+                )}
+
                 <button
-                  className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white"
+                  onClick={saveProfile}
+                  disabled={profileSaving}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
                   style={{ backgroundColor: "#1a7a4a" }}
                 >
-                  Save Changes
+                  {profileSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {profileSaving ? "Saving…" : "Save Profile"}
                 </button>
+              </div>
+            </div>
+
+            {/* Dashboard Customization */}
+            <div
+              className="bg-white rounded-2xl border overflow-hidden"
+              style={{ borderColor: "#e5e1d8" }}
+            >
+              <div
+                className="px-6 py-4 border-b flex items-center gap-2"
+                style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
+              >
+                <LayoutDashboard className="w-4 h-4 text-gray-500" />
+                <h2 className="font-display font-semibold text-gray-900">Customize Dashboard</h2>
+              </div>
+              <div className="px-6 py-5 space-y-5">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-3">Tab visibility & order</p>
+                  <div className="space-y-2">
+                    {dashPrefs.tabOrder.map((tabId, idx) => {
+                      const tab = ALL_BASE_TABS.find((t) => t.id === tabId);
+                      if (!tab) return null;
+                      const isSettings = tabId === "settings";
+                      const hidden = dashPrefs.hiddenTabs.includes(tabId);
+                      return (
+                        <div
+                          key={tabId}
+                          className="flex items-center gap-3 p-3 rounded-xl border"
+                          style={{ borderColor: "#e5e1d8", backgroundColor: hidden ? "#fafafa" : "white" }}
+                        >
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => moveTab(tabId, -1)}
+                              disabled={idx === 0}
+                              className="p-1 rounded text-gray-400 hover:text-gray-700 disabled:opacity-30"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => moveTab(tabId, 1)}
+                              disabled={idx === dashPrefs.tabOrder.length - 1}
+                              className="p-1 rounded text-gray-400 hover:text-gray-700 disabled:opacity-30"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <span className={`text-sm font-medium flex-1 ${hidden ? "text-gray-400 line-through" : "text-gray-900"}`}>
+                            {tab.label}
+                          </span>
+                          {isSettings ? (
+                            <span className="text-xs text-gray-400 px-2">Always visible</span>
+                          ) : (
+                            <button
+                              onClick={() => toggleHideTab(tabId)}
+                              className={`relative w-10 h-5.5 rounded-full transition-colors flex-shrink-0 ${hidden ? "bg-gray-200" : ""}`}
+                              style={!hidden ? { backgroundColor: "#1a7a4a" } : {}}
+                              role="switch"
+                              aria-checked={!hidden}
+                            >
+                              <span
+                                className={`absolute top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow transition-transform ${!hidden ? "translate-x-5" : "translate-x-0.5"}`}
+                              />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Default tab when you open your profile
+                  </label>
+                  <select
+                    value={dashPrefs.defaultTab}
+                    onChange={(e) => updateDashPrefs({ defaultTab: e.target.value })}
+                    className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors bg-white"
+                    style={{ borderColor: "#e5e1d8" }}
+                  >
+                    {dashPrefs.tabOrder
+                      .filter((id) => !dashPrefs.hiddenTabs.includes(id))
+                      .map((id) => {
+                        const tab = ALL_BASE_TABS.find((t) => t.id === id);
+                        return tab ? (
+                          <option key={id} value={id}>{tab.label}</option>
+                        ) : null;
+                      })}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -540,64 +859,29 @@ export default function ProfilePage() {
                 style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
               >
                 <Bell className="w-4 h-4 text-gray-500" />
-                <h2 className="font-display font-semibold text-gray-900">
-                  Notification Preferences
-                </h2>
+                <h2 className="font-display font-semibold text-gray-900">Notification Preferences</h2>
               </div>
               <div className="px-6 py-5 space-y-4">
                 {[
-                  {
-                    key: "newOrgs" as const,
-                    label: "New verified organizations",
-                    desc: "When new orgs in your categories are verified",
-                  },
-                  {
-                    key: "receipts" as const,
-                    label: "Donation receipts",
-                    desc: "Immediate email after each donation",
-                  },
-                  {
-                    key: "impact" as const,
-                    label: "Impact updates",
-                    desc: "Monthly updates from organizations you support",
-                  },
-                  {
-                    key: "newsletter" as const,
-                    label: "EasyToGive newsletter",
-                    desc: "Giving tips, featured causes, and platform news",
-                  },
+                  { key: "newOrgs" as const, label: "New verified organizations", desc: "When new orgs in your categories are verified" },
+                  { key: "receipts" as const, label: "Donation receipts", desc: "Immediate email after each donation" },
+                  { key: "impact" as const, label: "Impact updates", desc: "Monthly updates from organizations you support" },
+                  { key: "newsletter" as const, label: "EasyToGive newsletter", desc: "Giving tips, featured causes, and platform news" },
                 ].map((item) => (
                   <div key={item.key} className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {item.label}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{item.label}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{item.desc}</div>
                     </div>
                     <button
-                      onClick={() =>
-                        setNotifications((prev) => ({
-                          ...prev,
-                          [item.key]: !prev[item.key],
-                        }))
-                      }
-                      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
-                        notifications[item.key] ? "" : "bg-gray-200"
-                      }`}
-                      style={
-                        notifications[item.key]
-                          ? { backgroundColor: "#1a7a4a" }
-                          : {}
-                      }
+                      onClick={() => setNotifications((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
+                      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${notifications[item.key] ? "" : "bg-gray-200"}`}
+                      style={notifications[item.key] ? { backgroundColor: "#1a7a4a" } : {}}
                       role="switch"
                       aria-checked={notifications[item.key]}
                     >
                       <span
-                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                          notifications[item.key]
-                            ? "translate-x-5"
-                            : "translate-x-0.5"
-                        }`}
+                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${notifications[item.key] ? "translate-x-5" : "translate-x-0.5"}`}
                       />
                     </button>
                   </div>
@@ -615,9 +899,7 @@ export default function ProfilePage() {
                 style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
               >
                 <CreditCard className="w-4 h-4 text-gray-500" />
-                <h2 className="font-display font-semibold text-gray-900">
-                  Payment Methods
-                </h2>
+                <h2 className="font-display font-semibold text-gray-900">Payment Methods</h2>
               </div>
               <div className="px-6 py-5">
                 <div
@@ -632,9 +914,7 @@ export default function ProfilePage() {
                       VISA
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        Visa ending in 4242
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">Visa ending in 4242</div>
                       <div className="text-xs text-gray-500">Expires 08/2028</div>
                     </div>
                   </div>

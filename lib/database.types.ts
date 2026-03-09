@@ -60,6 +60,8 @@ export interface Database {
           email: string;
           phone: string;
           avatar_url: string;
+          bio: string;
+          location: string;
           created_at: string;
           updated_at: string;
         };
@@ -99,6 +101,19 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["portfolio_allocations"]["Insert"]
         >;
+      };
+      org_display_settings: {
+        Row: {
+          org_id: string;
+          show_goal: boolean;
+          show_donors: boolean;
+          show_raised: boolean;
+          show_recommendations: boolean;
+          show_impact_stats: boolean;
+          show_related_orgs: boolean;
+        };
+        Insert: Database["public"]["Tables"]["org_display_settings"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["org_display_settings"]["Row"]>;
       };
       watchlist: {
         Row: {

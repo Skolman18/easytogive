@@ -9,16 +9,30 @@ import type { Organization } from "@/lib/placeholder-data";
 
 const QUICK_AMOUNTS = [25, 50, 100, 250];
 
-interface Props {
-  org: Organization;
+interface DisplaySettings {
+  show_raised: boolean;
+  show_goal: boolean;
+  show_donors: boolean;
 }
 
-export default function OrgDonateSidebar({ org }: Props) {
+interface Props {
+  org: Organization;
+  displaySettings?: DisplaySettings;
+}
+
+const DEFAULT_DISPLAY: DisplaySettings = {
+  show_raised: true,
+  show_goal: true,
+  show_donors: true,
+};
+
+export default function OrgDonateSidebar({ org, displaySettings }: Props) {
   const [selectedAmount, setSelectedAmount] = useState(50);
   const [customAmount, setCustomAmount] = useState("");
   const [useCustom, setUseCustom] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
+  const ds = { ...DEFAULT_DISPLAY, ...displaySettings };
   const progress = getProgressPercent(org.raised, org.goal);
   const effectiveAmount = useCustom ? parseFloat(customAmount) || 0 : selectedAmount;
 
@@ -27,6 +41,8 @@ export default function OrgDonateSidebar({ org }: Props) {
     setModalOpen(true);
   }
 
+  const showProgressSection = ds.show_raised || ds.show_goal || ds.show_donors;
+
   return (
     <>
       <div
@@ -34,26 +50,36 @@ export default function OrgDonateSidebar({ org }: Props) {
         style={{ borderColor: "#e5e1d8" }}
       >
         {/* Progress */}
+        {showProgressSection && (
         <div className="mb-6">
+          {(ds.show_raised || ds.show_goal) && (
           <div className="flex items-end justify-between mb-2">
             <div>
+              {ds.show_raised && (
               <div
                 className="font-display text-3xl font-bold"
                 style={{ color: "#1a7a4a" }}
               >
                 {formatCurrency(org.raised)}
               </div>
+              )}
+              {ds.show_goal && (
               <div className="text-sm text-gray-500">
-                raised of {formatCurrency(org.goal)} goal
+                {ds.show_raised ? "raised of " : ""}{formatCurrency(org.goal)} goal
               </div>
+              )}
             </div>
+            {ds.show_goal && (
             <div
               className="text-2xl font-bold font-display"
               style={{ color: "#1a7a4a" }}
             >
               {progress}%
             </div>
+            )}
           </div>
+          )}
+          {ds.show_goal && (
           <div
             className="w-full rounded-full h-3"
             style={{ backgroundColor: "#e5e1d8" }}
@@ -63,14 +89,18 @@ export default function OrgDonateSidebar({ org }: Props) {
               style={{ width: `${progress}%`, backgroundColor: "#1a7a4a" }}
             />
           </div>
+          )}
+          {ds.show_donors && (
           <div className="flex items-center justify-between mt-2 text-sm text-gray-500">
             <span className="flex items-center gap-1">
               <Users className="w-3.5 h-3.5" />
               {org.donors.toLocaleString()} donors
             </span>
-            <span>{100 - progress}% to go</span>
+            {ds.show_goal && <span>{100 - progress}% to go</span>}
           </div>
+          )}
         </div>
+        )}
 
         {/* Amount selector */}
         <div className="grid grid-cols-2 gap-2 mb-3">

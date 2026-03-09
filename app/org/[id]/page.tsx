@@ -19,6 +19,7 @@ import {
   getProgressPercent,
 } from "@/lib/placeholder-data";
 import OrgDonateSidebar from "@/components/OrgDonateSidebar";
+import OrgAdminBar from "@/components/OrgAdminBar";
 import { createClient } from "@/lib/supabase-server";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -59,25 +60,39 @@ export default async function OrgPage({
     (o) => o.category === org.category && o.id !== org.id
   ).slice(0, 3);
 
-  // Fetch recommended_orgs from Supabase (graceful fallback if column doesn't exist yet)
+  // Fetch recommended_orgs and display settings from Supabase
   let recommendedOrgs: typeof ORGANIZATIONS = [];
+  let displaySettings = {
+    show_goal: true,
+    show_donors: true,
+    show_raised: true,
+    show_recommendations: true,
+    show_impact_stats: true,
+    show_related_orgs: true,
+  };
+
   try {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from("organizations")
-      .select("recommended_orgs")
-      .eq("id", id)
-      .single();
-    const ids: string[] = (data as any)?.recommended_orgs ?? [];
+    const [orgData, settingsData] = await Promise.all([
+      supabase.from("organizations").select("recommended_orgs").eq("id", id).single(),
+      (supabase as any).from("org_display_settings").select("*").eq("org_id", id).single(),
+    ]);
+    const ids: string[] = (orgData.data as any)?.recommended_orgs ?? [];
     if (ids.length > 0) {
       recommendedOrgs = ORGANIZATIONS.filter((o) => ids.includes(o.id));
     }
+    if (settingsData.data) {
+      displaySettings = { ...displaySettings, ...settingsData.data };
+    }
   } catch {
-    // Column may not exist yet — silently skip
+    // Tables may not exist yet — silently skip
   }
 
   return (
     <div style={{ backgroundColor: "#faf9f6" }}>
+      {/* Admin edit bar — only visible to sethmitzel@gmail.com */}
+      <OrgAdminBar orgId={id} orgName={org.name} />
+
       {/* Cover image */}
       <div className="relative h-72 md:h-96 overflow-hidden bg-gray-900">
         <img
@@ -157,10 +172,12 @@ export default async function OrgPage({
                   <Calendar className="w-4 h-4" />
                   Founded {org.founded}
                 </span>
+                {displaySettings.show_donors && (
                 <span className="flex items-center gap-1.5">
                   <Users className="w-4 h-4" />
                   {org.donors.toLocaleString()} donors
                 </span>
+                )}
                 <a
                   href={org.website}
                   target="_blank"
@@ -186,6 +203,7 @@ export default async function OrgPage({
             </div>
 
             {/* Impact Stats */}
+            {displaySettings.show_impact_stats && (
             <div
               className="rounded-2xl border bg-white p-6"
               style={{ borderColor: "#e5e1d8" }}
@@ -211,6 +229,7 @@ export default async function OrgPage({
                 ))}
               </div>
             </div>
+            )}
 
             {/* Verification */}
             <div
@@ -258,12 +277,12 @@ export default async function OrgPage({
 
           {/* Sidebar — client component handles all donation interactivity */}
           <div>
-            <OrgDonateSidebar org={org} />
+            <OrgDonateSidebar org={org} displaySettings={displaySettings} />
           </div>
         </div>
 
         {/* ── We Recommend ──────────────────────────────────────────── */}
-        {recommendedOrgs.length > 0 && (
+        {displaySettings.show_recommendations && recommendedOrgs.length > 0 && (
           <div className="pb-12">
             <div className="flex items-center gap-2 mb-6">
               <Sparkles className="w-5 h-5" style={{ color: "#1a7a4a" }} />
@@ -322,7 +341,7 @@ export default async function OrgPage({
         )}
 
         {/* Related organizations */}
-        {related.length > 0 && (
+        {displaySettings.show_related_orgs && related.length > 0 && (
           <div className="pb-16">
             <h2 className="font-display text-2xl font-bold text-gray-900 mb-6">
               More in {categoryLabel}

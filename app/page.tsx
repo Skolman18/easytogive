@@ -50,23 +50,21 @@ export default function HomePage() {
   return (
     <div className="bg-white">
       {/* ── Hero ────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-12 md:pt-28 md:pb-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 md:pt-10 md:pb-5">
         <div className="max-w-2xl">
           <div
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-6"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-3"
             style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
           >
             <CheckCircle className="w-3.5 h-3.5" />
             12,400+ verified organizations
           </div>
 
-          <h1 className="font-display text-5xl md:text-6xl font-bold text-gray-900 leading-[1.1] mb-5">
-            Give to what<br />
-            <span style={{ color: "#1a7a4a" }}>matters most,</span><br />
-            all at once.
+          <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900 leading-[1.15] mb-3">
+            Give to what <span style={{ color: "#1a7a4a" }}>matters most,</span> all at once.
           </h1>
 
-          <p className="text-lg text-gray-500 leading-relaxed mb-8 max-w-lg">
+          <p className="text-base text-gray-500 leading-relaxed mb-5 max-w-lg">
             Discover verified nonprofits and churches, then donate to multiple
             causes through a single tax-deductible giving portfolio.
           </p>
@@ -93,7 +91,7 @@ export default function HomePage() {
 
       {/* ── Stats strip ─────────────────────────────────────────────── */}
       <section className="border-y" style={{ borderColor: "#f0ede6" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { value: "12,400+", label: "Verified organizations" },
@@ -102,10 +100,10 @@ export default function HomePage() {
               { value: "100%", label: "Tax-deductible" },
             ].map((s) => (
               <div key={s.label} className="text-center">
-                <div className="font-display text-3xl font-bold text-gray-900 mb-0.5">
+                <div className="font-display text-2xl font-bold text-gray-900 mb-0.5">
                   {s.value}
                 </div>
-                <div className="text-sm text-gray-500">{s.label}</div>
+                <div className="text-xs text-gray-500">{s.label}</div>
               </div>
             ))}
           </div>
@@ -113,7 +111,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Category chips + org cards ──────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Section header */}
         <div className="flex items-end justify-between mb-8">
           <div>

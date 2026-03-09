@@ -8,15 +8,15 @@ const FOOTER_LINKS = {
     { href: "/profile", label: "Giving History" },
   ],
   Company: [
-    { href: "#", label: "About Us" },
-    { href: "#", label: "How It Works" },
-    { href: "#", label: "For Nonprofits" },
-    { href: "#", label: "Blog" },
+    { href: "/about", label: "About Us" },
+    { href: "/how-it-works", label: "How It Works" },
+    { href: "/for-nonprofits", label: "For Nonprofits" },
+    { href: "/blog", label: "Blog" },
   ],
   Legal: [
-    { href: "#", label: "Privacy Policy" },
-    { href: "#", label: "Terms of Service" },
-    { href: "#", label: "Tax FAQ" },
+    { href: "/privacy", label: "Privacy Policy" },
+    { href: "/terms", label: "Terms of Service" },
+    { href: "/tax-faq", label: "Tax FAQ" },
   ],
 };
 
