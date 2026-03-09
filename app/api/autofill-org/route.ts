@@ -76,15 +76,15 @@ Rules:
 - category MUST be one of the listed values; pick the closest match.
 - tags should describe the cause area (e.g. "hunger", "youth", "veterans", "climate").`;
 
-    // Call Grok API
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    // Call Groq API
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.GROK_API_KEY}`,
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "grok-3-latest",
+        model: "llama-3.3-70b-versatile",
         max_tokens: 1024,
         messages: [{ role: "user", content: prompt }],
       }),
@@ -93,7 +93,7 @@ Rules:
     if (!response.ok) {
       const errText = await response.text();
       return NextResponse.json(
-        { error: `Grok API error: ${errText}` },
+        { error: `Groq API error: ${errText}` },
         { status: 502 }
       );
     }
@@ -101,7 +101,7 @@ Rules:
     const data = await response.json();
     const raw = data.choices?.[0]?.message?.content?.trim() ?? "";
 
-    // Parse the JSON Grok returned
+    // Parse the JSON Groq returned
     let parsed: Record<string, unknown>;
     try {
       const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
