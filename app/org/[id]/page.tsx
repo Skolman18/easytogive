@@ -79,6 +79,7 @@ export default async function OrgPage({
         goal: supabaseOrg.goal ?? 0,
         tags: supabaseOrg.tags ?? [],
         impactStats: supabaseOrg.impact_stats ?? supabaseOrg.impactStats ?? [],
+        featured: supabaseOrg.featured ?? false,
       }
     : ORGANIZATIONS.find((o) => o.id === id);
 
