@@ -25,6 +25,8 @@ export interface Organization {
   website: string;
   impactStats: { label: string; value: string }[];
   tags: string[];
+  recommended_orgs?: string[];
+  sort_order?: number;
 }
 
 export interface GivingRecord {

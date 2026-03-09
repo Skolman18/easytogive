@@ -11,6 +11,7 @@ import {
   ExternalLink,
   CheckCircle,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import {
   ORGANIZATIONS,
@@ -18,6 +19,7 @@ import {
   getProgressPercent,
 } from "@/lib/placeholder-data";
 import OrgDonateSidebar from "@/components/OrgDonateSidebar";
+import { createClient } from "@/lib/supabase-server";
 
 const CATEGORY_LABELS: Record<string, string> = {
   churches: "Church",
@@ -56,6 +58,23 @@ export default async function OrgPage({
   const related = ORGANIZATIONS.filter(
     (o) => o.category === org.category && o.id !== org.id
   ).slice(0, 3);
+
+  // Fetch recommended_orgs from Supabase (graceful fallback if column doesn't exist yet)
+  let recommendedOrgs: typeof ORGANIZATIONS = [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("organizations")
+      .select("recommended_orgs")
+      .eq("id", id)
+      .single();
+    const ids: string[] = (data as any)?.recommended_orgs ?? [];
+    if (ids.length > 0) {
+      recommendedOrgs = ORGANIZATIONS.filter((o) => ids.includes(o.id));
+    }
+  } catch {
+    // Column may not exist yet — silently skip
+  }
 
   return (
     <div style={{ backgroundColor: "#faf9f6" }}>
@@ -242,6 +261,65 @@ export default async function OrgPage({
             <OrgDonateSidebar org={org} />
           </div>
         </div>
+
+        {/* ── We Recommend ──────────────────────────────────────────── */}
+        {recommendedOrgs.length > 0 && (
+          <div className="pb-12">
+            <div className="flex items-center gap-2 mb-6">
+              <Sparkles className="w-5 h-5" style={{ color: "#1a7a4a" }} />
+              <h2 className="font-display text-2xl font-bold text-gray-900">
+                We Recommend
+              </h2>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendedOrgs.map((r) => {
+                const rProgress = getProgressPercent(r.raised, r.goal);
+                const rColor = CATEGORY_COLORS[r.category] || "#1a7a4a";
+                const rLabel = CATEGORY_LABELS[r.category] || r.category;
+                return (
+                  <Link
+                    key={r.id}
+                    href={`/org/${r.id}`}
+                    className="block group rounded-2xl border bg-white overflow-hidden card-hover"
+                    style={{ borderColor: "#e5e1d8" }}
+                  >
+                    <div className="relative h-36 overflow-hidden bg-gray-100">
+                      <img
+                        src={r.imageUrl}
+                        alt={r.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <span
+                        className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
+                        style={{ backgroundColor: rColor }}
+                      >
+                        {rLabel}
+                      </span>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-display font-semibold text-gray-900 group-hover:text-green-700 transition-colors mb-1 leading-tight">
+                        {r.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 mb-3">{r.location}</p>
+                      <div
+                        className="w-full rounded-full h-1.5"
+                        style={{ backgroundColor: "#e5e1d8" }}
+                      >
+                        <div
+                          className="h-1.5 rounded-full"
+                          style={{ width: `${rProgress}%`, backgroundColor: "#1a7a4a" }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1.5">
+                        {formatCurrency(r.raised)} raised · {rProgress}%
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Related organizations */}
         {related.length > 0 && (

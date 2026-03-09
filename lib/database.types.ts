@@ -40,6 +40,8 @@ export interface Database {
           website: string;
           impact_stats: Json;
           tags: string[];
+          recommended_orgs: string[];
+          sort_order: number;
           created_at: string;
           updated_at: string;
         };

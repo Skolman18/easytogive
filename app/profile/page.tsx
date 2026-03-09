@@ -17,9 +17,11 @@ import {
   Shield,
   User,
   Loader2,
+  LayoutDashboard,
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-browser";
+import AdminPanel from "@/components/AdminPanel";
 import {
   GIVING_HISTORY,
   ORGANIZATIONS,
@@ -29,12 +31,15 @@ import {
   getProgressPercent,
 } from "@/lib/placeholder-data";
 
-const TABS = [
+const ADMIN_EMAIL = "sethmitzel@gmail.com";
+
+const BASE_TABS = [
   { id: "history", label: "Giving History", icon: Clock },
   { id: "tax", label: "Tax Documents", icon: FileText },
   { id: "watchlist", label: "Watchlist", icon: Bookmark },
   { id: "settings", label: "Settings", icon: Settings },
 ];
+const ADMIN_TAB = { id: "admin", label: "Admin", icon: LayoutDashboard };
 
 const CATEGORY_COLORS: Record<string, string> = {
   churches: "#7c3aed",
@@ -80,7 +85,7 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    createClient().auth.getUser().then(({ data: { user } }) => {
       if (!user) {
         router.push("/auth/signin?redirectTo=/profile");
       } else {
@@ -96,6 +101,9 @@ export default function ProfilePage() {
     ? new Date(user.created_at).getFullYear()
     : 2024;
   const initials = displayEmail.slice(0, 2).toUpperCase();
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
+  const TABS = isAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS;
 
   const totalGiven = GIVING_HISTORY.reduce((s, g) => s + g.amount, 0);
   const orgsSupported = new Set(GIVING_HISTORY.map((g) => g.orgId)).size;
@@ -472,6 +480,11 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Admin tab ── */}
+        {activeTab === "admin" && isAdmin && (
+          <AdminPanel />
         )}
 
         {/* ── Settings tab ── */}

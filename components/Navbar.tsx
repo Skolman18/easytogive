@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Menu, X, Heart, LogOut, User } from "lucide-react";
+import { Menu, X, Heart, LogOut } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-browser";
 
@@ -21,13 +21,9 @@ export default function Navbar() {
 
   useEffect(() => {
     createClient().auth.getUser().then(({ data: { user } }) => setUser(user));
-
-    const {
-      data: { subscription },
-    } = createClient().auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
+    const { data: { subscription } } = createClient().auth.onAuthStateChange(
+      (_event, session) => setUser(session?.user ?? null)
+    );
     return () => subscription.unsubscribe();
   }, []);
 
@@ -37,40 +33,36 @@ export default function Navbar() {
     router.refresh();
   }
 
-  const initials = user?.email
-    ? user.email.slice(0, 2).toUpperCase()
-    : null;
+  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : null;
 
   return (
-    <nav
-      className="sticky top-0 z-50 border-b"
-      style={{ backgroundColor: "#0d1117", borderColor: "#1e2530" }}
-    >
+    <nav className="sticky top-0 z-50 bg-white border-b" style={{ borderColor: "#f0ede6" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14">
+
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              className="w-7 h-7 rounded-lg flex items-center justify-center"
               style={{ backgroundColor: "#1a7a4a" }}
             >
-              <Heart className="w-4 h-4 text-white fill-white" />
+              <Heart className="w-3.5 h-3.5 text-white fill-white" />
             </div>
-            <span className="font-display text-xl font-semibold tracking-tight text-white">
+            <span className="font-display text-lg font-semibold text-gray-900 tracking-tight">
               EasyToGive
             </span>
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1">
+          {/* Desktop nav links */}
+          <div className="hidden md:flex items-center gap-0.5">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                   pathname === link.href
-                    ? "text-white bg-white/10"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    ? "text-gray-900 bg-gray-100"
+                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
                 {link.label}
@@ -78,13 +70,13 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Desktop auth */}
+          <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
                 <Link
                   href="/profile"
-                  className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
@@ -92,13 +84,13 @@ export default function Navbar() {
                   >
                     {initials}
                   </div>
-                  <span className="max-w-[160px] truncate">{user.email}</span>
+                  <span className="max-w-[140px] truncate">{user.email}</span>
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                   Sign Out
                 </button>
               </>
@@ -106,13 +98,13 @@ export default function Navbar() {
               <>
                 <Link
                   href="/auth/signin"
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                  className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
-                  href="/auth/signup"
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+                  href="/get-started"
+                  className="px-4 py-2 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
                   style={{ backgroundColor: "#1a7a4a" }}
                 >
                   Start Giving
@@ -121,9 +113,9 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile toggle */}
           <button
-            className="md:hidden text-gray-400 hover:text-white p-2 rounded-md"
+            className="md:hidden p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -134,25 +126,22 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div
-          className="md:hidden border-t px-4 py-4 space-y-1"
-          style={{ backgroundColor: "#0d1117", borderColor: "#1e2530" }}
-        >
+        <div className="md:hidden border-t bg-white px-4 py-3 space-y-1" style={{ borderColor: "#f0ede6" }}>
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setMobileOpen(false)}
-              className={`block px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+              className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 pathname === link.href
-                  ? "text-white bg-white/10"
-                  : "text-gray-400 hover:text-white hover:bg-white/5"
+                  ? "text-gray-900 bg-gray-100"
+                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
               {link.label}
             </Link>
           ))}
-          <div className="pt-3 border-t space-y-2" style={{ borderColor: "#1e2530" }}>
+          <div className="pt-2 border-t space-y-1" style={{ borderColor: "#f0ede6" }}>
             {user ? (
               <>
                 <div className="flex items-center gap-2 px-4 py-2">
@@ -162,14 +151,11 @@ export default function Navbar() {
                   >
                     {initials}
                   </div>
-                  <span className="text-sm text-gray-400 truncate">{user.email}</span>
+                  <span className="text-sm text-gray-600 truncate">{user.email}</span>
                 </div>
                 <button
-                  onClick={() => {
-                    setMobileOpen(false);
-                    handleSignOut();
-                  }}
-                  className="flex items-center gap-2 w-full px-4 py-2.5 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                  onClick={() => { setMobileOpen(false); handleSignOut(); }}
+                  className="flex items-center gap-2 w-full px-4 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   Sign Out
@@ -180,14 +166,14 @@ export default function Navbar() {
                 <Link
                   href="/auth/signin"
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-2.5 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                  className="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50"
                 >
                   Sign In
                 </Link>
                 <Link
-                  href="/auth/signup"
+                  href="/get-started"
                   onClick={() => setMobileOpen(false)}
-                  className="block w-full text-center px-4 py-2.5 rounded-lg text-sm font-semibold text-white"
+                  className="block w-full text-center px-4 py-2.5 rounded-full text-sm font-semibold text-white"
                   style={{ backgroundColor: "#1a7a4a" }}
                 >
                   Start Giving
