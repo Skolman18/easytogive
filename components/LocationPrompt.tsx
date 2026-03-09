@@ -1,40 +1,28 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, Navigation, X, Loader2 } from "lucide-react";
+import { MapPin, Navigation, X, Loader2, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 
 const PROMPT_KEY = "etg_location_prompted";
+const LOCATION_KEY = "etg_user_location";
 
 export default function LocationPrompt() {
   const [show, setShow] = useState(false);
-  const [mode, setMode] = useState<"choose" | "manual" | "loading" | "done">("choose");
+  const [mode, setMode] = useState<"choose" | "manual" | "loading" | "done" | "error">("choose");
   const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  const [stateVal, setStateVal] = useState("");
   const [zip, setZip] = useState("");
-  const [error, setError] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    // Only show for logged-in users who haven't been prompted yet
-    const alreadyPrompted = localStorage.getItem(PROMPT_KEY);
-    if (alreadyPrompted) return;
-
-    const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      // Check if they already have a location set
-      const { data: profile } = await (supabase as any)
-        .from("users")
-        .select("lat")
-        .eq("id", data.user.id)
-        .single();
-      if (profile?.lat) {
-        localStorage.setItem(PROMPT_KEY, "1");
-        return;
-      }
-      // Show after a short delay
-      setTimeout(() => setShow(true), 1500);
-    });
+    if (localStorage.getItem(PROMPT_KEY)) return;
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        if (!data.user) return;
+        setTimeout(() => setShow(true), 1500);
+      });
   }, []);
 
   function dismiss() {
@@ -42,126 +30,146 @@ export default function LocationPrompt() {
     setShow(false);
   }
 
-  async function saveLocation(lat: number, lng: number, cityVal?: string, stateVal?: string, zipVal?: string) {
-    const supabase = createClient();
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
-    await (supabase as any)
-      .from("users")
-      .upsert({
-        id: userData.user.id,
-        lat,
-        lng,
-        city: cityVal ?? "",
-        state: stateVal ?? "",
-        zip: zipVal ?? "",
-      });
-    localStorage.setItem(PROMPT_KEY, "1");
-    setMode("done");
-    setTimeout(() => setShow(false), 1500);
+  async function saveToDb(payload: Record<string, unknown>) {
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      await (supabase as any)
+        .from("users")
+        .upsert({ id: userData.user.id, ...payload });
+    } catch {
+      // DB columns may not exist yet — silently ignore, localStorage backup covers it
+    }
   }
 
   async function handleGeolocate() {
     setMode("loading");
-    setError("");
+    setErrorMsg("");
+
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser.");
+      setErrorMsg("Geolocation isn't supported by your browser.");
       setMode("manual");
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        // Try reverse geocode via browser-safe approach (no API key needed for basic use)
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-          );
-          const geo = await res.json();
-          const addr = geo.address ?? {};
-          await saveLocation(
-            latitude,
-            longitude,
-            addr.city ?? addr.town ?? addr.village ?? "",
-            addr.state ?? "",
-            addr.postcode ?? ""
-          );
-        } catch {
-          await saveLocation(latitude, longitude);
-        }
-      },
-      () => {
-        setError("Location access was denied. Please enter your location manually.");
-        setMode("manual");
-      }
-    );
+
+    // Race geolocation against a 10s timeout
+    const geoPromise = new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        timeout: 10000,
+        maximumAge: 60000,
+      });
+    });
+
+    try {
+      const pos = await geoPromise;
+      const { latitude, longitude } = pos.coords;
+
+      // Save to localStorage immediately (works without DB migration)
+      localStorage.setItem(
+        LOCATION_KEY,
+        JSON.stringify({ lat: latitude, lng: longitude })
+      );
+
+      // Best-effort DB save (lat/lng columns may not exist yet)
+      await saveToDb({ lat: latitude, lng: longitude });
+
+      localStorage.setItem(PROMPT_KEY, "1");
+      setMode("done");
+      setTimeout(() => setShow(false), 1800);
+    } catch (err: any) {
+      const denied =
+        err?.code === 1 || // PERMISSION_DENIED
+        err?.message?.toLowerCase().includes("denied");
+      setErrorMsg(
+        denied
+          ? "Location access was denied — enter your location manually instead."
+          : "Couldn't get your location. Try entering it manually."
+      );
+      setMode("manual");
+    }
   }
 
   async function handleManualSave() {
     if (!zip && !city) {
-      setError("Please enter at least a city or ZIP code.");
+      setErrorMsg("Please enter at least a city or ZIP code.");
       return;
     }
     setMode("loading");
-    // Geocode via Nominatim
-    try {
-      const query = zip || `${city}, ${state}`;
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=us`
-      );
-      const results = await res.json();
-      if (results.length > 0) {
-        await saveLocation(parseFloat(results[0].lat), parseFloat(results[0].lon), city, state, zip);
-      } else {
-        // Save without lat/lng
-        const supabase = createClient();
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData.user) {
-          await (supabase as any).from("users").upsert({ id: userData.user.id, city, state, zip, lat: null, lng: null });
-        }
-        localStorage.setItem(PROMPT_KEY, "1");
-        setMode("done");
-        setTimeout(() => setShow(false), 1500);
-      }
-    } catch {
-      setMode("manual");
-      setError("Could not geocode that location. Please try again.");
-    }
+
+    const payload: Record<string, string> = {
+      city,
+      state: stateVal,
+      zip,
+    };
+
+    // Save city/state/zip to localStorage
+    localStorage.setItem(LOCATION_KEY, JSON.stringify(payload));
+
+    // Best-effort DB save
+    await saveToDb(payload);
+
+    localStorage.setItem(PROMPT_KEY, "1");
+    setMode("done");
+    setTimeout(() => setShow(false), 1800);
   }
 
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+    >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        {/* Header */}
         <div className="flex items-start justify-between mb-4">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#e8f5ee" }}>
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: "#e8f5ee" }}
+          >
             <MapPin className="w-5 h-5" style={{ color: "#1a7a4a" }} />
           </div>
-          <button onClick={dismiss} className="text-gray-400 hover:text-gray-600 p-1">
+          <button
+            onClick={dismiss}
+            className="text-gray-400 hover:text-gray-600 p-1"
+            aria-label="Dismiss"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {mode === "done" ? (
+        {/* Done */}
+        {mode === "done" && (
           <div className="text-center py-4">
+            <CheckCircle className="w-10 h-10 mx-auto mb-3" style={{ color: "#1a7a4a" }} />
             <p className="text-lg font-semibold text-gray-900 mb-1">Location saved!</p>
             <p className="text-sm text-gray-500">We&apos;ll show you local causes near you.</p>
           </div>
-        ) : mode === "loading" ? (
-          <div className="text-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-green-600" />
+        )}
+
+        {/* Loading */}
+        {mode === "loading" && (
+          <div className="text-center py-10">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3" style={{ color: "#1a7a4a" }} />
             <p className="text-sm text-gray-500">Getting your location…</p>
           </div>
-        ) : (
+        )}
+
+        {/* Choose / Manual */}
+        {(mode === "choose" || mode === "manual") && (
           <>
-            <h2 className="text-lg font-bold text-gray-900 mb-1">Where are you located?</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-1">
+              Where are you located?
+            </h2>
             <p className="text-sm text-gray-500 mb-5">
               We&apos;ll show you local causes and organizations near you.
             </p>
 
-            {error && (
-              <p className="text-sm text-red-500 mb-4 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+            {errorMsg && (
+              <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">
+                {errorMsg}
+              </p>
             )}
 
             {mode === "choose" && (
@@ -175,13 +183,16 @@ export default function LocationPrompt() {
                   Use My Location
                 </button>
                 <button
-                  onClick={() => setMode("manual")}
+                  onClick={() => { setErrorMsg(""); setMode("manual"); }}
                   className="w-full py-3 rounded-xl font-semibold text-sm border transition-all hover:bg-gray-50"
                   style={{ borderColor: "#e5e1d8", color: "#374151" }}
                 >
                   Enter Manually
                 </button>
-                <button onClick={dismiss} className="w-full text-sm text-gray-400 hover:text-gray-600 py-2">
+                <button
+                  onClick={dismiss}
+                  className="w-full text-sm text-gray-400 hover:text-gray-600 py-2"
+                >
                   Skip for now
                 </button>
               </div>
@@ -196,20 +207,21 @@ export default function LocationPrompt() {
                   onChange={(e) => setCity(e.target.value)}
                   className="w-full px-4 py-2.5 border rounded-lg text-sm outline-none focus:border-green-600"
                   style={{ borderColor: "#e5e1d8" }}
+                  autoFocus
                 />
                 <div className="grid grid-cols-2 gap-3">
                   <input
                     type="text"
-                    placeholder="State"
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
+                    placeholder="State (e.g. TX)"
+                    value={stateVal}
+                    onChange={(e) => setStateVal(e.target.value.toUpperCase())}
                     maxLength={2}
                     className="w-full px-4 py-2.5 border rounded-lg text-sm outline-none focus:border-green-600 uppercase"
                     style={{ borderColor: "#e5e1d8" }}
                   />
                   <input
                     type="text"
-                    placeholder="ZIP Code"
+                    placeholder="ZIP"
                     value={zip}
                     onChange={(e) => setZip(e.target.value)}
                     maxLength={5}
@@ -224,8 +236,11 @@ export default function LocationPrompt() {
                 >
                   Save Location
                 </button>
-                <button onClick={dismiss} className="w-full text-sm text-gray-400 hover:text-gray-600 py-2">
-                  Skip for now
+                <button
+                  onClick={() => { setErrorMsg(""); setMode("choose"); }}
+                  className="w-full text-sm text-gray-400 hover:text-gray-600 py-2"
+                >
+                  ← Back
                 </button>
               </div>
             )}
