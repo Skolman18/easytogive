@@ -50,7 +50,38 @@ export default async function OrgPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const org = ORGANIZATIONS.find((o) => o.id === id);
+
+  // Try Supabase first, fall back to placeholder data
+  const supabaseMain = await createClient();
+  const { data: supabaseOrg } = await supabaseMain
+    .from("organizations")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  // Normalize Supabase org fields to match placeholder shape
+  const org = supabaseOrg
+    ? {
+        id: supabaseOrg.id,
+        name: supabaseOrg.name,
+        tagline: supabaseOrg.tagline ?? "",
+        description: supabaseOrg.description ?? "",
+        category: supabaseOrg.category ?? "nonprofits",
+        location: supabaseOrg.location ?? "",
+        founded: supabaseOrg.founded ?? "",
+        website: supabaseOrg.website ?? "",
+        imageUrl: supabaseOrg.image_url ?? supabaseOrg.imageUrl ?? "",
+        coverUrl: supabaseOrg.cover_url ?? supabaseOrg.coverUrl ?? supabaseOrg.image_url ?? "",
+        verified: supabaseOrg.verified ?? false,
+        ein: supabaseOrg.ein ?? "Pending",
+        donors: supabaseOrg.donors ?? 0,
+        raised: supabaseOrg.raised ?? 0,
+        goal: supabaseOrg.goal ?? 0,
+        tags: supabaseOrg.tags ?? [],
+        impactStats: supabaseOrg.impact_stats ?? supabaseOrg.impactStats ?? [],
+      }
+    : ORGANIZATIONS.find((o) => o.id === id);
+
   if (!org) notFound();
 
   const categoryColor = CATEGORY_COLORS[org.category] || "#1a7a4a";
@@ -203,7 +234,7 @@ export default async function OrgPage({
             </div>
 
             {/* Impact Stats */}
-            {displaySettings.show_impact_stats && (
+            {displaySettings.show_impact_stats && org.impactStats && org.impactStats.length > 0 && (
             <div
               className="rounded-2xl border bg-white p-6"
               style={{ borderColor: "#e5e1d8" }}
@@ -212,7 +243,7 @@ export default async function OrgPage({
                 Impact by the numbers
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                {org.impactStats.map((stat) => (
+                {org.impactStats.map((stat: any) => (
                   <div
                     key={stat.label}
                     className="text-center p-4 rounded-xl"
@@ -262,8 +293,9 @@ export default async function OrgPage({
             </div>
 
             {/* Tags */}
+            {org.tags && org.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {org.tags.map((tag) => (
+              {org.tags.map((tag: any) => (
                 <span
                   key={tag}
                   className="px-3 py-1 rounded-full text-sm text-gray-600"
@@ -273,6 +305,7 @@ export default async function OrgPage({
                 </span>
               ))}
             </div>
+            )}
           </div>
 
           {/* Sidebar — client component handles all donation interactivity */}
