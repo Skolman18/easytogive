@@ -2,12 +2,22 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, Users, Lock } from "lucide-react";
+import { Heart, Users, Lock, RefreshCw } from "lucide-react";
 import CheckoutModal from "@/components/CheckoutModal";
 import { formatCurrency, getProgressPercent } from "@/lib/placeholder-data";
 import type { Organization } from "@/lib/placeholder-data";
+import { createClient } from "@/lib/supabase-browser";
 
 const QUICK_AMOUNTS = [25, 50, 100, 250];
+
+const FREQUENCIES = [
+  { value: "weekly", label: "Weekly" },
+  { value: "biweekly", label: "Bi-weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+] as const;
+
+type Frequency = (typeof FREQUENCIES)[number]["value"];
 
 interface DisplaySettings {
   show_raised: boolean;
@@ -31,6 +41,9 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
   const [customAmount, setCustomAmount] = useState("");
   const [useCustom, setUseCustom] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<Frequency>("monthly");
+  const [recurringStatus, setRecurringStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const ds = { ...DEFAULT_DISPLAY, ...displaySettings };
   const progress = getProgressPercent(org.raised, org.goal);
@@ -39,6 +52,29 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
   function openCheckout() {
     if (effectiveAmount < 1) return;
     setModalOpen(true);
+  }
+
+  async function handleStartRecurring() {
+    if (effectiveAmount < 1) return;
+    setRecurringStatus("saving");
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      await (supabase as any).from("recurring_donations").insert({
+        user_id: userId ?? null,
+        org_id: org.id,
+        org_name: org.name,
+        amount_cents: Math.round(effectiveAmount * 100),
+        frequency,
+        active: true,
+      });
+      setRecurringStatus("saved");
+      setTimeout(() => setRecurringStatus("idle"), 3000);
+    } catch {
+      setRecurringStatus("error");
+      setTimeout(() => setRecurringStatus("idle"), 3000);
+    }
   }
 
   const showProgressSection = ds.show_raised || ds.show_goal || ds.show_donors;
@@ -102,6 +138,56 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
         </div>
         )}
 
+        {/* One-time / Recurring toggle */}
+        <div
+          className="flex rounded-xl p-1 mb-4"
+          style={{ backgroundColor: "#f0ede6" }}
+        >
+          <button
+            onClick={() => setIsRecurring(false)}
+            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={
+              !isRecurring
+                ? { backgroundColor: "white", color: "#111827", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                : { color: "#6b7280" }
+            }
+          >
+            One-Time
+          </button>
+          <button
+            onClick={() => setIsRecurring(true)}
+            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
+            style={
+              isRecurring
+                ? { backgroundColor: "white", color: "#111827", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                : { color: "#6b7280" }
+            }
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Recurring
+          </button>
+        </div>
+
+        {/* Frequency selector (when recurring) */}
+        {isRecurring && (
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {FREQUENCIES.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setFrequency(f.value)}
+                className="py-2 rounded-lg text-xs font-semibold transition-all"
+                style={
+                  frequency === f.value
+                    ? { backgroundColor: "#1a7a4a", color: "white" }
+                    : { backgroundColor: "#f0ede6", color: "#374151" }
+                }
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Amount selector */}
         <div className="grid grid-cols-2 gap-2 mb-3">
           {QUICK_AMOUNTS.map((amt) => (
@@ -155,16 +241,34 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
           )}
         </div>
 
-        {/* Donate button */}
-        <button
-          onClick={openCheckout}
-          disabled={effectiveAmount < 1}
-          className="w-full py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2 mb-3 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ backgroundColor: "#1a7a4a" }}
-        >
-          <Heart className="w-4 h-4 fill-white" />
-          Donate {effectiveAmount >= 1 ? formatCurrency(effectiveAmount) : ""}
-        </button>
+        {/* Donate / Start Recurring button */}
+        {isRecurring ? (
+          <button
+            onClick={handleStartRecurring}
+            disabled={effectiveAmount < 1 || recurringStatus === "saving"}
+            className="w-full py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2 mb-3 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ backgroundColor: recurringStatus === "saved" ? "#16a34a" : "#1a7a4a" }}
+          >
+            <RefreshCw className="w-4 h-4" />
+            {recurringStatus === "saving"
+              ? "Setting up…"
+              : recurringStatus === "saved"
+              ? "Recurring giving set up!"
+              : recurringStatus === "error"
+              ? "Error — try again"
+              : `Give ${effectiveAmount >= 1 ? formatCurrency(effectiveAmount) : ""} ${FREQUENCIES.find((f) => f.value === frequency)?.label ?? ""}`}
+          </button>
+        ) : (
+          <button
+            onClick={openCheckout}
+            disabled={effectiveAmount < 1}
+            className="w-full py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2 mb-3 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ backgroundColor: "#1a7a4a" }}
+          >
+            <Heart className="w-4 h-4 fill-white" />
+            Donate {effectiveAmount >= 1 ? formatCurrency(effectiveAmount) : ""}
+          </button>
+        )}
 
         <Link
           href="/portfolio"

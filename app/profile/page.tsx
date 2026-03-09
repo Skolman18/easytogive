@@ -25,6 +25,7 @@ import {
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-browser";
 import AdminPanel from "@/components/AdminPanel";
+import Toggle from "@/components/Toggle";
 import {
   GIVING_HISTORY,
   ORGANIZATIONS,
@@ -122,6 +123,9 @@ function ProfilePageInner() {
     bio: "",
     avatar_url: "",
     location: "",
+    city: "",
+    state: "",
+    zip: "",
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -161,7 +165,7 @@ function ProfilePageInner() {
   async function loadProfile(userId: string) {
     const { data } = await (createClient() as any)
       .from("users")
-      .select("full_name, bio, avatar_url, location")
+      .select("full_name, bio, avatar_url, location, city, state, zip")
       .eq("id", userId)
       .single();
     if (data) {
@@ -170,6 +174,9 @@ function ProfilePageInner() {
         bio: data.bio || "",
         avatar_url: data.avatar_url || "",
         location: data.location || "",
+        city: data.city || "",
+        state: data.state || "",
+        zip: data.zip || "",
       });
     }
   }
@@ -187,6 +194,9 @@ function ProfilePageInner() {
         bio: profile.bio,
         avatar_url: profile.avatar_url,
         location: profile.location,
+        city: profile.city,
+        state: profile.state,
+        zip: profile.zip,
       });
     setProfileSaving(false);
     if (error) {
@@ -707,7 +717,7 @@ function ProfilePageInner() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Location
+                    Location (display)
                   </label>
                   <input
                     type="text"
@@ -717,6 +727,41 @@ function ProfilePageInner() {
                     style={{ borderColor: "#e5e1d8" }}
                     placeholder="Denver, CO"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Location
+                    <span className="ml-1 text-xs font-normal text-gray-400">(used to show local causes)</span>
+                  </label>
+                  <div className="grid grid-cols-5 gap-2">
+                    <input
+                      type="text"
+                      value={profile.city}
+                      onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                      className="col-span-3 px-3 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                      style={{ borderColor: "#e5e1d8" }}
+                      placeholder="City"
+                    />
+                    <input
+                      type="text"
+                      value={profile.state}
+                      onChange={(e) => setProfile({ ...profile, state: e.target.value.toUpperCase() })}
+                      maxLength={2}
+                      className="col-span-1 px-3 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors uppercase"
+                      style={{ borderColor: "#e5e1d8" }}
+                      placeholder="ST"
+                    />
+                    <input
+                      type="text"
+                      value={profile.zip}
+                      onChange={(e) => setProfile({ ...profile, zip: e.target.value })}
+                      maxLength={5}
+                      className="col-span-1 px-3 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                      style={{ borderColor: "#e5e1d8" }}
+                      placeholder="ZIP"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -808,17 +853,10 @@ function ProfilePageInner() {
                           {isSettings ? (
                             <span className="text-xs text-gray-400 px-2">Always visible</span>
                           ) : (
-                            <button
-                              onClick={() => toggleHideTab(tabId)}
-                              className={`relative w-10 h-5.5 rounded-full transition-colors flex-shrink-0 ${hidden ? "bg-gray-200" : ""}`}
-                              style={!hidden ? { backgroundColor: "#1a7a4a" } : {}}
-                              role="switch"
-                              aria-checked={!hidden}
-                            >
-                              <span
-                                className={`absolute top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow transition-transform ${!hidden ? "translate-x-5" : "translate-x-0.5"}`}
-                              />
-                            </button>
+                            <Toggle
+                              checked={!hidden}
+                              onChange={() => toggleHideTab(tabId)}
+                            />
                           )}
                         </div>
                       );
@@ -873,17 +911,10 @@ function ProfilePageInner() {
                       <div className="text-sm font-medium text-gray-900">{item.label}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{item.desc}</div>
                     </div>
-                    <button
-                      onClick={() => setNotifications((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-                      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${notifications[item.key] ? "" : "bg-gray-200"}`}
-                      style={notifications[item.key] ? { backgroundColor: "#1a7a4a" } : {}}
-                      role="switch"
-                      aria-checked={notifications[item.key]}
-                    >
-                      <span
-                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${notifications[item.key] ? "translate-x-5" : "translate-x-0.5"}`}
-                      />
-                    </button>
+                    <Toggle
+                      checked={notifications[item.key]}
+                      onChange={(v) => setNotifications((prev) => ({ ...prev, [item.key]: v }))}
+                    />
                   </div>
                 ))}
               </div>

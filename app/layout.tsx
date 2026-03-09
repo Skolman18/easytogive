@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { EditModeProvider } from "@/components/EditModeContext";
+import EditModeButton from "@/components/EditModeButton";
+import LocationPrompt from "@/components/LocationPrompt";
 
 export const metadata: Metadata = {
   title: "EasyToGive — Charitable Giving, Simplified",
@@ -17,9 +20,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <Navbar />
-        <main className="min-h-screen">{children}</main>
-        <Footer />
+        <EditModeProvider>
+          <Navbar />
+          <main className="min-h-screen">{children}</main>
+          <Footer />
+          <EditModeButton />
+          <LocationPrompt />
+        </EditModeProvider>
       </body>
     </html>
   );

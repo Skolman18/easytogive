@@ -20,6 +20,7 @@ import {
 } from "@/lib/placeholder-data";
 import OrgDonateSidebar from "@/components/OrgDonateSidebar";
 import OrgAdminBar from "@/components/OrgAdminBar";
+import EditableField from "@/components/EditableField";
 import { createClient } from "@/lib/supabase-server";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -178,9 +179,13 @@ export default async function OrgPage({
           <div className="lg:col-span-2 space-y-8">
             <div>
               <div className="flex items-start gap-3 mb-2 flex-wrap">
-                <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900">
-                  {org.name}
-                </h1>
+                <EditableField
+                  orgId={supabaseOrg ? id : undefined}
+                  field="name"
+                  value={org.name}
+                  as="h1"
+                  className="font-display text-3xl md:text-4xl font-bold text-gray-900"
+                />
                 {org.verified && (
                   <span
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold text-white mt-1 flex-shrink-0"
@@ -191,18 +196,33 @@ export default async function OrgPage({
                   </span>
                 )}
               </div>
-              <p className="text-xl text-gray-600 mb-4 italic font-display">
-                {org.tagline}
-              </p>
+              <EditableField
+                orgId={supabaseOrg ? id : undefined}
+                field="tagline"
+                value={org.tagline}
+                as="p"
+                className="text-xl text-gray-600 mb-4 italic font-display"
+              />
 
               <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                 <span className="flex items-center gap-1.5">
                   <MapPin className="w-4 h-4" />
-                  {org.location}
+                  <EditableField
+                    orgId={supabaseOrg ? id : undefined}
+                    field="location"
+                    value={org.location}
+                    as="span"
+                  />
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" />
-                  Founded {org.founded}
+                  Founded{" "}
+                  <EditableField
+                    orgId={supabaseOrg ? id : undefined}
+                    field="founded"
+                    value={String(org.founded)}
+                    as="span"
+                  />
                 </span>
                 {displaySettings.show_donors && (
                 <span className="flex items-center gap-1.5">
@@ -217,7 +237,12 @@ export default async function OrgPage({
                   className="flex items-center gap-1.5 hover:text-green-700 transition-colors"
                 >
                   <Globe className="w-4 h-4" />
-                  Visit website
+                  <EditableField
+                    orgId={supabaseOrg ? id : undefined}
+                    field="website"
+                    value={org.website || ""}
+                    as="span"
+                  />
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -231,7 +256,14 @@ export default async function OrgPage({
               <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
                 About this organization
               </h2>
-              <p className="text-gray-700 leading-relaxed">{org.description}</p>
+              <EditableField
+                orgId={supabaseOrg ? id : undefined}
+                field="description"
+                value={org.description}
+                as="p"
+                className="text-gray-700 leading-relaxed"
+                multiline
+              />
             </div>
 
             {/* Impact Stats */}

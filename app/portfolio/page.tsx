@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { Plus, Trash2, Lock, AlertCircle, CheckCircle, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Lock, AlertCircle, CheckCircle, Search, RefreshCw, X } from "lucide-react";
 import {
   PORTFOLIO_ALLOCATIONS,
   ORGANIZATIONS,
@@ -11,6 +11,39 @@ import {
   PortfolioAllocation,
 } from "@/lib/placeholder-data";
 import CheckoutModal, { DonationAllocation } from "@/components/CheckoutModal";
+import { createClient } from "@/lib/supabase-browser";
+
+interface LocalAllocation extends PortfolioAllocation {
+  imageUrl?: string;
+  category?: string;
+}
+
+interface OrgSearchResult {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  image_url: string | null;
+}
+
+interface RecurringDonation {
+  id: string;
+  org_id: string;
+  org_name: string;
+  amount_cents: number;
+  frequency: string;
+  active: boolean;
+  created_at: string;
+}
+
+const FREQUENCIES = [
+  { value: "weekly", label: "Weekly" },
+  { value: "biweekly", label: "Bi-weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+] as const;
+
+type Frequency = (typeof FREQUENCIES)[number]["value"];
 
 const DONATION_AMOUNTS = [25, 50, 100, 250, 500];
 
@@ -43,13 +76,127 @@ function CustomTooltip({
 }
 
 export default function PortfolioPage() {
-  const [allocations, setAllocations] = useState<PortfolioAllocation[]>(PORTFOLIO_ALLOCATIONS);
+  const [allocations, setAllocations] = useState<LocalAllocation[]>(
+    PORTFOLIO_ALLOCATIONS.map((a) => {
+      const org = ORGANIZATIONS.find((o) => o.id === a.orgId);
+      return { ...a, imageUrl: org?.imageUrl, category: org?.category };
+    })
+  );
   const [donationAmount, setDonationAmount] = useState(100);
   const [customAmount, setCustomAmount] = useState("");
   const [useCustom, setUseCustom] = useState(false);
   const [addingOrg, setAddingOrg] = useState(false);
-  const [selectedOrgId, setSelectedOrgId] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  // Recurring
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<Frequency>("monthly");
+  const [recurringDonations, setRecurringDonations] = useState<RecurringDonation[]>([]);
+  const [recurringStatus, setRecurringStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<OrgSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Debounced Supabase search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      const supabase = createClient() as any;
+      const addedIds = allocations.map((a) => a.orgId);
+      const { data } = await supabase
+        .from("organizations")
+        .select("id, name, category, location, image_url")
+        .eq("visible", true)
+        .ilike("name", `%${searchQuery}%`)
+        .limit(8);
+      if (data) {
+        setSearchResults(data.filter((r: OrgSearchResult) => !addedIds.includes(r.id)));
+      }
+      setSearchLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, allocations]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Load recurring donations
+  useEffect(() => {
+    async function loadRecurring() {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { data } = await (supabase as any)
+        .from("recurring_donations")
+        .select("*")
+        .eq("user_id", userData.user.id)
+        .eq("active", true)
+        .order("created_at", { ascending: false });
+      if (data) setRecurringDonations(data);
+    }
+    loadRecurring();
+  }, []);
+
+  async function handleCancelRecurring(id: string) {
+    await (createClient() as any)
+      .from("recurring_donations")
+      .update({ active: false })
+      .eq("id", id);
+    setRecurringDonations((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  async function handleStartPortfolioRecurring() {
+    if (effectiveAmount < 1 || !isValid) return;
+    setRecurringStatus("saving");
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      await Promise.all(
+        allocations
+          .filter((a) => a.percentage > 0)
+          .map((a) =>
+            (supabase as any).from("recurring_donations").insert({
+              user_id: userId ?? null,
+              org_id: a.orgId,
+              org_name: a.orgName,
+              amount_cents: Math.round(effectiveAmount * (a.percentage / 100) * 100),
+              frequency,
+              active: true,
+            })
+          )
+      );
+      setRecurringStatus("saved");
+      // Refresh list
+      const { data } = await (supabase as any)
+        .from("recurring_donations")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("active", true)
+        .order("created_at", { ascending: false });
+      if (data) setRecurringDonations(data);
+      setTimeout(() => setRecurringStatus("idle"), 3000);
+    } catch {
+      setRecurringStatus("error");
+      setTimeout(() => setRecurringStatus("idle"), 3000);
+    }
+  }
 
   const totalPercent = allocations.reduce((sum, a) => sum + a.percentage, 0);
   const remaining = 100 - totalPercent;
@@ -82,25 +229,24 @@ export default function PortfolioPage() {
     );
   };
 
-  const handleAddOrg = () => {
-    const org = ORGANIZATIONS.find((o) => o.id === selectedOrgId);
-    if (!org || allocations.find((a) => a.orgId === org.id)) return;
+  const handleAddOrgFromResult = (result: OrgSearchResult) => {
+    if (allocations.find((a) => a.orgId === result.id)) return;
     setAllocations((prev) => [
       ...prev,
       {
-        orgId: org.id,
-        orgName: org.name,
+        orgId: result.id,
+        orgName: result.name,
         percentage: 0,
-        color: EXTRA_COLORS[allocations.length % EXTRA_COLORS.length],
+        color: EXTRA_COLORS[prev.length % EXTRA_COLORS.length],
+        imageUrl: result.image_url ?? undefined,
+        category: result.category,
       },
     ]);
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowDropdown(false);
     setAddingOrg(false);
-    setSelectedOrgId("");
   };
-
-  const availableOrgs = ORGANIZATIONS.filter(
-    (o) => !allocations.find((a) => a.orgId === o.id)
-  );
 
   const chartData = allocations
     .filter((a) => a.percentage > 0)
@@ -140,8 +286,7 @@ export default function PortfolioPage() {
               </button>
               <button
                 onClick={() => setAddingOrg(true)}
-                disabled={availableOrgs.length === 0}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
                 style={{ backgroundColor: "#1a7a4a" }}
               >
                 <Plus className="w-4 h-4" />
@@ -235,49 +380,78 @@ export default function PortfolioPage() {
                   className="rounded-2xl border p-5"
                   style={{ borderColor: "#e5e1d8", backgroundColor: "#faf9f6" }}
                 >
-                  <p className="text-sm font-semibold text-gray-800 mb-3">
-                    Add an organization
-                  </p>
-                  <div className="flex gap-3">
-                    <div className="flex-1 relative">
-                      <select
-                        value={selectedOrgId}
-                        onChange={(e) => setSelectedOrgId(e.target.value)}
-                        className="w-full border rounded-lg px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-green-600 appearance-none pr-8 bg-white"
-                        style={{ borderColor: "#e5e1d8" }}
-                      >
-                        <option value="">Select an organization…</option>
-                        {availableOrgs.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold text-gray-800">Add an organization</p>
                     <button
-                      onClick={handleAddOrg}
-                      disabled={!selectedOrgId}
-                      className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-40"
-                      style={{ backgroundColor: "#1a7a4a" }}
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={() => { setAddingOrg(false); setSelectedOrgId(""); }}
-                      className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                      onClick={() => { setAddingOrg(false); setSearchQuery(""); setSearchResults([]); }}
+                      className="text-xs text-gray-400 hover:text-gray-600"
                     >
                       Cancel
                     </button>
+                  </div>
+                  <div ref={searchRef} className="relative">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                        onFocus={() => setShowDropdown(true)}
+                        placeholder="Search organizations by name…"
+                        autoFocus
+                        className="w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm bg-white outline-none focus:border-green-600"
+                        style={{ borderColor: "#e5e1d8" }}
+                      />
+                      {searchLoading && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                          Searching…
+                        </span>
+                      )}
+                    </div>
+
+                    {showDropdown && searchResults.length > 0 && (
+                      <div className="absolute z-20 left-0 right-0 mt-1 bg-white rounded-xl border shadow-lg overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
+                        {searchResults.map((result) => (
+                          <button
+                            key={result.id}
+                            onMouseDown={() => handleAddOrgFromResult(result)}
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <div className="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                              {result.image_url ? (
+                                <img src={result.image_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-gray-200" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{result.name}</p>
+                              <p className="text-xs text-gray-400 truncate">{result.location}</p>
+                            </div>
+                            <span className="text-xs text-gray-400 flex-shrink-0 capitalize">
+                              {CATEGORY_LABELS[result.category] ?? result.category}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {showDropdown && searchQuery && !searchLoading && searchResults.length === 0 && (
+                      <div className="absolute z-20 left-0 right-0 mt-1 bg-white rounded-xl border shadow-lg px-4 py-3 text-sm text-gray-400" style={{ borderColor: "#e5e1d8" }}>
+                        No organizations found for &quot;{searchQuery}&quot;
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
               {/* Org rows */}
               {allocations.map((alloc) => {
-                const org = ORGANIZATIONS.find((o) => o.id === alloc.orgId);
+                const placeholderOrg = ORGANIZATIONS.find((o) => o.id === alloc.orgId);
+                const imageUrl = alloc.imageUrl ?? placeholderOrg?.imageUrl;
+                const category = alloc.category ?? placeholderOrg?.category ?? "";
                 const dollarAmount = (effectiveAmount * alloc.percentage) / 100;
-                const categoryLabel = org ? (CATEGORY_LABELS[org.category] || org.category) : "";
+                const categoryLabel = CATEGORY_LABELS[category] || category;
 
                 return (
                   <div
@@ -289,9 +463,9 @@ export default function PortfolioPage() {
                     <div className="flex items-center gap-4 mb-4">
                       {/* Thumbnail */}
                       <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                        {org?.imageUrl ? (
+                        {imageUrl ? (
                           <img
-                            src={org.imageUrl}
+                            src={imageUrl}
                             alt={alloc.orgName}
                             className="w-full h-full object-cover"
                           />
@@ -419,10 +593,57 @@ export default function PortfolioPage() {
                   </span>
                 </div>
 
+                {/* One-time / Recurring toggle */}
+                <div className="flex rounded-xl p-1 mb-4" style={{ backgroundColor: "#f3f4f6" }}>
+                  <button
+                    onClick={() => setIsRecurring(false)}
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+                    style={
+                      !isRecurring
+                        ? { backgroundColor: "white", color: "#111827", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                        : { color: "#6b7280" }
+                    }
+                  >
+                    One-Time
+                  </button>
+                  <button
+                    onClick={() => setIsRecurring(true)}
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
+                    style={
+                      isRecurring
+                        ? { backgroundColor: "white", color: "#111827", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                        : { color: "#6b7280" }
+                    }
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Recurring
+                  </button>
+                </div>
+
+                {/* Frequency (when recurring) */}
+                {isRecurring && (
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                    {FREQUENCIES.map((f) => (
+                      <button
+                        key={f.value}
+                        onClick={() => setFrequency(f.value)}
+                        className="py-2 rounded-lg text-xs font-semibold transition-all"
+                        style={
+                          frequency === f.value
+                            ? { backgroundColor: "#1a7a4a", color: "white" }
+                            : { backgroundColor: "#f3f4f6", color: "#374151" }
+                        }
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* Amount selector */}
                 <div className="mb-4">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Donation amount
+                    {isRecurring ? `Amount per ${FREQUENCIES.find((f) => f.value === frequency)?.label.toLowerCase() ?? "period"}` : "Donation amount"}
                   </p>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {DONATION_AMOUNTS.map((amt) => (
@@ -496,16 +717,34 @@ export default function PortfolioPage() {
                   </div>
                 )}
 
-                {/* Donate button */}
-                <button
-                  onClick={() => setCheckoutOpen(true)}
-                  disabled={!isValid || effectiveAmount < 1}
-                  className="w-full py-3.5 rounded-xl font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
-                  style={{ backgroundColor: "#1a7a4a" }}
-                >
-                  <Lock className="w-4 h-4" />
-                  Donate {isValid && effectiveAmount >= 1 ? formatCurrency(effectiveAmount) : "Securely"}
-                </button>
+                {/* Donate / Start Recurring button */}
+                {isRecurring ? (
+                  <button
+                    onClick={handleStartPortfolioRecurring}
+                    disabled={!isValid || effectiveAmount < 1 || recurringStatus === "saving"}
+                    className="w-full py-3.5 rounded-xl font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    {recurringStatus === "saving"
+                      ? "Setting up…"
+                      : recurringStatus === "saved"
+                      ? "Recurring giving set up!"
+                      : isValid && effectiveAmount >= 1
+                      ? `Give ${formatCurrency(effectiveAmount)} ${FREQUENCIES.find((f) => f.value === frequency)?.label ?? ""}`
+                      : "Set Up Recurring Giving"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setCheckoutOpen(true)}
+                    disabled={!isValid || effectiveAmount < 1}
+                    className="w-full py-3.5 rounded-xl font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    <Lock className="w-4 h-4" />
+                    Donate {isValid && effectiveAmount >= 1 ? formatCurrency(effectiveAmount) : "Securely"}
+                  </button>
+                )}
                 <p className="text-xs text-gray-400 text-center mt-3 flex items-center justify-center gap-1">
                   <Lock className="w-3 h-3" />
                   Secured by Stripe · 100% tax-deductible
@@ -523,6 +762,49 @@ export default function PortfolioPage() {
               </div>
             </div>
           </div>
+
+          {/* ── Active Recurring Giving ──────────────────────────────── */}
+          {recurringDonations.length > 0 && (
+            <div className="mt-10 pb-10">
+              <h2 className="font-display text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <RefreshCw className="w-5 h-5" style={{ color: "#1a7a4a" }} />
+                Active Recurring Giving
+              </h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recurringDonations.map((r) => (
+                  <div
+                    key={r.id}
+                    className="rounded-2xl border bg-white p-4 flex items-center justify-between gap-4"
+                    style={{ borderColor: "#e5e1d8" }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
+                          style={{ backgroundColor: "#1a7a4a" }}
+                        >
+                          <RefreshCw className="w-2.5 h-2.5" />
+                          {r.frequency}
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{r.org_name}</p>
+                      <p className="text-sm font-bold mt-0.5" style={{ color: "#1a7a4a" }}>
+                        {formatCurrency(r.amount_cents / 100)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleCancelRecurring(r.id)}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors flex-shrink-0"
+                      aria-label="Cancel recurring"
+                      title="Cancel"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -33,6 +33,7 @@ export interface Database {
           donors: number;
           verified: boolean;
           featured: boolean;
+          visible: boolean;
           image_url: string;
           cover_url: string;
           ein: string;
@@ -42,6 +43,8 @@ export interface Database {
           tags: string[];
           recommended_orgs: string[];
           sort_order: number;
+          contact_email: string;
+          search_vector: string | null;
           created_at: string;
           updated_at: string;
         };
