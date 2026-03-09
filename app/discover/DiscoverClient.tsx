@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
 import OrgCard from "@/components/OrgCard";
+import type { OrgDisplaySettings } from "@/components/OrgCard";
 import { CATEGORIES } from "@/lib/placeholder-data";
 import type { Organization, Category } from "@/lib/placeholder-data";
 
@@ -15,9 +16,10 @@ const SORT_OPTIONS = [
 
 interface Props {
   organizations: Organization[];
+  displaySettingsMap?: Record<string, OrgDisplaySettings>;
 }
 
-export default function DiscoverClient({ organizations }: Props) {
+export default function DiscoverClient({ organizations, displaySettingsMap }: Props) {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<Category | "all">("all");
   const [sortBy, setSortBy] = useState("featured");
@@ -117,11 +119,11 @@ export default function DiscoverClient({ organizations }: Props) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        {/* ── Desktop: category chips ─────────────────────────────── */}
-        <div className="hidden sm:flex items-center gap-2 flex-wrap mb-5">
+        {/* ── Desktop: category chips — horizontal scroll ─────────── */}
+        <div className="hidden sm:flex items-center gap-2 overflow-x-auto pb-2 mb-5" style={{ scrollbarWidth: "none" }}>
           <button
             onClick={() => setActiveCategory("all")}
-            className="px-4 py-2 rounded-full text-sm font-medium transition-all"
+            className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap"
             style={
               activeCategory === "all"
                 ? { backgroundColor: "#1a7a4a", color: "white" }
@@ -134,7 +136,7 @@ export default function DiscoverClient({ organizations }: Props) {
             <button
               key={cat.value}
               onClick={() => setActiveCategory(cat.value)}
-              className="px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 whitespace-nowrap"
               style={
                 activeCategory === cat.value
                   ? { backgroundColor: "#1a7a4a", color: "white" }
@@ -347,7 +349,7 @@ export default function DiscoverClient({ organizations }: Props) {
         {filtered.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((org) => (
-              <OrgCard key={org.id} org={org} />
+              <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
           </div>
         ) : (

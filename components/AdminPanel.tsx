@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import Toggle from "@/components/Toggle";
 import OrgOrderingTab from "@/components/OrgOrderingTab";
+import ImageUpload from "@/components/ImageUpload";
 
 const CATEGORIES = [
   "nonprofits", "education", "environment",
@@ -320,48 +321,22 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
             />
           </div>
 
-          {/* Image URL with preview */}
-          <div>
-            <label className={labelCls}>Card Image URL</label>
-            <p className="text-xs text-gray-400 mb-1">Use a direct image URL from unsplash.com or imgur.com</p>
-            <input
-              className={inputCls}
-              style={inputStyle}
+          {/* Image upload */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <ImageUpload
+              label="Card Image"
+              hint="Square/portrait — shown in org cards"
+              aspect="aspect-square"
               value={form.image_url || ""}
-              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-              placeholder="https://images.unsplash.com/..."
+              onChange={(url) => setForm({ ...form, image_url: url })}
             />
-            {form.image_url && (
-              <div className="mt-2 flex items-center gap-3">
-                <img src={form.image_url} alt="Preview"
-                  className="w-24 h-16 object-cover rounded-lg border"
-                  style={{ borderColor: "#e5e7eb" }}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                <span className="text-xs text-gray-400">Card image preview</span>
-              </div>
-            )}
-          </div>
-
-          {/* Cover URL with preview */}
-          <div>
-            <label className={labelCls}>Cover / Banner Image URL</label>
-            <p className="text-xs text-gray-400 mb-1">Wide banner shown at top of org page.</p>
-            <input
-              className={inputCls}
-              style={inputStyle}
+            <ImageUpload
+              label="Cover / Banner Image"
+              hint="Wide banner shown at top of org page"
+              aspect="aspect-video"
               value={form.cover_url || ""}
-              onChange={(e) => setForm({ ...form, cover_url: e.target.value })}
-              placeholder="https://images.unsplash.com/..."
+              onChange={(url) => setForm({ ...form, cover_url: url })}
             />
-            {form.cover_url && (
-              <div className="mt-2 flex items-center gap-3">
-                <img src={form.cover_url} alt="Cover preview"
-                  className="w-48 h-16 object-cover rounded-lg border"
-                  style={{ borderColor: "#e5e7eb" }}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                <span className="text-xs text-gray-400">Cover banner preview</span>
-              </div>
-            )}
           </div>
 
           {/* Toggles */}
@@ -464,7 +439,7 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
             <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
               All Organizations ({orgs.length})
             </h2>
-            <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "#e5e7eb" }}>
+            <div className="overflow-x-auto rounded-xl border shadow-sm" style={{ borderColor: "#e5e7eb" }}>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-gray-400 text-xs uppercase tracking-wide bg-gray-50" style={{ borderColor: "#e5e7eb" }}>
@@ -520,11 +495,13 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button onClick={() => handleEdit(org)}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-medium">
+                            className="px-3 py-1.5 border rounded-lg text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                            style={{ borderColor: "#bfdbfe" }}>
                             Edit
                           </button>
                           <button onClick={() => handleDelete(org.id)}
-                            className="px-3 py-1 bg-red-500 hover:bg-red-400 text-white rounded text-xs font-medium">
+                            className="px-3 py-1.5 border rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                            style={{ borderColor: "#fecaca" }}>
                             Delete
                           </button>
                         </div>

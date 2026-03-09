@@ -47,20 +47,6 @@ CREATE TABLE IF NOT EXISTS site_settings (
   value text NOT NULL DEFAULT ''
 );
 
--- 6. Search vector for full-text search on organizations
-ALTER TABLE organizations
-  ADD COLUMN IF NOT EXISTS search_vector tsvector
-    GENERATED ALWAYS AS (
-      to_tsvector('english',
-        coalesce(name, '') || ' ' ||
-        coalesce(tagline, '') || ' ' ||
-        coalesce(description, '') || ' ' ||
-        coalesce(location, '') || ' ' ||
-        coalesce(array_to_string(tags, ' '), '')
-      )
-    ) STORED;
-
-CREATE INDEX IF NOT EXISTS idx_organizations_search ON organizations USING GIN (search_vector);
 CREATE INDEX IF NOT EXISTS idx_organizations_sort ON organizations (sort_order ASC NULLS LAST);
 CREATE INDEX IF NOT EXISTS idx_organizations_visible ON organizations (visible);
 CREATE INDEX IF NOT EXISTS idx_recurring_donations_user ON recurring_donations (user_id, active);

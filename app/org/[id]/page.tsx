@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -43,6 +44,38 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export async function generateStaticParams() {
   return ORGANIZATIONS.map((org) => ({ id: org.id }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("organizations")
+    .select("name, tagline, image_url")
+    .eq("id", id)
+    .single();
+
+  const org = data ?? ORGANIZATIONS.find((o) => o.id === id);
+  const name = (org as any)?.name ?? "Organization";
+  const tagline = (org as any)?.tagline ?? "";
+  const image = (org as any)?.image_url ?? (org as any)?.imageUrl ?? "";
+  const url = `https://easytogive.com/org/${id}`;
+
+  return {
+    title: `${name} — Donate on EasyToGive`,
+    description: tagline,
+    openGraph: {
+      title: `${name} — Donate on EasyToGive`,
+      description: tagline,
+      images: image ? [{ url: image }] : [],
+      url,
+      type: "website",
+    },
+  };
 }
 
 export default async function OrgPage({
@@ -103,6 +136,8 @@ export default async function OrgPage({
     show_impact_stats: false,
     show_related_orgs: false,
   };
+  // Display settings for secondary cards (recommended + related orgs)
+  let secondaryDisplayMap: Record<string, { show_raised: boolean; show_donors: boolean; show_goal: boolean }> = {};
 
   try {
     const supabase = await createClient();
@@ -116,6 +151,21 @@ export default async function OrgPage({
     }
     if (settingsData.data) {
       displaySettings = { ...displaySettings, ...settingsData.data };
+    }
+
+    // Fetch display settings for secondary org cards
+    const secondaryIds = [
+      ...related.map((r) => r.id),
+      ...recommendedOrgs.map((r) => r.id),
+    ];
+    if (secondaryIds.length > 0) {
+      const { data: secData } = await (supabase as any)
+        .from("org_display_settings")
+        .select("org_id, show_raised, show_donors, show_goal")
+        .in("org_id", secondaryIds);
+      if (secData) {
+        for (const row of secData) secondaryDisplayMap[row.org_id] = row;
+      }
     }
   } catch {
     // Tables may not exist yet — silently skip
@@ -175,8 +225,8 @@ export default async function OrgPage({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-3 gap-8 py-10">
-          {/* Main content */}
-          <div className="lg:col-span-2 space-y-8">
+          {/* Main content — order-1 so sidebar goes below on mobile */}
+          <div className="lg:col-span-2 space-y-8 order-1 lg:order-none">
             <div>
               <div className="flex items-start gap-3 mb-2 flex-wrap">
                 <EditableField
@@ -341,8 +391,8 @@ export default async function OrgPage({
             )}
           </div>
 
-          {/* Sidebar — client component handles all donation interactivity */}
-          <div>
+          {/* Sidebar — appears below content on mobile, right column on desktop */}
+          <div className="order-2 lg:order-none">
             <OrgDonateSidebar org={org} displaySettings={displaySettings} />
           </div>
         </div>
@@ -386,18 +436,21 @@ export default async function OrgPage({
                         {r.name}
                       </h3>
                       <p className="text-xs text-gray-500 mb-3">{r.location}</p>
-                      <div
-                        className="w-full rounded-full h-1.5"
-                        style={{ backgroundColor: "#e5e1d8" }}
-                      >
-                        <div
-                          className="h-1.5 rounded-full"
-                          style={{ width: `${rProgress}%`, backgroundColor: "#1a7a4a" }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1.5">
-                        {formatCurrency(r.raised)} raised · {rProgress}%
-                      </p>
+                      {(() => {
+                        const ds = secondaryDisplayMap[r.id];
+                        const showRaised = ds ? (ds.show_raised ?? false) : true;
+                        if (!showRaised) return null;
+                        return (
+                          <>
+                            <div className="w-full rounded-full h-1.5" style={{ backgroundColor: "#e5e1d8" }}>
+                              <div className="h-1.5 rounded-full" style={{ width: `${rProgress}%`, backgroundColor: "#1a7a4a" }} />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1.5">
+                              {formatCurrency(r.raised)} raised · {rProgress}%
+                            </p>
+                          </>
+                        );
+                      })()}
                     </div>
                   </Link>
                 );
@@ -434,18 +487,21 @@ export default async function OrgPage({
                         {r.name}
                       </h3>
                       <p className="text-xs text-gray-500 mb-3">{r.location}</p>
-                      <div
-                        className="w-full rounded-full h-1.5"
-                        style={{ backgroundColor: "#e5e1d8" }}
-                      >
-                        <div
-                          className="h-1.5 rounded-full"
-                          style={{ width: `${rProgress}%`, backgroundColor: "#1a7a4a" }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1.5">
-                        {formatCurrency(r.raised)} raised · {rProgress}%
-                      </p>
+                      {(() => {
+                        const ds = secondaryDisplayMap[r.id];
+                        const showRaised = ds ? (ds.show_raised ?? false) : true;
+                        if (!showRaised) return null;
+                        return (
+                          <>
+                            <div className="w-full rounded-full h-1.5" style={{ backgroundColor: "#e5e1d8" }}>
+                              <div className="h-1.5 rounded-full" style={{ width: `${rProgress}%`, backgroundColor: "#1a7a4a" }} />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1.5">
+                              {formatCurrency(r.raised)} raised · {rProgress}%
+                            </p>
+                          </>
+                        );
+                      })()}
                     </div>
                   </Link>
                 );

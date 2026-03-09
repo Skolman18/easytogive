@@ -1,186 +1,201 @@
 import Link from "next/link";
-import { Shield, Heart, CheckCircle } from "lucide-react";
+import { Search, Heart, BarChart2, ArrowRight } from "lucide-react";
+
+export const metadata = {
+  title: "About Us — EasyToGive",
+  description:
+    "EasyToGive is the charitable giving marketplace making it radically easier to discover, give, and track impact across multiple causes.",
+};
 
 export default function AboutPage() {
-  const values = [
-    {
-      icon: Shield,
-      title: "Transparency",
-      description:
-        "We believe donors deserve to know exactly where their money goes. Every organization on EasyToGive is verified, and every transaction is logged and accessible in your account history.",
-    },
-    {
-      icon: Heart,
-      title: "Accessibility",
-      description:
-        "Generosity shouldn't require a finance degree. We've designed EasyToGive so that anyone — regardless of income level or technical ability — can give meaningfully and confidently.",
-    },
-    {
-      icon: CheckCircle,
-      title: "Accountability",
-      description:
-        "We hold ourselves to the same standard we hold the organizations on our platform. That means clear fees, honest communication, and a commitment to improving the nonprofit ecosystem.",
-    },
-  ];
-
-  const team = [
-    {
-      name: "Sarah Chen",
-      title: "Co-founder & CEO",
-      initials: "SC",
-      color: "bg-emerald-100 text-emerald-800",
-      bio: "Sarah spent a decade in nonprofit fundraising before co-founding EasyToGive to solve the inefficiencies she witnessed firsthand.",
-    },
-    {
-      name: "Marcus Williams",
-      title: "Co-founder & CTO",
-      initials: "MW",
-      color: "bg-blue-100 text-blue-800",
-      bio: "Marcus is a software engineer who previously built fintech products at two venture-backed startups and wanted to apply that experience to social good.",
-    },
-    {
-      name: "Priya Patel",
-      title: "Head of Nonprofit Relations",
-      initials: "PP",
-      color: "bg-violet-100 text-violet-800",
-      bio: "Priya has worked with over 200 nonprofit organizations across the country and leads EasyToGive's verification and partnership programs.",
-    },
-    {
-      name: "James Rodriguez",
-      title: "Head of Operations",
-      initials: "JR",
-      color: "bg-amber-100 text-amber-800",
-      bio: "James brings a background in operations and logistics to ensure that every dollar donated through EasyToGive arrives accurately and on time.",
-    },
-  ];
-
   return (
-    <main>
-      {/* Hero */}
-      <section className="bg-white py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="font-display text-5xl font-bold text-gray-900 mb-6">
-            Making generosity effortless
+    <div style={{ backgroundColor: "#faf9f6" }} className="min-h-screen">
+
+      {/* ── HERO ── */}
+      <section style={{ backgroundColor: "#e8f5ee" }} className="py-20 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="font-display text-4xl md:text-5xl font-bold text-gray-900 mb-5 leading-tight">
+            The Marketplace for Giving
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            EasyToGive is a charitable giving platform that simplifies the way
-            people donate — so you can focus on the causes you care about, not
-            the paperwork. We believe that removing friction from giving leads
-            to more giving, and more good in the world.
+          <p className="text-lg md:text-xl text-gray-700 leading-relaxed max-w-2xl mx-auto">
+            We&apos;re building the Amazon of charitable giving — a place where every cause can be
+            discovered, every donor can give with confidence, and generosity becomes effortless.
           </p>
         </div>
       </section>
 
-      {/* Our Story */}
-      <section className="py-20" style={{ backgroundColor: "#faf9f6" }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-3xl font-bold text-gray-900 mb-6">
-            Our Story
-          </h2>
-          <p className="text-lg text-gray-600 leading-relaxed mb-4">
-            EasyToGive was founded in 2023 by a group of people frustrated by
-            the friction of charitable giving — writing separate checks, tracking
-            receipts, doing manual math to split donations across multiple causes.
-            We each had organizations we cared deeply about, but the process of
-            actually giving to them felt unnecessarily complicated.
-          </p>
-          <p className="text-lg text-gray-600 leading-relaxed">
-            We built the platform we wished existed: one place to discover
-            verified nonprofits, allocate your giving however you like, donate
-            once, and receive a single tax receipt for everything. What started
-            as a side project among friends has grown into a platform serving
-            tens of thousands of donors and thousands of nonprofit organizations
-            across the United States.
+      {/* ── OUR MISSION ── */}
+      <section className="py-20 px-4">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="font-display text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
+          <p className="text-gray-600 leading-relaxed text-lg">
+            EasyToGive exists to increase charitable giving worldwide by making it radically easier.
+            We believe that most people want to give — they just don&apos;t know where to start,
+            don&apos;t trust where their money is going, or find the process too complicated.
+            We&apos;re changing that. By building a transparent, beautiful, and easy-to-use
+            platform, we&apos;re removing every barrier between a generous heart and the causes
+            that need it most. Our goal is simple: more giving, to more organizations, by more
+            people.
           </p>
         </div>
       </section>
 
-      {/* Our Values */}
-      <section className="bg-white py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-3xl font-bold text-gray-900 mb-12 text-center">
-            Our Values
+      {/* ── WHY WE EXIST ── */}
+      <section className="py-20 px-4" style={{ backgroundColor: "#f0ede6" }}>
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-display text-3xl font-bold text-gray-900 mb-10 text-center">
+            Why We Built This
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {values.map((value) => {
-              const Icon = value.icon;
-              return (
-                <div key={value.title} className="text-center">
-                  <div
-                    className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5"
-                    style={{ backgroundColor: "#e8f5ee" }}
-                  >
-                    <Icon className="w-7 h-7" style={{ color: "#1a7a4a" }} />
-                  </div>
-                  <h3 className="font-display text-xl font-semibold text-gray-900 mb-3">
-                    {value.title}
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    {value.description}
-                  </p>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {[
+              { stat: "$471 Billion", desc: "given to charity in the US in 2023 alone" },
+              { stat: "1.5 Million+", desc: "nonprofits registered in the US" },
+              { stat: "1–2 Orgs", desc: "most donors give to their entire life" },
+            ].map((item) => (
+              <div
+                key={item.stat}
+                className="bg-white rounded-2xl p-6 text-center border shadow-sm"
+                style={{ borderColor: "#e5e1d8" }}
+              >
+                <div className="font-display text-3xl font-bold mb-2" style={{ color: "#1a7a4a" }}>
+                  {item.stat}
                 </div>
-              );
-            })}
+                <p className="text-sm text-gray-600 leading-snug">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-gray-700 leading-relaxed text-lg max-w-3xl mx-auto text-center">
+            We think that last number should be a lot higher. The problem isn&apos;t generosity —
+            it&apos;s discovery. Most incredible organizations doing life-changing work are invisible
+            to the average donor. EasyToGive changes that.
+          </p>
+        </div>
+      </section>
+
+      {/* ── FOUNDER ── */}
+      <section className="py-20 px-4">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-display text-3xl font-bold text-gray-900 mb-10 text-center">
+            Built by a Giver, for Givers
+          </h2>
+
+          <div className="flex flex-col md:flex-row gap-10 items-center md:items-start">
+            {/* Photo — Seth: replace src with your Supabase Storage public URL after uploading */}
+            <div className="flex-shrink-0 w-56 md:w-64">
+              <div className="rounded-2xl shadow-md overflow-hidden bg-gray-200 aspect-square flex items-center justify-center">
+                <img
+                  src="https://dfktfiruzulhpwcafaey.supabase.co/storage/v1/object/public/images/seth-founder.jpg"
+                  alt="Seth Mitzel, Founder of EasyToGive"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+
+            {/* Text */}
+            <div className="flex-1">
+              <p className="text-gray-600 leading-relaxed text-lg mb-5">
+                EasyToGive was founded by Seth Mitzel with one simple frustration: giving should be
+                easier. As someone who wanted to support multiple causes but found the process
+                scattered, confusing, and time-consuming, Seth set out to build the platform he
+                always wished existed.
+              </p>
+              <p className="text-gray-600 leading-relaxed text-lg mb-5">
+                A single place to discover vetted organizations, manage your giving portfolio, set up
+                recurring donations, and know your money is making a real difference. What started as
+                a personal project became a mission: to make generosity as easy as ordering from
+                Amazon.
+              </p>
+              <p className="font-semibold text-gray-900">
+                Seth Mitzel — Founder &amp; CEO, EasyToGive
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* The Team */}
-      <section className="py-20" style={{ backgroundColor: "#faf9f6" }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* ── HOW IT WORKS ── */}
+      <section className="py-20 px-4" style={{ backgroundColor: "#faf9f6" }}>
+        <div className="max-w-5xl mx-auto">
           <h2 className="font-display text-3xl font-bold text-gray-900 mb-12 text-center">
-            The Team
+            How It Works
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            {team.map((member) => (
-              <div
-                key={member.name}
-                className="bg-white rounded-2xl p-6 flex items-start gap-5 shadow-sm"
-              >
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                Icon: Search,
+                title: "Discover",
+                desc: "Browse thousands of verified organizations by cause, location, or impact",
+              },
+              {
+                Icon: Heart,
+                title: "Give",
+                desc: "Donate one-time or set up recurring giving in seconds",
+              },
+              {
+                Icon: BarChart2,
+                title: "Track",
+                desc: "Watch your impact grow in your personal giving portfolio",
+              },
+            ].map(({ Icon, title, desc }) => (
+              <div key={title} className="text-center">
                 <div
-                  className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold ${member.color}`}
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ backgroundColor: "#e8f5ee" }}
                 >
-                  {member.initials}
+                  <Icon className="w-7 h-7" style={{ color: "#1a7a4a" }} />
                 </div>
-                <div>
-                  <p className="font-semibold text-gray-900 text-lg">
-                    {member.name}
-                  </p>
-                  <p
-                    className="text-sm font-medium mb-2"
-                    style={{ color: "#1a7a4a" }}
-                  >
-                    {member.title}
-                  </p>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {member.bio}
-                  </p>
-                </div>
+                <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section className="bg-white py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-display text-3xl font-bold text-gray-900 mb-4">
-            Start giving smarter today
+      {/* ── FOR ORGANIZATIONS ── */}
+      <section className="py-20 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="font-display text-3xl font-bold text-gray-900 mb-5">
+            Are You an Organization?
           </h2>
-          <p className="text-gray-600 text-lg mb-8">
-            Join tens of thousands of donors who have simplified their charitable
-            giving with EasyToGive.
+          <p className="text-gray-600 leading-relaxed text-lg mb-8">
+            EasyToGive isn&apos;t just for donors. We help nonprofits, churches, and causes of all
+            sizes get discovered by new donors, tell their story, and grow their giving base.
+            Getting listed is free.
           </p>
-          <Link
-            href="/get-started"
-            className="inline-block px-8 py-4 rounded-full text-white font-semibold text-lg transition-opacity hover:opacity-90"
+          <a
+            href="mailto:seth@easytogive.com"
+            className="inline-flex items-center gap-2 px-7 py-3 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90"
             style={{ backgroundColor: "#1a7a4a" }}
           >
-            Get Started Free
+            List Your Organization
+            <ArrowRight className="w-4 h-4" />
+          </a>
+        </div>
+      </section>
+
+      {/* ── CLOSING CTA ── */}
+      <section className="py-20 px-4" style={{ backgroundColor: "#e8f5ee" }}>
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="font-display text-3xl font-bold text-gray-900 mb-3">
+            Ready to start giving smarter?
+          </h2>
+          <p className="text-gray-600 leading-relaxed mb-8">
+            Join thousands of donors building their giving portfolio on EasyToGive.
+          </p>
+          <Link
+            href="/discover"
+            className="inline-flex items-center gap-2 px-7 py-3 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90"
+            style={{ backgroundColor: "#1a7a4a" }}
+          >
+            Explore Organizations
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

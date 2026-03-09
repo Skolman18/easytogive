@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { ORGANIZATIONS } from "@/lib/placeholder-data";
 import type { Organization, Category } from "@/lib/placeholder-data";
 import type { OrganizationRow } from "@/lib/database.types";
+import type { OrgDisplaySettings } from "@/components/OrgCard";
 import HomeClient from "./HomeClient";
 
 function rowToOrg(row: OrganizationRow): Organization {
@@ -53,6 +54,20 @@ const DEFAULT_HERO = {
     "Discover verified nonprofits and churches, then donate to multiple causes through a single tax-deductible giving portfolio.",
 };
 
+async function getDisplaySettingsMap(): Promise<Record<string, OrgDisplaySettings>> {
+  try {
+    const { data } = await (supabase as any)
+      .from("org_display_settings")
+      .select("org_id, show_raised, show_donors, show_goal");
+    if (!data) return {};
+    const map: Record<string, OrgDisplaySettings> = {};
+    for (const row of data) map[row.org_id] = row;
+    return map;
+  } catch {
+    return {};
+  }
+}
+
 async function getSiteSettings(): Promise<{ hero_headline: string; hero_subtext: string }> {
   try {
     const { data } = await (supabase as any)
@@ -72,9 +87,10 @@ async function getSiteSettings(): Promise<{ hero_headline: string; hero_subtext:
 }
 
 export default async function HomePage() {
-  const [organizations, siteSettings] = await Promise.all([
+  const [organizations, siteSettings, displaySettingsMap] = await Promise.all([
     getOrganizations(),
     getSiteSettings(),
+    getDisplaySettingsMap(),
   ]);
-  return <HomeClient organizations={organizations} siteSettings={siteSettings} />;
+  return <HomeClient organizations={organizations} siteSettings={siteSettings} displaySettingsMap={displaySettingsMap} />;
 }

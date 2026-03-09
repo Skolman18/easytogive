@@ -6,6 +6,7 @@ import { ArrowRight, Shield, Search, Star, Heart, CheckCircle, MapPin } from "lu
 import { CATEGORIES } from "@/lib/placeholder-data";
 import type { Organization } from "@/lib/placeholder-data";
 import OrgCard from "@/components/OrgCard";
+import type { OrgDisplaySettings } from "@/components/OrgCard";
 import EditableField from "@/components/EditableField";
 import { createClient } from "@/lib/supabase-browser";
 
@@ -50,9 +51,10 @@ interface SiteSettings {
 interface Props {
   organizations: Organization[];
   siteSettings?: SiteSettings;
+  displaySettingsMap?: Record<string, OrgDisplaySettings>;
 }
 
-export default function HomeClient({ organizations, siteSettings }: Props) {
+export default function HomeClient({ organizations, siteSettings, displaySettingsMap }: Props) {
   const [activeChip, setActiveChip] = useState("all");
   const [userCity, setUserCity] = useState<string | null>(null);
   const [localOrgs, setLocalOrgs] = useState<Organization[]>([]);
@@ -118,10 +120,10 @@ export default function HomeClient({ organizations, siteSettings }: Props) {
             multiline
           />
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Link
               href="/discover"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90 active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-3 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90 active:scale-95"
               style={{ backgroundColor: "#1a7a4a" }}
             >
               Explore Causes
@@ -129,7 +131,7 @@ export default function HomeClient({ organizations, siteSettings }: Props) {
             </Link>
             <Link
               href="/portfolio"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border transition-all hover:bg-gray-50"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-3 rounded-full font-semibold text-sm border transition-all hover:bg-gray-50"
               style={{ color: "#374151", borderColor: "#d1d5db" }}
             >
               Build Portfolio
@@ -180,15 +182,15 @@ export default function HomeClient({ organizations, siteSettings }: Props) {
           </Link>
         </div>
 
-        {/* Category chips */}
-        <div className="flex gap-2 flex-wrap mb-8">
+        {/* Category chips — horizontal scroll on mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap" style={{ scrollbarWidth: "none" }}>
           {CHIPS.map((chip) => {
             const active = chip.value === activeChip;
             return (
               <button
                 key={chip.value}
                 onClick={() => setActiveChip(chip.value)}
-                className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+                className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap"
                 style={
                   active
                     ? { backgroundColor: "#1a7a4a", color: "white" }
@@ -208,7 +210,7 @@ export default function HomeClient({ organizations, siteSettings }: Props) {
         {visibleOrgs.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {visibleOrgs.slice(0, 8).map((org) => (
-              <OrgCard key={org.id} org={org} />
+              <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
           </div>
         ) : (
@@ -243,7 +245,7 @@ export default function HomeClient({ organizations, siteSettings }: Props) {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {localOrgs.map((org) => (
-              <OrgCard key={org.id} org={org} />
+              <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
           </div>
         </section>

@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase-browser";
 const NAV_LINKS = [
   { href: "/discover", label: "Discover" },
   { href: "/portfolio", label: "My Portfolio" },
+  { href: "/about", label: "About" },
   { href: "/profile", label: "Profile" },
 ];
 
