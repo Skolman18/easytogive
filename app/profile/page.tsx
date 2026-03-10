@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -26,7 +26,8 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-browser";
 import AdminPanel from "@/components/AdminPanel";
 import Toggle from "@/components/Toggle";
-import ImageUpload from "@/components/ImageUpload";
+import GivingGoalCard from "@/components/GivingGoalCard";
+import YourImpactSection from "@/components/YourImpactSection";
 import {
   GIVING_HISTORY,
   ORGANIZATIONS,
@@ -37,6 +38,87 @@ import {
 } from "@/lib/placeholder-data";
 
 const ADMIN_EMAIL = "sethmitzel@gmail.com";
+
+// ─── Compact avatar upload ────────────────────────────────────────────────────
+function AvatarUpload({
+  value,
+  initials,
+  onChange,
+}: {
+  value: string;
+  initials: string;
+  onChange: (url: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(file: File) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) return;
+    if (file.size > 5 * 1024 * 1024) return;
+    setUploading(true);
+    try {
+      const { createClient: createBrowser } = await import("@/lib/supabase-browser");
+      const supabase = createBrowser() as any;
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("images").upload(path, file, { cacheControl: "3600", upsert: false });
+      if (!error) {
+        const { data } = supabase.storage.from("images").getPublicUrl(path);
+        onChange(data.publicUrl);
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <div
+        className="w-20 h-20 rounded-full flex items-center justify-center text-xl font-bold text-white flex-shrink-0 overflow-hidden ring-2"
+        style={{ backgroundColor: "#1a7a4a", ringColor: "#1a7a4a" } as any}
+      >
+        {uploading ? (
+          <Loader2 className="w-5 h-5 animate-spin text-white" />
+        ) : value ? (
+          <img src={value} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+        ) : (
+          initials
+        )}
+      </div>
+      <div>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="text-sm font-medium hover:underline"
+          style={{ color: "#1a7a4a" }}
+        >
+          Change photo
+        </button>
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="block text-xs text-gray-400 hover:text-gray-600 mt-1"
+          >
+            Remove
+          </button>
+        )}
+        <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP · max 5 MB</p>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
 
 const ALL_BASE_TABS = [
   { id: "history", label: "Giving History", icon: Clock },
@@ -127,6 +209,7 @@ function ProfilePageInner() {
     state: "",
     zip: "",
   });
+  const [userCauses, setUserCauses] = useState<string[]>([]);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -162,7 +245,7 @@ function ProfilePageInner() {
   async function loadProfile(userId: string) {
     const { data } = await (createClient() as any)
       .from("users")
-      .select("full_name, bio, avatar_url, location, city, state, zip")
+      .select("full_name, bio, avatar_url, location, city, state, zip, causes")
       .eq("id", userId)
       .single();
     if (data) {
@@ -175,6 +258,7 @@ function ProfilePageInner() {
         state: data.state || "",
         zip: data.zip || "",
       });
+      setUserCauses(data.causes || []);
     }
   }
 
@@ -194,6 +278,7 @@ function ProfilePageInner() {
         city: profile.city,
         state: profile.state,
         zip: profile.zip,
+        causes: userCauses,
       });
     setProfileSaving(false);
     if (error) {
@@ -362,7 +447,9 @@ function ProfilePageInner() {
           <div className="grid lg:grid-cols-[1fr_340px] gap-6 items-start">
 
             {/* ── LEFT: Donation history list ── */}
-            <div>
+            <div className="space-y-6">
+              {user && <YourImpactSection userId={user.id} />}
+              <div>
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Donation History
               </h2>
@@ -431,10 +518,14 @@ function ProfilePageInner() {
                   );
                 })}
               </div>
+              </div>
             </div>
 
             {/* ── RIGHT: Sticky stats sidebar ── */}
             <div className="space-y-4 lg:sticky lg:top-20">
+
+              {/* Giving Goal */}
+              {user && <GivingGoalCard userId={user.id} />}
 
               {/* Giving Impact — 2×2 grid */}
               <div
@@ -676,19 +767,13 @@ function ProfilePageInner() {
                 <h2 className="font-display font-semibold text-gray-900">Profile Information</h2>
               </div>
               <div className="px-6 py-5">
-                {/* Avatar row */}
+                {/* Avatar row — compact circle */}
                 <div className="flex items-center gap-4 mb-5 pb-5 border-b" style={{ borderColor: "#f0ede6" }}>
-                  <div
-                    className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white flex-shrink-0 overflow-hidden"
-                    style={{ backgroundColor: "#1a7a4a" }}
-                  >
-                    {profile.avatar_url
-                      ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                      : initials}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {profile.avatar_url ? "Profile picture set" : "No profile picture — paste an image URL below"}
-                  </div>
+                  <AvatarUpload
+                    value={profile.avatar_url}
+                    initials={initials || "??"}
+                    onChange={(url) => setProfile({ ...profile, avatar_url: url })}
+                  />
                 </div>
 
                 {/* 2-column grid */}
@@ -702,16 +787,6 @@ function ProfilePageInner() {
                       className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
                       style={{ borderColor: "#e5e1d8" }}
                       placeholder="Jane Smith"
-                    />
-                  </div>
-
-                  <div>
-                    <ImageUpload
-                      label="Profile Picture"
-                      hint="Square photo works best"
-                      aspect="aspect-square"
-                      value={profile.avatar_url}
-                      onChange={(url) => setProfile({ ...profile, avatar_url: url })}
                     />
                   </div>
 
@@ -802,6 +877,56 @@ function ProfilePageInner() {
                   {profileSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {profileSaving ? "Saving…" : "Save Profile"}
                 </button>
+              </div>
+            </div>
+
+            {/* Giving Interests (Causes) */}
+            <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
+              <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
+                <Heart className="w-4 h-4 text-gray-500" />
+                <h2 className="font-display font-semibold text-gray-900">Giving Interests</h2>
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-sm text-gray-500 mb-4">
+                  Select the causes you care about — we&rsquo;ll personalize your discover feed and homepage.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {[
+                    { id: "environment", label: "Environment & Climate" },
+                    { id: "education", label: "Education" },
+                    { id: "health", label: "Health & Medicine" },
+                    { id: "animals", label: "Animals & Wildlife" },
+                    { id: "hunger", label: "Hunger Relief" },
+                    { id: "housing", label: "Housing & Homelessness" },
+                    { id: "civil-rights", label: "Civil Rights & Equality" },
+                    { id: "children", label: "Children & Youth" },
+                    { id: "veterans", label: "Veterans" },
+                    { id: "arts", label: "Arts & Culture" },
+                    { id: "disaster", label: "Disaster Relief" },
+                    { id: "community", label: "Community" },
+                  ].map(({ id, label }) => {
+                    const selected = userCauses.includes(id);
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() =>
+                          setUserCauses((prev) =>
+                            prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+                          )
+                        }
+                        className="px-3 py-2 rounded-xl border text-xs font-medium text-left transition-all"
+                        style={{
+                          borderColor: selected ? "#1a7a4a" : "#e5e1d8",
+                          backgroundColor: selected ? "#e8f5ee" : "white",
+                          color: selected ? "#1a7a4a" : "#374151",
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

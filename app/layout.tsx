@@ -5,6 +5,19 @@ import Footer from "@/components/Footer";
 import { EditModeProvider } from "@/components/EditModeContext";
 import EditModeButton from "@/components/EditModeButton";
 import LocationPrompt from "@/components/LocationPrompt";
+import CookieConsent from "@/components/CookieConsent";
+
+// ── Env var audit (warns at startup, never crashes) ──────────────────────────
+const REQUIRED_ENV_VARS = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "GROQ_API_KEY",
+];
+for (const key of REQUIRED_ENV_VARS) {
+  if (!process.env[key]) {
+    console.warn(`[EasyToGive] WARNING: Required environment variable ${key} is not set.`);
+  }
+}
 
 export const metadata: Metadata = {
   title: "EasyToGive — Charitable Giving, Simplified",
@@ -26,6 +39,7 @@ export default function RootLayout({
           <Footer />
           <EditModeButton />
           <LocationPrompt />
+          <CookieConsent />
         </EditModeProvider>
       </body>
     </html>

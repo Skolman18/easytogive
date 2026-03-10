@@ -230,10 +230,10 @@ export default function TermsPage() {
             </h2>
             <p>
               These Terms shall be governed by and construed in accordance with
-              the laws of the State of Delaware, without regard to its conflict
+              the laws of the State of North Dakota, without regard to its conflict
               of law provisions. Any dispute arising from or relating to these
               Terms or the Service shall be subject to the exclusive jurisdiction
-              of the state and federal courts located in the State of Delaware,
+              of the state and federal courts located in the State of North Dakota,
               and you consent to personal jurisdiction in such courts.
             </p>
           </section>
@@ -248,15 +248,15 @@ export default function TermsPage() {
             </p>
             <p className="mt-3">
               <a
-                href="mailto:legal@easytogive.com"
+                href="mailto:seth@easytogive.com"
                 className="font-medium underline underline-offset-2"
                 style={{ color: "#1a7a4a" }}
               >
-                legal@easytogive.com
+                seth@easytogive.com
               </a>
             </p>
             <p className="mt-3 text-sm text-gray-500">
-              EasyToGive, Inc. &bull; Wilmington, Delaware, United States
+              EasyToGive &bull; North Dakota, United States
             </p>
           </section>
         </div>

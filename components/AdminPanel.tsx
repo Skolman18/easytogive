@@ -1,15 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase-browser";
 import Toggle from "@/components/Toggle";
 import OrgOrderingTab from "@/components/OrgOrderingTab";
 import ImageUpload from "@/components/ImageUpload";
+import {
+  Pencil,
+  Trash2,
+  Copy,
+  Download,
+  ChevronUp,
+  ChevronDown,
+  Check,
+  Search,
+  Loader2,
+  ExternalLink,
+  Film,
+} from "lucide-react";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
   "nonprofits", "education", "environment",
   "churches", "animal-rescue", "local",
 ];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  churches: "Church",
+  "animal-rescue": "Animal Rescue",
+  nonprofits: "Nonprofit",
+  education: "Education",
+  environment: "Environment",
+  local: "Local Cause",
+};
 
 const EMPTY_FORM = {
   id: "", name: "", tagline: "", description: "",
@@ -19,6 +44,7 @@ const EMPTY_FORM = {
   image_url: "", cover_url: "", sort_order: 0,
   recommended_orgs: [] as string[],
   contact_email: "",
+  video_url: "", video_type: "", show_video: false,
 };
 
 const DEFAULT_DISPLAY_SETTINGS = {
@@ -28,12 +54,1375 @@ const DEFAULT_DISPLAY_SETTINGS = {
   show_recommendations: false,
   show_impact_stats: false,
   show_related_orgs: false,
+  show_video: false,
 };
 
 const ADMIN_TABS = [
   { id: "edit", label: "Add / Edit Org" },
-  { id: "ordering", label: "Ordering & Visibility" },
+  { id: "ordering", label: "Ordering" },
+  { id: "orgs", label: "Organizations" },
+  { id: "users", label: "Users" },
+  { id: "waitlist", label: "Waitlist" },
+  { id: "missionaries", label: "Missionaries" },
+  { id: "navigation", label: "Navigation" },
+  { id: "roadmap", label: "Roadmap" },
+  { id: "audit", label: "Audit Log" },
 ];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function initials(name: string, email: string) {
+  if (name && name.trim()) {
+    const parts = name.trim().split(" ");
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase();
+  }
+  return email.slice(0, 2).toUpperCase();
+}
+
+function Spinner() {
+  return (
+    <div className="flex items-center justify-center py-16">
+      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex items-center justify-center py-16 text-sm text-gray-400">
+      {message}
+    </div>
+  );
+}
+
+// ─── Pill ─────────────────────────────────────────────────────────────────────
+
+function Pill({
+  on, onLabel, offLabel, onClick,
+}: {
+  on: boolean;
+  onLabel: string;
+  offLabel: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors ${
+        on
+          ? "bg-green-100 text-green-700 hover:bg-green-200"
+          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+      } ${onClick ? "cursor-pointer" : "cursor-default"}`}
+    >
+      {on ? onLabel : offLabel}
+    </button>
+  );
+}
+
+// ─── SortHeader ───────────────────────────────────────────────────────────────
+
+function SortHeader({
+  label, field, sort, setSort,
+}: {
+  label: string;
+  field: string;
+  sort: { field: string; dir: "asc" | "desc" };
+  setSort: (s: { field: string; dir: "asc" | "desc" }) => void;
+}) {
+  const active = sort.field === field;
+  return (
+    <th
+      className="text-left px-4 py-3 cursor-pointer select-none group"
+      onClick={() => setSort({ field, dir: active && sort.dir === "asc" ? "desc" : "asc" })}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        <span className="text-gray-300 group-hover:text-gray-500">
+          {active ? (sort.dir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronDown className="w-3 h-3 opacity-40" />}
+        </span>
+      </div>
+    </th>
+  );
+}
+
+// ─── Users Tab ────────────────────────────────────────────────────────────────
+
+function UsersTab() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [portfolioCounts, setPortfolioCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<{ field: string; dir: "asc" | "desc" }>({ field: "created_at", dir: "desc" });
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient() as any;
+      const { data: userData } = await supabase
+        .from("users")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (userData) setUsers(userData);
+
+      const { data: portfolioData } = await supabase
+        .from("portfolio_orgs")
+        .select("user_id");
+      if (portfolioData) {
+        const counts: Record<string, number> = {};
+        for (const row of portfolioData) {
+          counts[row.user_id] = (counts[row.user_id] || 0) + 1;
+        }
+        setPortfolioCounts(counts);
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const filtered = users.filter((u) => {
+    const q = search.toLowerCase();
+    return (
+      (u.full_name || "").toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q)
+    );
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    let aVal: any, bVal: any;
+    if (sort.field === "created_at") {
+      aVal = new Date(a.created_at).getTime();
+      bVal = new Date(b.created_at).getTime();
+    } else if (sort.field === "portfolio") {
+      aVal = portfolioCounts[a.id] || 0;
+      bVal = portfolioCounts[b.id] || 0;
+    } else {
+      return 0;
+    }
+    return sort.dir === "asc" ? aVal - bVal : bVal - aVal;
+  });
+
+  const thCls = "text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide";
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+        <p className="text-sm text-gray-500">
+          <span className="font-semibold text-gray-900">{users.length}</span> users registered
+        </p>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search name or email…"
+            className="pl-8 pr-4 py-2 border rounded-lg text-sm outline-none focus:border-green-600 transition-colors bg-white"
+            style={{ borderColor: "#e5e7eb", width: 240 }}
+          />
+        </div>
+      </div>
+
+      {loading ? <Spinner /> : sorted.length === 0 ? (
+        <EmptyState message={search ? `No users match "${search}"` : "No users yet."} />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border shadow-sm" style={{ borderColor: "#e5e7eb" }}>
+          <table className="w-full text-sm min-w-[800px]">
+            <thead>
+              <tr className="border-b text-gray-500 bg-gray-50" style={{ borderColor: "#e5e7eb" }}>
+                <th className={thCls}>User</th>
+                <th className={thCls}>Email</th>
+                <SortHeader label="Member Since" field="created_at" sort={sort} setSort={setSort} />
+                <th className={thCls}>Location</th>
+                <th className={thCls}>Causes</th>
+                <th className={thCls + " text-center"}>Onboarded</th>
+                <SortHeader label="Portfolio" field="portfolio" sort={sort} setSort={setSort} />
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((u) => {
+                const causes: string[] = u.causes ?? [];
+                const location = [u.city, u.state].filter(Boolean).join(", ");
+                const portfolioCount = portfolioCounts[u.id] || 0;
+                return (
+                  <tr
+                    key={u.id}
+                    className="border-b hover:bg-gray-50 transition-colors bg-white"
+                    style={{ borderColor: "#f3f4f6" }}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        {u.avatar_url ? (
+                          <img
+                            src={u.avatar_url}
+                            alt=""
+                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-semibold"
+                            style={{ backgroundColor: "#1a7a4a" }}
+                          >
+                            {initials(u.full_name, u.email)}
+                          </div>
+                        )}
+                        <span className="font-medium text-gray-900">
+                          {u.full_name || <span className="text-gray-400">No name set</span>}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">{u.email}</td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(u.created_at)}</td>
+                    <td className="px-4 py-3 text-gray-500">{location || "—"}</td>
+                    <td className="px-4 py-3">
+                      {causes.length === 0 ? (
+                        <span className="text-gray-300">—</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {causes.slice(0, 3).map((c) => (
+                            <span
+                              key={c}
+                              className="px-2 py-0.5 rounded-full text-xs font-medium"
+                              style={{ backgroundColor: "#f3f4f6", color: "#6b7280", border: "1px solid #e5e7eb" }}
+                            >
+                              {c.replace(/-/g, " ")}
+                            </span>
+                          ))}
+                          {causes.length > 3 && (
+                            <span className="text-xs text-gray-400">+{causes.length - 3} more</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {u.onboarding_complete ? (
+                        <Check className="w-4 h-4 mx-auto" style={{ color: "#1a7a4a" }} />
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="font-semibold text-gray-900">{portfolioCount}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Organizations Tab ────────────────────────────────────────────────────────
+
+function OrgsTab({ onEdit }: { onEdit: (org: any) => void }) {
+  const [orgs, setOrgs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const load = useCallback(async () => {
+    const { data } = await (createClient() as any)
+      .from("organizations")
+      .select("*")
+      .order("sort_order", { ascending: true });
+    if (data) setOrgs(data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function toggle(id: string, field: "visible" | "featured" | "verified", current: boolean) {
+    await (createClient() as any)
+      .from("organizations")
+      .update({ [field]: !current })
+      .eq("id", id);
+    setOrgs((prev) => prev.map((o) => o.id === id ? { ...o, [field]: !current } : o));
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm(`Delete "${orgs.find((o) => o.id === id)?.name}"? This cannot be undone.`)) return;
+    await (createClient() as any).from("organizations").delete().eq("id", id);
+    setOrgs((prev) => prev.filter((o) => o.id !== id));
+  }
+
+  const filtered = orgs.filter((o) => {
+    const q = search.toLowerCase();
+    return (o.name || "").toLowerCase().includes(q) || (o.location || "").toLowerCase().includes(q);
+  });
+
+  const thCls = "text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap";
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+        <p className="text-sm text-gray-500">
+          <span className="font-semibold text-gray-900">{orgs.length}</span> organizations listed
+        </p>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search name or location…"
+            className="pl-8 pr-4 py-2 border rounded-lg text-sm outline-none focus:border-green-600 transition-colors bg-white"
+            style={{ borderColor: "#e5e7eb", width: 240 }}
+          />
+        </div>
+      </div>
+
+      {loading ? <Spinner /> : filtered.length === 0 ? (
+        <EmptyState message={search ? `No organizations match "${search}"` : "No organizations yet."} />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border shadow-sm" style={{ borderColor: "#e5e7eb" }}>
+          <table className="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr className="border-b bg-gray-50" style={{ borderColor: "#e5e7eb" }}>
+                <th className={thCls}>Organization</th>
+                <th className={thCls}>Category</th>
+                <th className={thCls}>Location</th>
+                <th className={thCls}>Added</th>
+                <th className={thCls + " text-center"}>Visible</th>
+                <th className={thCls + " text-center"}>Featured</th>
+                <th className={thCls + " text-center"}>Verified</th>
+                <th className={thCls + " text-center"}>Video</th>
+                <th className={thCls}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((org) => (
+                <tr
+                  key={org.id}
+                  className="border-b hover:bg-gray-50 transition-colors bg-white"
+                  style={{ borderColor: "#f3f4f6" }}
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        {org.image_url ? (
+                          <img src={org.image_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <a
+                          href={`/org/${org.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-gray-900 hover:text-green-700 transition-colors flex items-center gap-1"
+                        >
+                          {org.name}
+                          <ExternalLink className="w-3 h-3 flex-shrink-0 text-gray-300" />
+                        </a>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-medium"
+                      style={{ backgroundColor: "#f3f4f6", color: "#6b7280", border: "1px solid #e5e7eb" }}
+                    >
+                      {CATEGORY_LABELS[org.category] ?? org.category}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 max-w-[140px] truncate">{org.location || "—"}</td>
+                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(org.created_at)}</td>
+                  <td className="px-4 py-3 text-center">
+                    <Pill on={org.visible ?? false} onLabel="Visible" offLabel="Hidden" onClick={() => toggle(org.id, "visible", org.visible ?? false)} />
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <Pill on={org.featured ?? false} onLabel="Featured" offLabel="No" onClick={() => toggle(org.id, "featured", org.featured ?? false)} />
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <Pill on={org.verified ?? false} onLabel="Verified" offLabel="No" onClick={() => toggle(org.id, "verified", org.verified ?? false)} />
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {org.video_url ? (
+                      org.show_video ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Has Video</span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">Hidden</span>
+                      )
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onEdit(org)}
+                        className="p-1.5 rounded-lg border text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+                        style={{ borderColor: "#bfdbfe" }}
+                        title="Edit"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(org.id)}
+                        className="p-1.5 rounded-lg border text-red-400 bg-red-50 hover:bg-red-100 transition-colors"
+                        style={{ borderColor: "#fecaca" }}
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Waitlist Tab ─────────────────────────────────────────────────────────────
+
+function WaitlistTab() {
+  const [entries, setEntries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await (createClient() as any)
+        .from("waitlist")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (data) setEntries(data);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  function copyEmail(email: string) {
+    navigator.clipboard.writeText(email);
+    setCopied(email);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  function exportCsv() {
+    const header = "email,signed_up\n";
+    const rows = entries
+      .map((e) => `${e.email},${e.created_at}`)
+      .join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "easytogive-waitlist.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const thCls = "text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide";
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+        <p className="text-sm text-gray-500">
+          <span className="font-semibold text-gray-900">{entries.length}</span> people on the waitlist
+        </p>
+        <button
+          onClick={exportCsv}
+          disabled={entries.length === 0}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40"
+          style={{ borderColor: "#e5e7eb" }}
+        >
+          <Download className="w-3.5 h-3.5" />
+          Export CSV
+        </button>
+      </div>
+
+      {loading ? <Spinner /> : entries.length === 0 ? (
+        <EmptyState message="No waitlist signups yet." />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border shadow-sm" style={{ borderColor: "#e5e7eb" }}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-gray-50" style={{ borderColor: "#e5e7eb" }}>
+                <th className={thCls}>Email</th>
+                <th className={thCls}>Signed Up</th>
+                <th className={thCls + " w-20"}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr
+                  key={e.id}
+                  className="border-b hover:bg-gray-50 transition-colors bg-white"
+                  style={{ borderColor: "#f3f4f6" }}
+                >
+                  <td className="px-4 py-3 font-medium text-gray-900">{e.email}</td>
+                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(e.created_at)}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => copyEmail(e.email)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors hover:bg-gray-100"
+                      style={{ borderColor: "#e5e7eb", color: copied === e.email ? "#1a7a4a" : "#6b7280" }}
+                    >
+                      {copied === e.email ? (
+                        <><Check className="w-3 h-3" /> Copied</>
+                      ) : (
+                        <><Copy className="w-3 h-3" /> Copy</>
+                      )}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Roadmap Tab ─────────────────────────────────────────────────────────────
+
+const ROADMAP_ITEMS = [
+  {
+    id: "paycheck-giving",
+    status: "coming-soon",
+    title: "Paycheck Giving",
+    summary: "Allow users to set a percentage of each paycheck to automatically flow into their giving portfolio.",
+    details: [
+      "Triggers bi-weekly on payday",
+      "Requires Plaid integration for bank/payroll connection or employer direct deposit setup",
+      "UI is designed and ready — pending payment infrastructure",
+    ],
+  },
+];
+
+// ─── Missionaries Tab ─────────────────────────────────────────────────────────
+
+function generateSlug(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") +
+    "-" +
+    Math.random().toString(36).slice(2, 6)
+  );
+}
+
+function MissionariesAdminTab() {
+  const [subTab, setSubTab] = useState<"applications" | "active">("applications");
+  const [applications, setApplications] = useState<any[]>([]);
+  const [missionaries, setMissionaries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedBio, setExpandedBio] = useState<string | null>(null);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  async function loadAll() {
+    setLoading(true);
+    const supabase = createClient() as any;
+    const [appsRes, msRes] = await Promise.all([
+      supabase.from("missionary_applications").select("*").order("created_at", { ascending: false }),
+      supabase.from("missionaries").select("*").eq("status", "approved").order("created_at", { ascending: false }),
+    ]);
+    setApplications(appsRes.data || []);
+    setMissionaries(msRes.data || []);
+    setLoading(false);
+  }
+
+  async function handleApprove(app: any) {
+    const supabase = createClient() as any;
+    const slug = generateSlug(app.full_name);
+    const { error } = await supabase.from("missionaries").insert({
+      slug,
+      full_name: app.full_name,
+      bio: app.bio,
+      mission_org: app.mission_org || "",
+      country: app.country,
+      region: app.region || "",
+      photo_url: app.photo_url || "",
+      monthly_goal_cents: (app.monthly_goal || 0) * 100,
+      monthly_raised_cents: 0,
+      status: "approved",
+      visible: true,
+      featured: false,
+    });
+    if (!error) {
+      await supabase
+        .from("missionary_applications")
+        .update({ status: "approved", admin_notes: notes[app.id] || "" })
+        .eq("id", app.id);
+      setMsg(`Approved: ${app.full_name} — profile live at /missionaries/${slug}`);
+      loadAll();
+    } else {
+      setMsg("Error: " + error.message);
+    }
+  }
+
+  async function handleReject(app: any) {
+    if (!confirm(`Reject application from ${app.full_name}?`)) return;
+    const supabase = createClient() as any;
+    await supabase
+      .from("missionary_applications")
+      .update({ status: "rejected", admin_notes: notes[app.id] || "" })
+      .eq("id", app.id);
+    setMsg(`Rejected: ${app.full_name}`);
+    loadAll();
+  }
+
+  async function toggleMissionaryField(id: string, field: "visible" | "featured", current: boolean) {
+    const supabase = createClient() as any;
+    await supabase.from("missionaries").update({ [field]: !current }).eq("id", id);
+    setMissionaries((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, [field]: !current } : m))
+    );
+  }
+
+  async function handleDeleteMissionary(id: string, name: string) {
+    if (!confirm(`Delete missionary ${name}? This cannot be undone.`)) return;
+    const supabase = createClient() as any;
+    await supabase.from("missionaries").delete().eq("id", id);
+    setMsg(`Deleted: ${name}`);
+    loadAll();
+  }
+
+  const pendingApps = applications.filter((a) => a.status === "pending");
+
+  if (loading) return <Spinner />;
+
+  return (
+    <div className="space-y-4">
+      {msg && (
+        <div className="px-4 py-2 rounded-lg text-sm" style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}>
+          {msg}
+        </div>
+      )}
+
+      {/* Sub-tabs */}
+      <div className="flex gap-0 border-b" style={{ borderColor: "#e5e1d8" }}>
+        {(["applications", "active"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setSubTab(t)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors capitalize ${subTab === t ? "border-green-600 text-green-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+            style={subTab === t ? { borderColor: "#1a7a4a", color: "#1a7a4a" } : {}}
+          >
+            {t === "applications" ? `Applications (${pendingApps.length})` : `Active Missionaries (${missionaries.length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Applications */}
+      {subTab === "applications" && (
+        <div>
+          {pendingApps.length === 0 ? (
+            <EmptyState message="No pending applications." />
+          ) : (
+            <div className="space-y-4">
+              {pendingApps.map((app) => (
+                <div key={app.id} className="rounded-xl border bg-white p-5" style={{ borderColor: "#e5e1d8" }}>
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <div className="font-semibold text-gray-900">{app.full_name}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{app.email}</div>
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        {app.mission_org && (
+                          <span className="text-xs text-gray-500">{app.mission_org}</span>
+                        )}
+                        <span className="text-xs text-gray-500">{app.country}{app.region ? `, ${app.region}` : ""}</span>
+                        <span className="text-xs text-gray-400">{formatDate(app.created_at)}</span>
+                      </div>
+                    </div>
+                    {app.photo_url && (
+                      <img src={app.photo_url} alt="" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                    )}
+                  </div>
+
+                  <div className="mb-3">
+                    <p className={`text-sm text-gray-600 leading-relaxed ${expandedBio === app.id ? "" : "line-clamp-3"}`}>
+                      {app.bio}
+                    </p>
+                    {app.bio.length > 200 && (
+                      <button
+                        onClick={() => setExpandedBio(expandedBio === app.id ? null : app.id)}
+                        className="text-xs mt-1 hover:underline"
+                        style={{ color: "#1a7a4a" }}
+                      >
+                        {expandedBio === app.id ? "Show less" : "Read more"}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Admin Notes</label>
+                    <input
+                      type="text"
+                      value={notes[app.id] || ""}
+                      onChange={(e) => setNotes((n) => ({ ...n, [app.id]: e.target.value }))}
+                      placeholder="Internal notes..."
+                      className="w-full px-3 py-1.5 border rounded-lg text-sm outline-none focus:border-green-600"
+                      style={{ borderColor: "#e5e1d8" }}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApprove(app)}
+                      className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white"
+                      style={{ backgroundColor: "#1a7a4a" }}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(app)}
+                      className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Active missionaries */}
+      {subTab === "active" && (
+        <div>
+          {missionaries.length === 0 ? (
+            <EmptyState message="No approved missionaries yet." />
+          ) : (
+            <div className="rounded-xl border overflow-hidden bg-white" style={{ borderColor: "#e5e1d8" }}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-gray-500 font-medium" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
+                    <th className="px-4 py-3">Missionary</th>
+                    <th className="px-4 py-3">Country</th>
+                    <th className="px-4 py-3">Monthly</th>
+                    <th className="px-4 py-3">Visible</th>
+                    <th className="px-4 py-3">Featured</th>
+                    <th className="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {missionaries.map((m, i) => (
+                    <tr
+                      key={m.id}
+                      className={`border-b ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+                      style={{ borderColor: "#f5f3ef" }}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {m.photo_url ? (
+                            <img src={m.photo_url} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: "#1a7a4a" }}>
+                              {m.full_name.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium text-gray-900 text-xs">{m.full_name}</div>
+                            <div className="text-xs text-gray-400 font-mono">{m.slug}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500">
+                        {m.country}{m.region ? `, ${m.region}` : ""}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500">
+                        {m.monthly_goal_cents > 0 ? (
+                          <span>
+                            ${Math.round(m.monthly_raised_cents / 100)} / ${Math.round(m.monthly_goal_cents / 100)}/mo
+                          </span>
+                        ) : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Pill
+                          on={m.visible}
+                          onLabel="Visible"
+                          offLabel="Hidden"
+                          onClick={() => toggleMissionaryField(m.id, "visible", m.visible)}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Pill
+                          on={m.featured}
+                          onLabel="Featured"
+                          offLabel="—"
+                          onClick={() => toggleMissionaryField(m.id, "featured", m.featured)}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`/missionaries/${m.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium hover:underline"
+                            style={{ color: "#1a7a4a" }}
+                          >
+                            View
+                          </a>
+                          <button
+                            onClick={() => handleDeleteMissionary(m.id, m.full_name)}
+                            className="text-xs text-red-400 hover:text-red-600"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Audit Log Tab ────────────────────────────────────────────────────────────
+
+function AuditLogTab() {
+  const [entries, setEntries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("");
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient() as any;
+      const { data } = await supabase
+        .from("audit_log")
+        .select("id, user_id, action, table_name, record_id, ip_address, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      setEntries(data || []);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const filtered = filter
+    ? entries.filter((e) => e.action?.toLowerCase().includes(filter.toLowerCase()))
+    : entries;
+
+  if (loading) return <Spinner />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter by action..."
+            className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm outline-none focus:border-green-600"
+            style={{ borderColor: "#e5e1d8" }}
+          />
+        </div>
+        <span className="text-xs text-gray-400">{filtered.length} entries</span>
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState message="No audit log entries yet." />
+      ) : (
+        <div className="rounded-xl border overflow-hidden bg-white" style={{ borderColor: "#e5e1d8" }}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs text-gray-500 font-medium" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
+                <th className="px-4 py-3">Timestamp</th>
+                <th className="px-4 py-3">Action</th>
+                <th className="px-4 py-3">Table</th>
+                <th className="px-4 py-3">IP Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((entry, i) => (
+                <tr
+                  key={entry.id}
+                  className={`border-b text-xs ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+                  style={{ borderColor: "#f5f3ef" }}
+                >
+                  <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap font-mono">
+                    {new Date(entry.created_at).toLocaleString("en-US", {
+                      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                    })}
+                  </td>
+                  <td className="px-4 py-2.5 font-semibold text-gray-900">{entry.action}</td>
+                  <td className="px-4 py-2.5 text-gray-500">{entry.table_name || "—"}</td>
+                  <td className="px-4 py-2.5 text-gray-400 font-mono">
+                    {entry.ip_address ? entry.ip_address.slice(0, 15) + (entry.ip_address.length > 15 ? "…" : "") : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoadmapTab() {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-500">Upcoming features planned for EasyToGive.</p>
+      {ROADMAP_ITEMS.map((item) => {
+        const isOpen = expanded === item.id;
+        return (
+          <div
+            key={item.id}
+            className="rounded-xl border bg-white overflow-hidden"
+            style={{ borderColor: "#e5e7eb" }}
+          >
+            <button
+              onClick={() => setExpanded(isOpen ? null : item.id)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                  style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                >
+                  Coming Soon
+                </span>
+                <span className="font-semibold text-gray-900">{item.title}</span>
+              </div>
+              <ChevronDown
+                className="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200"
+                style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+              />
+            </button>
+            {isOpen && (
+              <div className="px-5 pb-5 border-t" style={{ borderColor: "#f3f4f6" }}>
+                <p className="text-sm text-gray-700 mt-4 mb-3">{item.summary}</p>
+                <ul className="space-y-1.5">
+                  {item.details.map((d) => (
+                    <li key={d} className="flex items-start gap-2 text-sm text-gray-500">
+                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#1a7a4a" }} />
+                      {d}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Navigation Tab ───────────────────────────────────────────────────────────
+
+function NavLinksTab() {
+  const [links, setLinks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function load() {
+    const { data } = await (createClient() as any)
+      .from("nav_links")
+      .select("*")
+      .order("sort_order", { ascending: true });
+    if (data) setLinks(data);
+    setLoading(false);
+  }
+
+  function move(index: number, dir: -1 | 1) {
+    const next = [...links];
+    const swap = index + dir;
+    if (swap < 0 || swap >= next.length) return;
+    [next[index], next[swap]] = [next[swap], next[index]];
+    setLinks(next);
+  }
+
+  function toggleVisible(index: number) {
+    setLinks((prev) =>
+      prev.map((l, i) => (i === index ? { ...l, visible: !l.visible } : l))
+    );
+  }
+
+  async function save() {
+    setSaving(true);
+    const supabase = createClient() as any;
+    await Promise.all(
+      links.map((l, i) =>
+        supabase
+          .from("nav_links")
+          .update({ sort_order: i, visible: l.visible })
+          .eq("id", l.id)
+      )
+    );
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  if (loading) return <Spinner />;
+
+  return (
+    <div className="space-y-4 max-w-md">
+      <p className="text-sm text-gray-500">
+        Drag to reorder or use the arrows. Toggle visibility to show/hide a link in the top bar.
+      </p>
+
+      <div className="rounded-xl border overflow-hidden bg-white" style={{ borderColor: "#e5e7eb" }}>
+        {links.map((link, i) => (
+          <div
+            key={link.id}
+            className="flex items-center gap-3 px-4 py-3 border-b last:border-0"
+            style={{ borderColor: "#f3f4f6", opacity: link.visible ? 1 : 0.45 }}
+          >
+            {/* Up/down */}
+            <div className="flex flex-col gap-0.5 flex-shrink-0">
+              <button
+                onClick={() => move(i, -1)}
+                disabled={i === 0}
+                className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-20 transition-colors"
+                aria-label="Move up"
+              >
+                <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
+              </button>
+              <button
+                onClick={() => move(i, 1)}
+                disabled={i === links.length - 1}
+                className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-20 transition-colors"
+                aria-label="Move down"
+              >
+                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+              </button>
+            </div>
+
+            {/* Order badge */}
+            <span className="w-5 text-xs font-mono text-gray-300 flex-shrink-0">{i + 1}</span>
+
+            {/* Label + href */}
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-sm text-gray-900">{link.label}</div>
+              <div className="text-xs text-gray-400 font-mono">{link.href}</div>
+            </div>
+
+            {/* Visible toggle */}
+            <button
+              onClick={() => toggleVisible(i)}
+              className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors flex-shrink-0 ${
+                link.visible
+                  ? "bg-green-100 text-green-700 hover:bg-green-200"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              {link.visible ? "Visible" : "Hidden"}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={save}
+        disabled={saving}
+        className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-60 transition-colors"
+        style={{ backgroundColor: "#1a7a4a" }}
+      >
+        {saving ? (
+          <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
+        ) : saved ? (
+          <><Check className="w-3.5 h-3.5" /> Saved</>
+        ) : (
+          "Save Order"
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ─── VideoSection ─────────────────────────────────────────────────────────────
+
+function VideoSection({
+  videoUrl,
+  videoType,
+  showVideo,
+  onChangeUrl,
+  onToggleShow,
+  coverUrl,
+}: {
+  videoUrl: string;
+  videoType: string;
+  showVideo: boolean;
+  onChangeUrl: (url: string, type: string) => void;
+  onToggleShow: (v: boolean) => void;
+  coverUrl: string;
+}) {
+  const [mode, setMode] = useState<"link" | "upload">(videoType === "upload" ? "upload" : "link");
+  const [linkInput, setLinkInput] = useState(videoType !== "upload" ? videoUrl : "");
+  const [linkError, setLinkError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function detectType(url: string): "youtube" | "vimeo" | null {
+    if (/youtu\.be\/|youtube\.com/i.test(url)) return "youtube";
+    if (/vimeo\.com/i.test(url)) return "vimeo";
+    return null;
+  }
+
+  function getYouTubeId(url: string): string | null {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=)([^&\n?#]+)/,
+      /(?:youtube\.com\/embed\/)([^&\n?#]+)/,
+      /(?:youtu\.be\/)([^&\n?#]+)/,
+      /(?:youtube\.com\/v\/)([^&\n?#]+)/,
+      /(?:youtube\.com\/shorts\/)([^&\n?#]+)/,
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    return null;
+  }
+
+  function handleLinkSave() {
+    const trimmed = linkInput.trim();
+    if (!trimmed) { onChangeUrl("", ""); setLinkError(""); return; }
+    const type = detectType(trimmed);
+    if (!type) {
+      setLinkError("Please enter a valid YouTube or Vimeo URL");
+      return;
+    }
+    setLinkError("");
+    onChangeUrl(trimmed, type);
+  }
+
+  async function handleFileUpload(file: File) {
+    if (file.size > 100 * 1024 * 1024) {
+      alert("File exceeds 100MB limit.");
+      return;
+    }
+    setUploading(true);
+    setUploadProgress(10);
+    try {
+      const supabase = createClient() as any;
+      const ext = file.name.split(".").pop() ?? "mp4";
+      const path = `org-videos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage
+        .from("videos")
+        .upload(path, file, { cacheControl: "3600", upsert: false });
+      setUploadProgress(80);
+      if (!error) {
+        const { data } = supabase.storage.from("videos").getPublicUrl(path);
+        onChangeUrl(data.publicUrl, "upload");
+        setUploadProgress(100);
+      } else {
+        alert("Upload error: " + error.message);
+      }
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  }
+
+  const ytId = videoType === "youtube" ? getYouTubeId(videoUrl) : null;
+  const inputCls = "w-full mt-1 px-3 py-2 rounded-lg border text-sm text-gray-900 outline-none focus:border-green-600 transition-colors bg-white";
+  const inputStyle = { borderColor: "#e5e7eb" };
+
+  return (
+    <div className="rounded-xl border p-4 space-y-4" style={{ borderColor: "#e5e7eb", backgroundColor: "#f9fafb" }}>
+      {/* Heading */}
+      <div className="flex items-center gap-2">
+        <Film className="w-4 h-4 text-gray-500" />
+        <span className="font-display font-bold text-gray-900" style={{ fontSize: 16 }}>Video</span>
+      </div>
+
+      {/* Show video toggle */}
+      <div className="flex items-center justify-between">
+        <div>
+          <Toggle
+            checked={showVideo}
+            onChange={onToggleShow}
+            label="Show video on public profile"
+          />
+          <p className="text-xs text-gray-400 mt-1 ml-0">Turn this on once your video is added and ready to show.</p>
+        </div>
+      </div>
+
+      {/* Source selector */}
+      <div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Video Source</p>
+        <div className="flex gap-2">
+          {(["link", "upload"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className="px-3 py-1.5 rounded-full text-sm font-medium border transition-colors"
+              style={
+                mode === m
+                  ? { backgroundColor: "white", borderColor: "#1a7a4a", color: "#1a7a4a" }
+                  : { borderColor: "#e5e7eb", color: "#6b7280" }
+              }
+            >
+              {m === "link" ? "YouTube / Vimeo Link" : "Upload from Computer"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Link input */}
+      {mode === "link" && (
+        <div>
+          <input
+            type="url"
+            className={inputCls}
+            style={inputStyle}
+            placeholder="Paste a YouTube or Vimeo URL..."
+            value={linkInput}
+            onChange={(e) => { setLinkInput(e.target.value); setLinkError(""); }}
+            onBlur={handleLinkSave}
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            e.g. https://www.youtube.com/watch?v=... or https://vimeo.com/...
+          </p>
+          {linkError && <p className="text-xs text-red-500 mt-1">{linkError}</p>}
+          {/* YouTube thumbnail preview */}
+          {ytId && !linkError && (
+            <div className="mt-2">
+              <img
+                src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
+                alt="YouTube thumbnail"
+                className="w-32 h-20 object-cover rounded-lg border"
+                style={{ borderColor: "#e5e7eb" }}
+              />
+            </div>
+          )}
+          {videoUrl && videoType === "vimeo" && !linkError && (
+            <p className="text-xs mt-1" style={{ color: "#1a7a4a" }}>Vimeo video set.</p>
+          )}
+          <button
+            type="button"
+            onClick={handleLinkSave}
+            className="mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+            style={{ backgroundColor: "#1a7a4a" }}
+          >
+            Save Video
+          </button>
+        </div>
+      )}
+
+      {/* Upload input */}
+      {mode === "upload" && (
+        <div>
+          {videoUrl && videoType === "upload" ? (
+            <div className="flex items-center gap-3">
+              <video
+                src={videoUrl}
+                className="w-32 h-20 object-cover rounded-lg border"
+                style={{ borderColor: "#e5e7eb" }}
+                poster={coverUrl || undefined}
+              />
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="text-xs font-medium hover:underline"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  Replace Video
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChangeUrl("", "")}
+                  className="text-xs text-red-400 hover:text-red-600"
+                >
+                  Remove Video
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              style={{ borderColor: "#e5e1d8", borderStyle: "dashed" }}
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Film className="w-4 h-4" />}
+              {uploading ? `Uploading... ${uploadProgress}%` : "Choose a video file"}
+            </button>
+          )}
+          {uploading && (
+            <div className="mt-2 w-full h-2 rounded-full bg-gray-200 overflow-hidden">
+              <div
+                className="h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%`, backgroundColor: "#1a7a4a" }}
+              />
+            </div>
+          )}
+          <p className="text-xs text-gray-400 mt-1">MP4, MOV, or WebM recommended · Max 100MB</p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFileUpload(f);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
+
+      {/* Status */}
+      <div className="flex items-center gap-2 text-xs text-gray-500">
+        <span
+          className="w-2 h-2 rounded-full flex-shrink-0"
+          style={{ backgroundColor: videoUrl ? "#1a7a4a" : "#d1d5db" }}
+        />
+        {videoUrl ? (
+          <>
+            Video added
+            <a
+              href={videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline ml-1"
+              style={{ color: "#1a7a4a" }}
+            >
+              Preview
+            </a>
+          </>
+        ) : (
+          "No video added"
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main AdminPanel ──────────────────────────────────────────────────────────
 
 interface Props {
   editOrgId?: string;
@@ -115,6 +1504,9 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
       recommended_orgs: org.recommended_orgs ?? [],
       sort_order: org.sort_order ?? 0,
       contact_email: org.contact_email ?? "",
+      video_url: org.video_url ?? "",
+      video_type: org.video_type ?? "",
+      show_video: org.show_video ?? false,
     });
     setEditing(org.id);
     setActiveAdminTab("edit");
@@ -172,7 +1564,6 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
   }
 
   const otherOrgs = orgs.filter((o) => o.id !== editing);
-
   const inputCls = "w-full mt-1 px-3 py-2 rounded-lg border text-sm text-gray-900 outline-none focus:border-green-600 transition-colors bg-white";
   const inputStyle = { borderColor: "#e5e7eb" };
   const labelCls = "block text-xs font-medium text-gray-500 uppercase tracking-wide";
@@ -193,12 +1584,12 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
       )}
 
       {/* Tab navigation */}
-      <div className="flex gap-1 border-b" style={{ borderColor: "#e5e7eb" }}>
+      <div className="flex gap-0 border-b overflow-x-auto" style={{ borderColor: "#e5e7eb" }}>
         {ADMIN_TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveAdminTab(tab.id)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
               activeAdminTab === tab.id
                 ? "border-green-600 text-green-700"
                 : "border-transparent text-gray-500 hover:text-gray-700"
@@ -209,8 +1600,29 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
         ))}
       </div>
 
-      {/* ── Ordering & Visibility tab ── */}
+      {/* ── Ordering tab ── */}
       {activeAdminTab === "ordering" && <OrgOrderingTab />}
+
+      {/* ── Organizations tab ── */}
+      {activeAdminTab === "orgs" && <OrgsTab onEdit={handleEdit} />}
+
+      {/* ── Users tab ── */}
+      {activeAdminTab === "users" && <UsersTab />}
+
+      {/* ── Waitlist tab ── */}
+      {activeAdminTab === "waitlist" && <WaitlistTab />}
+
+      {/* ── Missionaries tab ── */}
+      {activeAdminTab === "missionaries" && <MissionariesAdminTab />}
+
+      {/* ── Navigation tab ── */}
+      {activeAdminTab === "navigation" && <NavLinksTab />}
+
+      {/* ── Roadmap tab ── */}
+      {activeAdminTab === "roadmap" && <RoadmapTab />}
+
+      {/* ── Audit Log tab ── */}
+      {activeAdminTab === "audit" && <AuditLogTab />}
 
       {/* ── Add / Edit Form tab ── */}
       {activeAdminTab === "edit" && (
@@ -327,6 +1739,7 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
               label="Card Image"
               hint="Square/portrait — shown in org cards"
               aspect="aspect-square"
+              maxHeight={180}
               value={form.image_url || ""}
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
@@ -334,10 +1747,21 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
               label="Cover / Banner Image"
               hint="Wide banner shown at top of org page"
               aspect="aspect-video"
+              maxHeight={120}
               value={form.cover_url || ""}
               onChange={(url) => setForm({ ...form, cover_url: url })}
             />
           </div>
+
+          {/* Video Settings */}
+          <VideoSection
+            videoUrl={form.video_url || ""}
+            videoType={form.video_type || ""}
+            showVideo={form.show_video || false}
+            onChangeUrl={(url, type) => setForm((f: any) => ({ ...f, video_url: url, video_type: type }))}
+            onToggleShow={(v) => setForm((f: any) => ({ ...f, show_video: v }))}
+            coverUrl={form.cover_url || ""}
+          />
 
           {/* Toggles */}
           <div className="flex gap-8 items-center py-2">
@@ -400,6 +1824,11 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
                   label={label}
                 />
               ))}
+              <Toggle
+                checked={form.show_video || false}
+                onChange={(v) => setForm((f: any) => ({ ...f, show_video: v }))}
+                label="Show Video"
+              />
             </div>
           </div>
 
@@ -434,7 +1863,7 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
             )}
           </div>
 
-          {/* Org Table */}
+          {/* Compact org list in edit tab */}
           <div>
             <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
               All Organizations ({orgs.length})
@@ -453,10 +1882,10 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
                   </tr>
                 </thead>
                 <tbody>
-                  {orgs.map((org, i) => (
+                  {orgs.map((org) => (
                     <tr
                       key={org.id}
-                      className={`border-b hover:bg-gray-50 transition-colors ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
+                      className="border-b hover:bg-gray-50 transition-colors bg-white"
                       style={{ borderColor: "#f3f4f6" }}
                     >
                       <td className="px-4 py-3">
@@ -511,58 +1940,6 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
                 </tbody>
               </table>
             </div>
-          </div>
-
-          {/* Migration reminder */}
-          <div className="p-4 rounded-xl border text-sm" style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a", color: "#92400e" }}>
-            <p className="font-semibold mb-1">DB migrations required</p>
-            <p className="text-xs mb-2 text-amber-700">Run in Supabase Dashboard → SQL Editor:</p>
-            <pre className="text-xs bg-amber-50 p-2 rounded overflow-x-auto border border-amber-200">
-{`-- Organizations columns
-ALTER TABLE organizations
-  ADD COLUMN IF NOT EXISTS recommended_orgs text[] DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS visible boolean DEFAULT true,
-  ADD COLUMN IF NOT EXISTS contact_email text DEFAULT '';
-
--- Display settings (all default false)
-CREATE TABLE IF NOT EXISTS org_display_settings (
-  org_id text primary key references organizations(id) on delete cascade,
-  show_goal boolean DEFAULT false,
-  show_donors boolean DEFAULT false,
-  show_raised boolean DEFAULT false,
-  show_recommendations boolean DEFAULT false,
-  show_impact_stats boolean DEFAULT false,
-  show_related_orgs boolean DEFAULT false
-);
-
--- User location fields
-ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS city text DEFAULT '',
-  ADD COLUMN IF NOT EXISTS state text DEFAULT '',
-  ADD COLUMN IF NOT EXISTS zip text DEFAULT '',
-  ADD COLUMN IF NOT EXISTS lat double precision,
-  ADD COLUMN IF NOT EXISTS lng double precision;
-
--- Recurring donations
-CREATE TABLE IF NOT EXISTS recurring_donations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES users(id),
-  org_id text NOT NULL,
-  org_name text NOT NULL,
-  amount_cents integer NOT NULL,
-  frequency text NOT NULL CHECK (frequency IN ('weekly','biweekly','monthly','yearly')),
-  active boolean DEFAULT true,
-  created_at timestamptz DEFAULT now(),
-  next_charge_at timestamptz
-);
-
--- Site settings (editable homepage content)
-CREATE TABLE IF NOT EXISTS site_settings (
-  key text PRIMARY KEY,
-  value text NOT NULL DEFAULT ''
-);`}
-            </pre>
           </div>
         </div>
       )}

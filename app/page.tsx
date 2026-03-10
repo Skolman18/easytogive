@@ -49,10 +49,28 @@ async function getOrganizations(): Promise<Organization[]> {
 }
 
 const DEFAULT_HERO = {
-  headline: "Give to what matters most, all at once.",
+  headline: "The Marketplace for Giving.",
   subtext:
-    "Discover verified nonprofits and churches, then donate to multiple causes through a single tax-deductible giving portfolio.",
+    "Discover thousands of verified organizations, build your giving portfolio, and donate to multiple causes with one simple transaction.",
 };
+
+async function getRealStats(): Promise<{ orgCount: number; totalRaised: number; userCount: number }> {
+  try {
+    const [orgsRes, raisedRes, usersRes] = await Promise.all([
+      supabase.from("organizations").select("id", { count: "exact", head: true } as any),
+      supabase.from("organizations").select("raised"),
+      (supabase as any).from("users").select("id", { count: "exact", head: true }),
+    ]);
+    const orgCount = (orgsRes as any).count ?? 0;
+    const totalRaised = ((raisedRes.data ?? []) as any[]).reduce(
+      (s, r) => s + (r.raised ?? 0), 0
+    );
+    const userCount = (usersRes as any).count ?? 0;
+    return { orgCount, totalRaised, userCount };
+  } catch {
+    return { orgCount: 0, totalRaised: 0, userCount: 0 };
+  }
+}
 
 async function getDisplaySettingsMap(): Promise<Record<string, OrgDisplaySettings>> {
   try {
@@ -87,10 +105,18 @@ async function getSiteSettings(): Promise<{ hero_headline: string; hero_subtext:
 }
 
 export default async function HomePage() {
-  const [organizations, siteSettings, displaySettingsMap] = await Promise.all([
+  const [organizations, siteSettings, displaySettingsMap, stats] = await Promise.all([
     getOrganizations(),
     getSiteSettings(),
     getDisplaySettingsMap(),
+    getRealStats(),
   ]);
-  return <HomeClient organizations={organizations} siteSettings={siteSettings} displaySettingsMap={displaySettingsMap} />;
+  return (
+    <HomeClient
+      organizations={organizations}
+      siteSettings={siteSettings}
+      displaySettingsMap={displaySettingsMap}
+      stats={stats}
+    />
+  );
 }

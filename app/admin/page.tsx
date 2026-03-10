@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 const ADMIN_EMAIL = "sethmitzel@gmail.com";
-const CATEGORIES = ["nonprofits","education","health","environment","arts","community","animals","international"];
+const CATEGORIES = ["nonprofits","education","environment","churches","animal-rescue","local"];
 
 export default function AdminPage() {
   const router = useRouter();

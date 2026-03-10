@@ -1,10 +1,6 @@
-export type Category =
-  | "churches"
-  | "animal-rescue"
-  | "nonprofits"
-  | "education"
-  | "environment"
-  | "local";
+export type { Category } from "@/lib/categories";
+export { CATEGORIES } from "@/lib/categories";
+import type { Category } from "@/lib/categories";
 
 export interface Organization {
   id: string;
@@ -46,14 +42,6 @@ export interface PortfolioAllocation {
   color: string;
 }
 
-export const CATEGORIES: { value: Category; label: string; icon: string }[] = [
-  { value: "churches", label: "Churches", icon: "⛪" },
-  { value: "animal-rescue", label: "Animal Rescue", icon: "🐾" },
-  { value: "nonprofits", label: "Nonprofits", icon: "🤝" },
-  { value: "education", label: "Education", icon: "📚" },
-  { value: "environment", label: "Environment", icon: "🌿" },
-  { value: "local", label: "Local Causes", icon: "🏘️" },
-];
 
 export const ORGANIZATIONS: Organization[] = [
   {

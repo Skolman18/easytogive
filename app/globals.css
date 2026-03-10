@@ -78,3 +78,21 @@ html {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
 }
+
+/* Infinite marquee / auto-scroll strip */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 35s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* FAQ accordion smooth height */
+.faq-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease;
+}

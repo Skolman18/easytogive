@@ -22,6 +22,8 @@ import {
 import OrgDonateSidebar from "@/components/OrgDonateSidebar";
 import OrgAdminBar from "@/components/OrgAdminBar";
 import EditableField from "@/components/EditableField";
+import OrgImpactFeed from "@/components/OrgImpactFeed";
+import OrgVideoEmbed from "@/components/OrgVideoEmbed";
 import { createClient } from "@/lib/supabase-server";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -33,14 +35,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   local: "Local Cause",
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  churches: "#7c3aed",
-  "animal-rescue": "#f59e0b",
-  nonprofits: "#3b82f6",
-  education: "#6366f1",
-  environment: "#10b981",
-  local: "#f97316",
-};
 
 export async function generateStaticParams() {
   return ORGANIZATIONS.map((org) => ({ id: org.id }));
@@ -114,20 +108,42 @@ export default async function OrgPage({
         tags: supabaseOrg.tags ?? [],
         impactStats: supabaseOrg.impact_stats ?? supabaseOrg.impactStats ?? [],
         featured: supabaseOrg.featured ?? false,
+        videoUrl: supabaseOrg.video_url ?? "",
+        videoType: supabaseOrg.video_type ?? "",
+        showVideo: supabaseOrg.show_video ?? false,
+        videoSizePercent: supabaseOrg.video_size_percent ?? 100,
       }
     : ORGANIZATIONS.find((o) => o.id === id);
 
   if (!org) notFound();
 
-  const categoryColor = CATEGORY_COLORS[org.category] || "#1a7a4a";
   const categoryLabel = CATEGORY_LABELS[org.category] || org.category;
 
-  const related = ORGANIZATIONS.filter(
-    (o) => o.category === org.category && o.id !== org.id
-  ).slice(0, 3);
+  // Normalized shape for recommended + related org cards
+  interface CardOrg {
+    id: string;
+    name: string;
+    location: string;
+    category: string;
+    imageUrl: string;
+    raised: number;
+    goal: number;
+  }
 
-  // Fetch recommended_orgs and display settings from Supabase
-  let recommendedOrgs: typeof ORGANIZATIONS = [];
+  function normalizeCardOrg(o: any): CardOrg {
+    return {
+      id: o.id,
+      name: o.name ?? "",
+      location: o.location ?? "",
+      category: o.category ?? "",
+      imageUrl: o.image_url ?? o.imageUrl ?? "",
+      raised: o.raised ?? 0,
+      goal: o.goal ?? 0,
+    };
+  }
+
+  let recommendedOrgs: CardOrg[] = [];
+  let related: CardOrg[] = [];
   let displaySettings = {
     show_goal: false,
     show_donors: false,
@@ -136,21 +152,51 @@ export default async function OrgPage({
     show_impact_stats: false,
     show_related_orgs: false,
   };
-  // Display settings for secondary cards (recommended + related orgs)
   let secondaryDisplayMap: Record<string, { show_raised: boolean; show_donors: boolean; show_goal: boolean }> = {};
 
   try {
     const supabase = await createClient();
-    const [orgData, settingsData] = await Promise.all([
+    const [orgData, settingsData, relatedData] = await Promise.all([
       supabase.from("organizations").select("recommended_orgs").eq("id", id).single(),
       (supabase as any).from("org_display_settings").select("*").eq("org_id", id).single(),
+      // Fetch related orgs by same category from Supabase
+      (supabase as any)
+        .from("organizations")
+        .select("id, name, location, category, image_url, raised, goal")
+        .eq("category", org.category)
+        .neq("id", id)
+        .eq("visible", true)
+        .limit(3),
     ]);
-    const ids: string[] = (orgData.data as any)?.recommended_orgs ?? [];
-    if (ids.length > 0) {
-      recommendedOrgs = ORGANIZATIONS.filter((o) => ids.includes(o.id));
-    }
+
     if (settingsData.data) {
       displaySettings = { ...displaySettings, ...settingsData.data };
+    }
+
+    if (relatedData.data) {
+      related = relatedData.data.map(normalizeCardOrg);
+    } else {
+      // Fall back to placeholder data if Supabase returns nothing
+      related = ORGANIZATIONS
+        .filter((o) => o.category === org.category && o.id !== org.id)
+        .slice(0, 3)
+        .map((o) => ({ id: o.id, name: o.name, location: o.location, category: o.category, imageUrl: o.imageUrl, raised: o.raised, goal: o.goal }));
+    }
+
+    // Fetch recommended orgs from Supabase by their IDs
+    const recIds: string[] = (orgData.data as any)?.recommended_orgs ?? [];
+    if (recIds.length > 0) {
+      const { data: recData } = await (supabase as any)
+        .from("organizations")
+        .select("id, name, location, category, image_url, raised, goal")
+        .in("id", recIds);
+      if (recData) {
+        // Preserve the order from recommended_orgs array
+        const recMap = new Map(recData.map((o: any) => [o.id, o]));
+        recommendedOrgs = recIds
+          .filter((rid) => recMap.has(rid))
+          .map((rid) => normalizeCardOrg(recMap.get(rid)));
+      }
     }
 
     // Fetch display settings for secondary org cards
@@ -168,7 +214,7 @@ export default async function OrgPage({
       }
     }
   } catch {
-    // Tables may not exist yet — silently skip
+    // Silently fall back
   }
 
   return (
@@ -215,8 +261,8 @@ export default async function OrgPage({
 
         <div className="absolute bottom-4 left-4 md:left-8">
           <span
-            className="px-3 py-1 rounded-full text-sm font-semibold text-white"
-            style={{ backgroundColor: categoryColor }}
+            className="px-3 py-1 rounded-full text-sm font-medium"
+            style={{ backgroundColor: "rgba(255,255,255,0.92)", color: "#374151", border: "1px solid rgba(255,255,255,0.5)" }}
           >
             {categoryLabel}
           </span>
@@ -316,6 +362,20 @@ export default async function OrgPage({
               />
             </div>
 
+            {/* Video */}
+            {(org as any).showVideo && (org as any).videoUrl && (
+              <OrgVideoEmbed
+                orgId={id}
+                videoUrl={(org as any).videoUrl}
+                videoType={(org as any).videoType}
+                coverUrl={(org as any).coverUrl || ""}
+                initialSize={(org as any).videoSizePercent ?? 100}
+              />
+            )}
+
+            {/* Dynamic Impact Updates */}
+            <OrgImpactFeed orgId={id} />
+
             {/* Impact Stats */}
             {displaySettings.show_impact_stats && org.impactStats && org.impactStats.length > 0 && (
             <div
@@ -366,7 +426,7 @@ export default async function OrgPage({
                     financial transparency, and governance standards. Donations are
                     tax-deductible to the extent permitted by law.
                   </p>
-                  {org.ein !== "Pending" && (
+                  {org.ein && org.ein !== "Pending" && (
                     <p className="text-sm text-gray-500 mt-2">
                       <span className="font-medium">EIN:</span> {org.ein}
                     </p>
@@ -409,7 +469,6 @@ export default async function OrgPage({
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {recommendedOrgs.map((r) => {
                 const rProgress = getProgressPercent(r.raised, r.goal);
-                const rColor = CATEGORY_COLORS[r.category] || "#1a7a4a";
                 const rLabel = CATEGORY_LABELS[r.category] || r.category;
                 return (
                   <Link
@@ -425,8 +484,8 @@ export default async function OrgPage({
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <span
-                        className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
-                        style={{ backgroundColor: rColor }}
+                        className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: "#f3f4f6", color: "#6b7280", border: "1px solid #e5e7eb" }}
                       >
                         {rLabel}
                       </span>

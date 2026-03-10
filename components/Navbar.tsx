@@ -7,8 +7,9 @@ import { Menu, X, Heart, LogOut } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-browser";
 
-const NAV_LINKS = [
+const DEFAULT_NAV_LINKS = [
   { href: "/discover", label: "Discover" },
+  { href: "/missionaries", label: "Missionaries" },
   { href: "/portfolio", label: "My Portfolio" },
   { href: "/about", label: "About" },
   { href: "/profile", label: "Profile" },
@@ -21,6 +22,25 @@ export default function Navbar() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [navLinks, setNavLinks] = useState(DEFAULT_NAV_LINKS);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    (createClient() as any)
+      .from("nav_links")
+      .select("href, label, sort_order, visible")
+      .eq("visible", true)
+      .order("sort_order", { ascending: true })
+      .then(({ data }: any) => {
+        if (data && data.length > 0) setNavLinks(data);
+      });
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -58,12 +78,18 @@ export default function Navbar() {
   const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : null;
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b" style={{ borderColor: "#f0ede6" }}>
+    <nav
+      className="sticky top-0 z-50 bg-white border-b transition-shadow duration-200"
+      style={{
+        borderColor: "#f0ede6",
+        boxShadow: scrolled ? "0 1px 12px rgba(0,0,0,0.07)" : "none",
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center"
               style={{ backgroundColor: "#1a7a4a" }}
@@ -77,7 +103,7 @@ export default function Navbar() {
 
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-0.5">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -92,7 +118,7 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Desktop auth */}
+          {/* Desktop auth + CTA */}
           <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
@@ -137,21 +163,43 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile toggle */}
-          <button
-            className="md:hidden p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          {/* Mobile: CTA always visible + hamburger */}
+          <div className="flex md:hidden items-center gap-2">
+            {!user && (
+              <Link
+                href="/get-started"
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white transition-all hover:opacity-90"
+                style={{ backgroundColor: "#1a7a4a" }}
+              >
+                Start Giving
+              </Link>
+            )}
+            {user && (
+              <Link
+                href="/profile"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 overflow-hidden"
+                style={{ backgroundColor: "#1a7a4a" }}
+              >
+                {profileAvatar
+                  ? <img src={profileAvatar} alt="" className="w-full h-full object-cover" />
+                  : initials}
+              </Link>
+            )}
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t bg-white px-4 py-3 space-y-1" style={{ borderColor: "#f0ede6" }}>
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -188,23 +236,13 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <>
-                <Link
-                  href="/auth/signin"
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/get-started"
-                  onClick={() => setMobileOpen(false)}
-                  className="block w-full text-center px-4 py-2.5 rounded-full text-sm font-semibold text-white"
-                  style={{ backgroundColor: "#1a7a4a" }}
-                >
-                  Start Giving
-                </Link>
-              </>
+              <Link
+                href="/auth/signin"
+                onClick={() => setMobileOpen(false)}
+                className="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50"
+              >
+                Sign In
+              </Link>
             )}
           </div>
         </div>

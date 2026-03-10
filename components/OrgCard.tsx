@@ -14,15 +14,6 @@ interface OrgCardProps {
   displaySettings?: OrgDisplaySettings;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  churches: "#7c3aed",
-  "animal-rescue": "#f59e0b",
-  nonprofits: "#3b82f6",
-  education: "#6366f1",
-  environment: "#10b981",
-  local: "#f97316",
-};
-
 const CATEGORY_LABELS: Record<string, string> = {
   churches: "Church",
   "animal-rescue": "Animal Rescue",
@@ -34,7 +25,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function OrgCard({ org, compact = false, displaySettings }: OrgCardProps) {
   const progress = getProgressPercent(org.raised, org.goal);
-  const categoryColor = CATEGORY_COLORS[org.category] || "#1a7a4a";
   const categoryLabel = CATEGORY_LABELS[org.category] || org.category;
 
   // If no displaySettings passed, show everything (backward compat / placeholder data).
@@ -59,8 +49,8 @@ export default function OrgCard({ org, compact = false, displaySettings }: OrgCa
           />
           <div className="absolute top-3 left-3">
             <span
-              className="px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: categoryColor }}
+              className="px-2.5 py-0.5 rounded-full text-xs font-medium"
+              style={{ backgroundColor: "#f3f4f6", color: "#6b7280", border: "1px solid #e5e7eb" }}
             >
               {categoryLabel}
             </span>

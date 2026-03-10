@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const VALID_CATEGORIES = [
   "nonprofits",
   "education",
-  "health",
   "environment",
-  "arts",
-  "community",
-  "animals",
-  "international",
   "churches",
   "animal-rescue",
   "local",
@@ -16,6 +12,16 @@ const VALID_CATEGORIES = [
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: max 10 autofill requests per IP per hour
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const { allowed } = checkRateLimit(ip, "autofill-org", 10, 60 * 60 * 1000);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const { url } = await req.json();
     if (!url) {
       return NextResponse.json({ error: "url is required" }, { status: 400 });

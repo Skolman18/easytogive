@@ -150,6 +150,61 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
+          {/* Data Retention */}
+          <section>
+            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
+              Data Retention
+            </h2>
+            <p className="mb-3">
+              We retain your personal information for as long as your account is active or as
+              needed to provide you with the Service. Specifically:
+            </p>
+            <ul className="list-disc list-outside pl-5 space-y-2">
+              <li>
+                <strong>Account data</strong> — Retained until you request deletion of your
+                account. You may request deletion at any time by emailing{" "}
+                <a
+                  href="mailto:seth@easytogive.com"
+                  className="underline underline-offset-2"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  seth@easytogive.com
+                </a>
+                .
+              </li>
+              <li>
+                <strong>Donation records</strong> — Retained for seven (7) years following
+                the date of each transaction to comply with IRS recordkeeping requirements and
+                to provide accurate tax documentation.
+              </li>
+              <li>
+                <strong>Usage and device data</strong> — Retained for up to 24 months, after
+                which it is aggregated or deleted.
+              </li>
+            </ul>
+          </section>
+
+          {/* Children's Privacy */}
+          <section>
+            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
+              Children&apos;s Privacy
+            </h2>
+            <p>
+              EasyToGive is not directed to children under the age of 13, and we do not
+              knowingly collect personal information from children under 13. If you believe
+              we have inadvertently collected information from a child under 13, please
+              contact us at{" "}
+              <a
+                href="mailto:seth@easytogive.com"
+                className="underline underline-offset-2"
+                style={{ color: "#1a7a4a" }}
+              >
+                seth@easytogive.com
+              </a>{" "}
+              and we will promptly delete the information.
+            </p>
+          </section>
+
           {/* Cookies */}
           <section>
             <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
@@ -236,15 +291,15 @@ export default function PrivacyPage() {
             </h2>
             <p>
               If you have questions, concerns, or requests regarding this Privacy
-              Policy or our data practices, please contact our Privacy team at:
+              Policy or our data practices, please contact us at:
             </p>
             <p className="mt-3">
               <a
-                href="mailto:privacy@easytogive.com"
+                href="mailto:seth@easytogive.com"
                 className="font-medium underline underline-offset-2"
                 style={{ color: "#1a7a4a" }}
               >
-                privacy@easytogive.com
+                seth@easytogive.com
               </a>
             </p>
             <p className="mt-3 text-sm text-gray-500">

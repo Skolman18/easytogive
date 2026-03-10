@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Search, Heart, BarChart2, ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { Search, Heart, BarChart2, ArrowRight, Mail } from "lucide-react";
 
 export const metadata = {
   title: "About Us — EasyToGive",
@@ -81,35 +82,47 @@ export default function AboutPage() {
             Built by a Giver, for Givers
           </h2>
 
-          <div className="flex flex-col md:flex-row gap-10 items-center md:items-start">
-            {/* Photo — Seth: replace src with your Supabase Storage public URL after uploading */}
-            <div className="flex-shrink-0 w-56 md:w-64">
-              <div className="rounded-2xl shadow-md overflow-hidden bg-gray-200 aspect-square flex items-center justify-center">
-                <img
-                  src="https://dfktfiruzulhpwcafaey.supabase.co/storage/v1/object/public/images/seth-founder.jpg"
-                  alt="Seth Mitzel, Founder of EasyToGive"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+          <div className="flex flex-col md:flex-row gap-10 items-start">
+            {/* Photo */}
+            <div className="flex-shrink-0 w-full md:w-auto">
+              <Image
+                src="/seth-mitzel.jpg"
+                alt="Seth Mitzel, Founder & CEO of EasyToGive"
+                width={320}
+                height={400}
+                className="rounded-2xl shadow-md object-cover w-full md:w-80"
+                style={{ objectPosition: "top center", height: 280 }}
+                sizes="(max-width: 768px) 100vw, 320px"
+              />
             </div>
 
             {/* Text */}
             <div className="flex-1">
-              <p className="text-gray-600 leading-relaxed text-lg mb-5">
-                EasyToGive was founded by Seth Mitzel with one simple frustration: giving should be
-                easier. As someone who wanted to support multiple causes but found the process
-                scattered, confusing, and time-consuming, Seth set out to build the platform he
-                always wished existed.
+              <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: "#1a7a4a" }}>
+                Founder &amp; CEO
               </p>
-              <p className="text-gray-600 leading-relaxed text-lg mb-5">
-                A single place to discover vetted organizations, manage your giving portfolio, set up
-                recurring donations, and know your money is making a real difference. What started as
-                a personal project became a mission: to make generosity as easy as ordering from
-                Amazon.
+              <h3 className="font-display text-2xl font-bold text-gray-900 mb-5">
+                Seth Mitzel
+              </h3>
+              <p className="text-gray-500 leading-relaxed text-base mb-4">
+                Seth built EasyToGive to make generosity effortless. Raised in Bismarck, North
+                Dakota, he saw firsthand how hard it was for people to give to multiple organizations
+                they loved — writing checks, tracking receipts, managing separate accounts.
+                EasyToGive was built to change that.
               </p>
-              <p className="font-semibold text-gray-900">
-                Seth Mitzel — Founder &amp; CEO, EasyToGive
+              <p className="text-gray-500 leading-relaxed text-base mb-6">
+                His vision is simple: make charitable giving as easy as managing an investment
+                portfolio, and bring more resources to the churches, nonprofits, and missionaries
+                doing good in the world.
               </p>
+              <a
+                href="mailto:seth@easytogive.com"
+                className="inline-flex items-center gap-1.5 text-sm hover:underline"
+                style={{ color: "#1a7a4a" }}
+              >
+                <Mail className="w-3.5 h-3.5" />
+                seth@easytogive.com
+              </a>
             </div>
           </div>
         </div>

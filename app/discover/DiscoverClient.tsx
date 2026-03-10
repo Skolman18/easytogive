@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, X, SlidersHorizontal, ChevronDown, Sparkles } from "lucide-react";
 import OrgCard from "@/components/OrgCard";
 import type { OrgDisplaySettings } from "@/components/OrgCard";
-import { CATEGORIES } from "@/lib/placeholder-data";
-import type { Organization, Category } from "@/lib/placeholder-data";
+import { CATEGORIES, CAUSE_TO_CATEGORY } from "@/lib/categories";
+import type { Organization } from "@/lib/placeholder-data";
+import type { Category } from "@/lib/categories";
+import { createClient } from "@/lib/supabase-browser";
 
 const SORT_OPTIONS = [
   { value: "featured", label: "Featured" },
@@ -26,6 +28,31 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   const [locationFilter, setLocationFilter] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [causesBanner, setCausesBanner] = useState(false);
+
+  useEffect(() => {
+    async function loadUserCauses() {
+      const supabase = createClient() as any;
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { data: profile } = await supabase
+        .from("users")
+        .select("causes")
+        .eq("id", userData.user.id)
+        .single();
+      if (!profile?.causes?.length) return;
+
+      // Find first matching category
+      const matchedCat = (profile.causes as string[])
+        .map((c: string) => CAUSE_TO_CATEGORY[c])
+        .find(Boolean);
+      if (matchedCat) {
+        setActiveCategory(matchedCat);
+        setCausesBanner(true);
+      }
+    }
+    loadUserCauses();
+  }, []);
 
   const hasActiveFilters =
     activeCategory !== "all" || showVerifiedOnly || locationFilter.trim() || query.trim();
@@ -118,6 +145,25 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        {/* ── Causes pre-filter banner ─────────────────────────────── */}
+        {causesBanner && (
+          <div
+            className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl mb-5 text-sm"
+            style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 flex-shrink-0" />
+              <span className="font-medium">Showing causes matched to your interests</span>
+            </div>
+            <button
+              onClick={() => { setActiveCategory("all"); setCausesBanner(false); }}
+              className="text-xs font-semibold underline whitespace-nowrap hover:no-underline"
+            >
+              Show all
+            </button>
+          </div>
+        )}
 
         {/* ── Desktop: category chips — horizontal scroll ─────────── */}
         <div className="hidden sm:flex items-center gap-2 overflow-x-auto pb-2 mb-5" style={{ scrollbarWidth: "none" }}>

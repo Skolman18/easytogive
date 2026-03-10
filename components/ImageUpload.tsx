@@ -16,6 +16,8 @@ interface ImageUploadProps {
   hint?: string;
   /** Aspect class applied to preview container, e.g. "aspect-video" or "aspect-square" */
   aspect?: string;
+  /** Hard max-height in pixels for the drop zone */
+  maxHeight?: number;
 }
 
 export default function ImageUpload({
@@ -24,6 +26,7 @@ export default function ImageUpload({
   label,
   hint,
   aspect = "aspect-video",
+  maxHeight,
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -78,7 +81,7 @@ export default function ImageUpload({
       {/* Preview / drop zone */}
       <div
         className={`relative rounded-xl border-2 border-dashed overflow-hidden ${aspect} flex items-center justify-center cursor-pointer transition-colors hover:border-green-400 hover:bg-green-50/30`}
-        style={{ borderColor: error ? "#f87171" : "#e5e7eb", backgroundColor: "#f9fafb" }}
+        style={{ borderColor: error ? "#f87171" : "#e5e7eb", backgroundColor: "#f9fafb", ...(maxHeight ? { maxHeight } : {}) }}
         onClick={() => !uploading && inputRef.current?.click()}
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}

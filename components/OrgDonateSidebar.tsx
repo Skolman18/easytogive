@@ -50,12 +50,12 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
   const effectiveAmount = useCustom ? parseFloat(customAmount) || 0 : selectedAmount;
 
   function openCheckout() {
-    if (effectiveAmount < 1) return;
+    if (effectiveAmount < 0.50) return;
     setModalOpen(true);
   }
 
   async function handleStartRecurring() {
-    if (effectiveAmount < 1) return;
+    if (effectiveAmount < 0.50) return;
     setRecurringStatus("saving");
     try {
       const supabase = createClient();
@@ -234,7 +234,8 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
                 placeholder="Enter amount"
                 className="w-full pl-7 pr-4 py-2.5 border rounded-lg text-sm outline-none focus:border-green-600 transition-colors"
                 style={{ borderColor: "#e5e1d8" }}
-                min={1}
+                min={0.01}
+                step={0.01}
                 autoFocus
               />
             </div>
@@ -245,7 +246,7 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
         {isRecurring ? (
           <button
             onClick={handleStartRecurring}
-            disabled={effectiveAmount < 1 || recurringStatus === "saving"}
+            disabled={effectiveAmount < 0.50 || recurringStatus === "saving"}
             className="w-full py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2 mb-3 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: recurringStatus === "saved" ? "#16a34a" : "#1a7a4a" }}
           >
@@ -256,17 +257,17 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
               ? "Recurring giving set up!"
               : recurringStatus === "error"
               ? "Error — try again"
-              : `Give ${effectiveAmount >= 1 ? formatCurrency(effectiveAmount) : ""} ${FREQUENCIES.find((f) => f.value === frequency)?.label ?? ""}`}
+              : `Give ${effectiveAmount >= 0.50 ? formatCurrency(effectiveAmount) : ""} ${FREQUENCIES.find((f) => f.value === frequency)?.label ?? ""}`}
           </button>
         ) : (
           <button
             onClick={openCheckout}
-            disabled={effectiveAmount < 1}
+            disabled={effectiveAmount < 0.50}
             className="w-full py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2 mb-3 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: "#1a7a4a" }}
           >
             <Heart className="w-4 h-4 fill-white" />
-            Donate {effectiveAmount >= 1 ? formatCurrency(effectiveAmount) : ""}
+            Donate {effectiveAmount >= 0.50 ? formatCurrency(effectiveAmount) : ""}
           </button>
         )}
 

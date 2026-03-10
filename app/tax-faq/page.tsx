@@ -67,6 +67,15 @@ export default function TaxFAQPage() {
       {/* FAQ Items */}
       <section className="py-16" style={{ backgroundColor: "#faf9f6" }}>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Disclaimer */}
+          <div
+            className="rounded-xl border p-4 mb-8 text-sm leading-relaxed"
+            style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a", color: "#92400e" }}
+          >
+            <strong>Notice:</strong> EasyToGive is not a tax advisor. This information is general
+            in nature and provided for educational purposes only. Please consult a qualified tax
+            professional for advice specific to your situation.
+          </div>
           <div className="space-y-6">
             {faqs.map((faq, index) => (
               <div
