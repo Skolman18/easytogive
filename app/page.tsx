@@ -35,7 +35,7 @@ async function getOrganizations(): Promise<Organization[]> {
   const { data, error } = await supabase
     .from("organizations")
     .select("*")
-    .order("sort_order", { ascending: true })
+    .order("home_sort_order", { ascending: true })
     .order("name");
 
   if (error || !data || data.length === 0) {

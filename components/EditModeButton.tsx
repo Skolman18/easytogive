@@ -9,7 +9,7 @@ const ADMIN_EMAIL = "sethmitzel@gmail.com";
 
 export default function EditModeButton() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const { editMode, setEditMode } = useEditMode();
+  const { editMode, setEditMode, viewMode } = useEditMode();
 
   useEffect(() => {
     createClient()
@@ -19,7 +19,7 @@ export default function EditModeButton() {
       });
   }, []);
 
-  if (!isAdmin) return null;
+  if (!isAdmin || viewMode !== "admin") return null;
 
   return (
     <button

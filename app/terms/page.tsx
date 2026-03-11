@@ -1,264 +1,312 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
 export default function TermsPage() {
   return (
-    <main className="bg-white py-20">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="font-display text-4xl font-bold text-gray-900 mb-3">
-          Terms of Service
-        </h1>
-        <p className="text-sm text-gray-500 mb-12">
-          Last updated: January 1, 2025
-        </p>
+    <main style={{ backgroundColor: "#faf9f6" }} className="min-h-screen py-16">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6">
+        <div className="bg-white rounded-xl shadow-sm p-10 sm:p-12">
 
-        <div className="space-y-10 text-gray-700 leading-relaxed">
-          {/* Acceptance of Terms */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              1. Acceptance of Terms
-            </h2>
-            <p className="mb-3">
-              These Terms of Service (&ldquo;Terms&rdquo;) constitute a legally
-              binding agreement between you and EasyToGive, Inc.
-              (&ldquo;EasyToGive,&rdquo; &ldquo;we,&rdquo; &ldquo;our,&rdquo;
-              or &ldquo;us&rdquo;) governing your access to and use of the
-              EasyToGive website and services (collectively, the
-              &ldquo;Service&rdquo;).
-            </p>
-            <p>
-              By accessing or using the Service, you agree to be bound by these
-              Terms. If you do not agree to these Terms, you may not access or
-              use the Service. We reserve the right to modify these Terms at any
-              time. Continued use of the Service after any changes constitutes
-              your acceptance of the revised Terms.
-            </p>
-          </section>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm font-medium mb-8"
+            style={{ color: "#1a7a4a" }}
+          >
+            <ArrowLeft size={15} />
+            Back
+          </Link>
 
-          {/* Use of Service */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              2. Use of Service
-            </h2>
+          <h1 className="font-display text-4xl font-bold text-gray-900 mb-2">
+            Terms of Service
+          </h1>
+          <p className="text-sm text-gray-500 mb-10">Last Updated: March 2026</p>
 
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Eligibility
-            </h3>
-            <p className="mb-4">
-              You must be at least 18 years of age to use the Service. By using
-              EasyToGive, you represent and warrant that you are 18 years of age
-              or older and have the legal capacity to enter into these Terms. If
-              you are under 18, you may not use the Service.
-            </p>
+          <div className="space-y-10 text-base text-gray-700 leading-relaxed">
 
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Account Responsibility
-            </h3>
-            <p>
-              You are responsible for maintaining the confidentiality of your
-              account credentials and for all activities that occur under your
-              account. You agree to notify us immediately of any unauthorized
-              use of your account. EasyToGive is not liable for any loss or
-              damage arising from your failure to maintain the security of your
-              account.
-            </p>
-          </section>
+            {/* 1. Acceptance */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                1. Acceptance of Terms
+              </h2>
+              <p className="mb-3">
+                These Terms of Service (&ldquo;Terms&rdquo;) constitute a legally binding
+                agreement between you and EasyToGive, Inc. (&ldquo;EasyToGive,&rdquo;
+                &ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) governing your
+                access to and use of easytogive.com and our services (collectively, the
+                &ldquo;Service&rdquo;).
+              </p>
+              <p>
+                By accessing or using the Service, you agree to be bound by these Terms. If
+                you do not agree, you may not use the Service. We reserve the right to modify
+                these Terms at any time; continued use after any changes constitutes your
+                acceptance of the revised Terms.
+              </p>
+            </section>
 
-          {/* Donations */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              3. Donations
-            </h2>
-            <p className="mb-3">
-              EasyToGive facilitates charitable donations to verified 501(c)(3)
-              nonprofit organizations. By initiating a donation through the
-              Service, you agree to the following:
-            </p>
-            <ul className="list-disc list-outside pl-5 space-y-3">
-              <li>
-                <strong>All donations are final.</strong> Donations processed
-                through EasyToGive are irrevocable. Once a transaction is
-                submitted, it cannot be reversed or refunded except at the sole
-                discretion of EasyToGive in cases of documented technical error.
-              </li>
-              <li>
-                <strong>Fiscal sponsorship.</strong> EasyToGive acts as an
-                intermediary facilitating the transfer of funds between donors
-                and recipient nonprofit organizations. We are not a charitable
-                organization ourselves and do not retain donated funds.
-              </li>
-              <li>
-                <strong>Processing fee.</strong> A standard payment processing
-                fee of 2.9% + $0.30 per transaction applies to each donation.
-                This fee covers credit and debit card processing costs charged
-                by our payment processor, Stripe. Donors may elect to cover
-                this fee on behalf of the recipient organization.
-              </li>
-              <li>
-                <strong>Tax deductibility.</strong> Donations to verified
-                501(c)(3) organizations through EasyToGive are tax-deductible to
-                the extent permitted by law. EasyToGive will provide a
-                consolidated donation receipt upon request. You are responsible
-                for consulting a qualified tax advisor regarding the
-                deductibility of your specific contributions.
-              </li>
-            </ul>
-          </section>
+            {/* 2. What We Are */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                2. What We Are
+              </h2>
+              <p className="mb-3">
+                EasyToGive is a <strong>for-profit marketplace</strong> that connects donors
+                with vetted nonprofit organizations. We are <strong>not</strong> a charitable
+                organization, a nonprofit, a foundation, or a donor-advised fund (DAF). We do
+                not provide any legal, tax, financial, or investment advice.
+              </p>
+              <p>
+                Donations are made directly to recipient 501(c)(3) nonprofits. EasyToGive
+                facilitates payment processing and disbursement but does not retain donated
+                funds beyond what is necessary to process and forward your contribution.
+              </p>
+            </section>
 
-          {/* Nonprofit Listings */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              4. Nonprofit Listings
-            </h2>
-            <p className="mb-3">
-              EasyToGive verifies the 501(c)(3) status of all listed
-              organizations; however, we do not endorse, guarantee, or take
-              responsibility for the activities, operations, or use of funds of
-              any listed organization.
-            </p>
-            <p>
-              EasyToGive reserves the right, in its sole discretion, to remove,
-              suspend, or decline any nonprofit listing at any time for any
-              reason, including but not limited to: loss of tax-exempt status,
-              credible reports of misuse of funds, violations of these Terms, or
-              activity inconsistent with our community standards.
-            </p>
-          </section>
+            {/* 3. Eligibility */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                3. Eligibility
+              </h2>
+              <p>
+                You must be at least <strong>18 years of age</strong> to use the Service. By
+                using EasyToGive, you represent and warrant that you are 18 or older and have
+                the legal capacity to enter into these Terms. If you are under 18, you may not
+                use the Service.
+              </p>
+            </section>
 
-          {/* Prohibited Uses */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              5. Prohibited Uses
-            </h2>
-            <p className="mb-3">You agree not to use the Service to:</p>
-            <ul className="list-disc list-outside pl-5 space-y-2">
-              <li>
-                Violate any applicable local, state, national, or international
-                law or regulation;
-              </li>
-              <li>
-                Submit false, misleading, or fraudulent information in
-                connection with any donation or nonprofit application;
-              </li>
-              <li>
-                Attempt to circumvent any security feature or access controls
-                of the Service;
-              </li>
-              <li>
-                Use automated scripts, bots, or other tools to scrape, crawl,
-                or otherwise access the Service without our prior written consent;
-              </li>
-              <li>
-                Engage in any activity that interferes with or disrupts the
-                integrity or performance of the Service or the servers and
-                networks connected to it.
-              </li>
-            </ul>
-          </section>
+            {/* 4. Your Account */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                4. Your Account
+              </h2>
+              <p className="mb-3">
+                You are responsible for maintaining the confidentiality of your account
+                credentials and for all activities that occur under your account. You agree
+                to notify us immediately of any unauthorized use of your account.
+              </p>
+              <p>
+                You agree to provide accurate, current, and complete information when creating
+                an account and to keep your information updated. EasyToGive reserves the right
+                to suspend or terminate accounts that contain false or misleading information.
+              </p>
+            </section>
 
-          {/* Intellectual Property */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              6. Intellectual Property
-            </h2>
-            <p>
-              The Service and its original content, features, and functionality
-              are and will remain the exclusive property of EasyToGive, Inc. and
-              its licensors. Our trademarks and trade dress may not be used in
-              connection with any product or service without the prior written
-              consent of EasyToGive. Nothing in these Terms grants you any right,
-              title, or interest in the Service or its content beyond the limited
-              license to use the Service as expressly provided herein.
-            </p>
-          </section>
+            {/* 5. Donations */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                5. Donations
+              </h2>
+              <p className="mb-3">
+                By initiating a donation through the Service, you agree to the following:
+              </p>
+              <ul className="list-disc list-outside pl-5 space-y-3">
+                <li>
+                  <strong>All donations are final and non-refundable.</strong> Once a
+                  transaction is submitted, it cannot be reversed or refunded except at the
+                  sole discretion of EasyToGive in cases of documented technical error.
+                </li>
+                <li>
+                  <strong>Non-refundable disclosure at checkout.</strong> The non-refundable
+                  nature of donations is disclosed on the checkout screen before you confirm
+                  payment. By completing checkout you acknowledge and accept this policy.
+                </li>
+                <li>
+                  <strong>Tax deductibility.</strong> Donations to verified 501(c)(3)
+                  organizations through EasyToGive are generally tax-deductible to the full
+                  extent permitted by law. You are responsible for consulting a qualified tax
+                  advisor regarding the deductibility of your specific contributions.
+                </li>
+              </ul>
+            </section>
 
-          {/* Limitation of Liability */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              7. Limitation of Liability
-            </h2>
-            <p className="mb-3">
-              To the maximum extent permitted by applicable law, EasyToGive, its
-              officers, directors, employees, and agents shall not be liable for
-              any indirect, incidental, special, consequential, or punitive
-              damages, including but not limited to loss of profits, data, or
-              goodwill, arising out of or in connection with your use of the
-              Service.
-            </p>
-            <p>
-              In no event shall EasyToGive&apos;s total liability to you for all
-              claims arising from or related to the Service exceed the greater of
-              (a) the total amount of fees you paid to EasyToGive in the twelve
-              months preceding the claim, or (b) one hundred dollars ($100).
-            </p>
-          </section>
+            {/* 6. Organizations */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                6. Organizations
+              </h2>
+              <p className="mb-3">
+                EasyToGive verifies the 501(c)(3) status of all listed organizations;
+                however, we do not endorse, guarantee, or assume responsibility for the
+                activities, operations, or use of funds of any listed organization. Listing
+                on EasyToGive is not an endorsement of the organization&apos;s effectiveness
+                or impact.
+              </p>
+              <p>
+                We reserve the right, in our sole discretion, to remove or suspend any
+                nonprofit listing at any time, including for loss of tax-exempt status,
+                credible reports of misuse of funds, or violations of these Terms.
+              </p>
+            </section>
 
-          {/* Termination */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              8. Termination
-            </h2>
-            <p>
-              We may terminate or suspend your account and access to the Service
-              at our sole discretion, without prior notice, for conduct that we
-              believe violates these Terms or is harmful to other users, us, or
-              third parties, or for any other reason. Upon termination, your
-              right to use the Service will immediately cease. Provisions of
-              these Terms that by their nature should survive termination shall
-              survive, including but not limited to ownership provisions,
-              warranty disclaimers, and limitations of liability.
-            </p>
-          </section>
+            {/* 7. User Conduct */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                7. User Conduct
+              </h2>
+              <p className="mb-3">You agree not to use the Service to:</p>
+              <ul className="list-disc list-outside pl-5 space-y-2">
+                <li>Violate any applicable local, state, national, or international law;</li>
+                <li>
+                  Submit false, misleading, or fraudulent information in connection with any
+                  donation or nonprofit application;
+                </li>
+                <li>
+                  Attempt to circumvent any security feature or access control of the Service;
+                </li>
+                <li>
+                  Use automated scripts, bots, or scrapers to access the Service without our
+                  prior written consent;
+                </li>
+                <li>
+                  Interfere with or disrupt the integrity or performance of the Service or its
+                  connected infrastructure.
+                </li>
+              </ul>
+            </section>
 
-          {/* Changes to Terms */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              9. Changes to Terms
-            </h2>
-            <p>
-              We reserve the right to modify these Terms at any time. We will
-              notify you of material changes by posting the updated Terms on this
-              page with a revised &ldquo;Last updated&rdquo; date and, where
-              required by law, by sending notice to the email address associated
-              with your account. Your continued use of the Service after the
-              effective date of any changes constitutes your acceptance of the
-              revised Terms.
-            </p>
-          </section>
+            {/* 8. User Content */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                8. User Content
+              </h2>
+              <p className="mb-3">
+                If you submit any content to EasyToGive — including nonprofit profile
+                information, reviews, or comments — you grant us a non-exclusive, worldwide,
+                royalty-free license to use, display, and distribute that content in
+                connection with the Service.
+              </p>
+              <p>
+                You represent that you have all necessary rights to the content you submit and
+                that it does not violate any third-party intellectual property rights, privacy
+                rights, or applicable law. EasyToGive reserves the right to remove any content
+                that violates these Terms or our community standards.
+              </p>
+            </section>
 
-          {/* Governing Law */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              10. Governing Law
-            </h2>
-            <p>
-              These Terms shall be governed by and construed in accordance with
-              the laws of the State of North Dakota, without regard to its conflict
-              of law provisions. Any dispute arising from or relating to these
-              Terms or the Service shall be subject to the exclusive jurisdiction
-              of the state and federal courts located in the State of North Dakota,
-              and you consent to personal jurisdiction in such courts.
-            </p>
-          </section>
+            {/* 9. Platform Fee */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                9. Platform Fee
+              </h2>
+              <p className="mb-3">
+                EasyToGive charges a <strong>1% platform fee</strong> on each donation to
+                support the cost of operating and maintaining the Service. This fee is in
+                addition to Stripe&apos;s standard payment processing fees and is disclosed
+                clearly at checkout before you confirm your donation.
+              </p>
+              <p>
+                The platform fee is not a charitable contribution and is not tax-deductible.
+                Only the net amount received by the recipient nonprofit is eligible for a
+                charitable deduction.
+              </p>
+            </section>
 
-          {/* Contact */}
-          <section>
-            <h2 className="font-display text-2xl font-semibold text-gray-900 mb-4">
-              11. Contact
-            </h2>
-            <p>
-              If you have questions about these Terms, please contact us at:
-            </p>
-            <p className="mt-3">
-              <a
-                href="mailto:seth@easytogive.com"
-                className="font-medium underline underline-offset-2"
-                style={{ color: "#1a7a4a" }}
-              >
-                seth@easytogive.com
-              </a>
-            </p>
-            <p className="mt-3 text-sm text-gray-500">
-              EasyToGive &bull; North Dakota, United States
-            </p>
-          </section>
+            {/* 10. Intellectual Property */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                10. Intellectual Property
+              </h2>
+              <p>
+                The Service and its original content, features, and functionality are and will
+                remain the exclusive property of EasyToGive, Inc. and its licensors. Our
+                trademarks and trade dress may not be used in connection with any product or
+                service without our prior written consent. Nothing in these Terms grants you
+                any right, title, or interest in the Service beyond the limited license to use
+                it as described herein.
+              </p>
+            </section>
+
+            {/* 11. Disclaimers */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                11. Disclaimers
+              </h2>
+              <p className="mb-3">
+                THE SERVICE IS PROVIDED &ldquo;AS IS&rdquo; AND &ldquo;AS AVAILABLE&rdquo;
+                WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT
+                LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+                PURPOSE, AND NON-INFRINGEMENT.
+              </p>
+              <p>
+                EasyToGive does not warrant that the Service will be uninterrupted, error-free,
+                or free of viruses or other harmful components. We do not guarantee the
+                accuracy or completeness of any information on the platform, including
+                nonprofit profiles and tax status information.
+              </p>
+            </section>
+
+            {/* 12. Limitation of Liability */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                12. Limitation of Liability
+              </h2>
+              <p className="mb-3">
+                To the maximum extent permitted by applicable law, EasyToGive, its officers,
+                directors, employees, and agents shall not be liable for any indirect,
+                incidental, special, consequential, or punitive damages — including loss of
+                profits, data, or goodwill — arising out of or in connection with your use of
+                the Service.
+              </p>
+              <p>
+                In no event shall EasyToGive&apos;s total liability to you for all claims
+                exceed the greater of (a) the total platform fees you paid to EasyToGive in
+                the twelve months preceding the claim, or (b) one hundred dollars ($100).
+              </p>
+            </section>
+
+            {/* 13. Governing Law */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                13. Governing Law
+              </h2>
+              <p>
+                These Terms shall be governed by and construed in accordance with the laws of
+                the State of <strong>North Dakota</strong>, without regard to its conflict of
+                law provisions. Any dispute arising from or relating to these Terms or the
+                Service shall be subject to the exclusive jurisdiction of the state and federal
+                courts located in North Dakota, and you consent to personal jurisdiction in
+                such courts.
+              </p>
+            </section>
+
+            {/* 14. Changes */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                14. Changes to These Terms
+              </h2>
+              <p>
+                We reserve the right to modify these Terms at any time. We will notify you of
+                material changes by posting the updated Terms on this page with a revised
+                &ldquo;Last Updated&rdquo; date and, where required by law, by sending notice
+                to the email address associated with your account. Your continued use of the
+                Service after changes become effective constitutes your acceptance of the
+                revised Terms.
+              </p>
+            </section>
+
+            {/* 15. Contact */}
+            <section>
+              <h2 className="font-display text-xl font-semibold text-gray-900 mb-3">
+                15. Contact
+              </h2>
+              <p>
+                If you have questions about these Terms, please contact us at:
+              </p>
+              <p className="mt-3">
+                <a
+                  href="mailto:seth@easytogive.com"
+                  className="font-medium underline underline-offset-2"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  seth@easytogive.com
+                </a>
+              </p>
+              <p className="mt-3 text-sm text-gray-500">
+                EasyToGive, Inc. &bull; North Dakota, United States
+              </p>
+            </section>
+
+          </div>
         </div>
       </div>
     </main>

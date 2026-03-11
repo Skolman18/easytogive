@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { VideoOff, GripHorizontal } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
+import { useEditMode } from "@/components/EditModeContext";
 
 const ADMIN_EMAIL = "sethmitzel@gmail.com";
 const MIN_SIZE = 30;
@@ -89,6 +90,7 @@ export default function OrgVideoEmbed({
 }) {
   const [size, setSize] = useState(Math.max(MIN_SIZE, Math.min(MAX_SIZE, initialSize)));
   const [isAdmin, setIsAdmin] = useState(false);
+  const { viewMode } = useEditMode();
   const [isDragging, setIsDragging] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startX: number; startSize: number } | null>(null);
@@ -220,7 +222,7 @@ export default function OrgVideoEmbed({
       </p>
 
       {/* Resize handle — top-right corner, admin only */}
-      {isAdmin && (
+      {isAdmin && viewMode === "admin" && (
         <div
           onMouseDown={onMouseDown}
           onTouchStart={onTouchStart}

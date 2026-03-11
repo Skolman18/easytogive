@@ -472,5 +472,6 @@ export function formatDate(dateStr: string): string {
 }
 
 export function getProgressPercent(raised: number, goal: number): number {
+  if (!goal || goal <= 0) return 0;
   return Math.min(Math.round((raised / goal) * 100), 100);
 }

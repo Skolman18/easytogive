@@ -11,6 +11,7 @@ export default function SignUpPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -19,6 +20,10 @@ export default function SignUpPage() {
     e.preventDefault();
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (!termsAccepted) {
+      setError("You must agree to the Terms of Service and Privacy Policy to continue.");
       return;
     }
     setLoading(true);
@@ -148,6 +153,36 @@ export default function SignUpPage() {
               />
             </div>
 
+            {/* Terms checkbox */}
+            <label className="flex items-start gap-2.5 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded flex-shrink-0 accent-green-700"
+              />
+              <span className="text-sm text-gray-600 leading-snug">
+                I agree to the{" "}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="font-medium underline underline-offset-2"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="font-medium underline underline-offset-2"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  Privacy Policy
+                </Link>
+              </span>
+            </label>
+
             {error && (
               <div
                 className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
@@ -191,9 +226,6 @@ export default function SignUpPage() {
           </p>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-5">
-          By creating an account you agree to our Terms of Service and Privacy Policy.
-        </p>
       </div>
     </div>
   );

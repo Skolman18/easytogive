@@ -5,18 +5,18 @@ const FOOTER_LINKS = {
   Platform: [
     { href: "/discover", label: "Discover Orgs" },
     { href: "/portfolio", label: "My Portfolio" },
-    { href: "/profile", label: "Giving History" },
+    { href: "/wallet", label: "Giving History" },
   ],
   Company: [
     { href: "/about", label: "About Us" },
-    { href: "/how-it-works", label: "How It Works" },
-    { href: "/for-nonprofits", label: "For Nonprofits" },
-    { href: "/blog", label: "Blog" },
+    { href: "/#how-it-works", label: "How It Works" },
+    { href: "/about", label: "For Nonprofits" },
   ],
   Legal: [
     { href: "/privacy", label: "Privacy Policy" },
     { href: "/terms", label: "Terms of Service" },
     { href: "/tax-faq", label: "Tax FAQ" },
+    { href: "/compliance", label: "Compliance & Trust" },
   ],
 };
 

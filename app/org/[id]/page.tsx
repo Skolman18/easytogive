@@ -301,46 +301,52 @@ export default async function OrgPage({
               />
 
               <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4" />
-                  <EditableField
-                    orgId={supabaseOrg ? id : undefined}
-                    field="location"
-                    value={org.location}
-                    as="span"
-                  />
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4" />
-                  Founded{" "}
-                  <EditableField
-                    orgId={supabaseOrg ? id : undefined}
-                    field="founded"
-                    value={String(org.founded)}
-                    as="span"
-                  />
-                </span>
-                {displaySettings.show_donors && (
-                <span className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4" />
-                  {org.donors.toLocaleString()} donors
-                </span>
+                {org.location?.trim() && (
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4" />
+                    <EditableField
+                      orgId={supabaseOrg ? id : undefined}
+                      field="location"
+                      value={org.location}
+                      as="span"
+                    />
+                  </span>
                 )}
-                <a
-                  href={org.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 hover:text-green-700 transition-colors"
-                >
-                  <Globe className="w-4 h-4" />
-                  <EditableField
-                    orgId={supabaseOrg ? id : undefined}
-                    field="website"
-                    value={org.website || ""}
-                    as="span"
-                  />
-                  <ExternalLink className="w-3 h-3" />
-                </a>
+                {org.founded && String(org.founded) !== "0" && (
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4" />
+                    Founded{" "}
+                    <EditableField
+                      orgId={supabaseOrg ? id : undefined}
+                      field="founded"
+                      value={String(org.founded)}
+                      as="span"
+                    />
+                  </span>
+                )}
+                {displaySettings.show_donors && org.donors > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <Users className="w-4 h-4" />
+                    {org.donors.toLocaleString()} donors
+                  </span>
+                )}
+                {org.website?.trim() && (
+                  <a
+                    href={org.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 hover:text-green-700 transition-colors"
+                  >
+                    <Globe className="w-4 h-4" />
+                    <EditableField
+                      orgId={supabaseOrg ? id : undefined}
+                      field="website"
+                      value={org.website}
+                      as="span"
+                    />
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
               </div>
             </div>
 

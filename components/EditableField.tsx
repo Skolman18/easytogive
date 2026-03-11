@@ -32,7 +32,8 @@ export default function EditableField({
   style,
   multiline = false,
 }: Props) {
-  const { editMode } = useEditMode();
+  const { editMode, viewMode } = useEditMode();
+  const canEdit = editMode && viewMode === "admin";
   const [editing, setEditing] = useState(false);
   const [current, setCurrent] = useState(value);
   const [draft, setDraft] = useState(value);
@@ -72,7 +73,7 @@ export default function EditableField({
   }
 
   // Not in edit mode — render normally
-  if (!editMode) {
+  if (!canEdit) {
     return React.createElement(Tag, { className, style }, current);
   }
 

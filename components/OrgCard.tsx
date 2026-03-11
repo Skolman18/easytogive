@@ -1,6 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { MapPin, CheckCircle, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MapPin, CheckCircle, Users, Plus, Check } from "lucide-react";
 import { Organization, formatCurrency, getProgressPercent } from "@/lib/placeholder-data";
+import { createClient } from "@/lib/supabase-browser";
 
 export interface OrgDisplaySettings {
   show_raised?: boolean;
@@ -23,23 +28,78 @@ const CATEGORY_LABELS: Record<string, string> = {
   local: "Local Cause",
 };
 
+function AddToPortfolioButton({ orgId }: { orgId: string }) {
+  const router = useRouter();
+  const [added, setAdded] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleClick(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (loading) return;
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        router.push("/auth/signin?redirectTo=/discover");
+        return;
+      }
+      await (supabase as any)
+        .from("portfolio_allocations")
+        .upsert(
+          { user_id: userData.user.id, org_id: orgId, percentage: 0 },
+          { onConflict: "user_id,org_id" }
+        );
+      setAdded(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (added) {
+    return (
+      <div
+        className="flex items-center justify-center gap-1.5 py-2 text-sm font-semibold"
+        style={{ color: "#1a7a4a" }}
+      >
+        <Check className="w-4 h-4" />
+        Added to Portfolio
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60"
+      style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+    >
+      <Plus className="w-4 h-4" />
+      {loading ? "Adding…" : "Add to Portfolio"}
+    </button>
+  );
+}
+
 export default function OrgCard({ org, compact = false, displaySettings }: OrgCardProps) {
   const progress = getProgressPercent(org.raised, org.goal);
   const categoryLabel = CATEGORY_LABELS[org.category] || org.category;
 
   // If no displaySettings passed, show everything (backward compat / placeholder data).
-  // If settings are provided, respect each flag.
   const showRaised = displaySettings ? (displaySettings.show_raised ?? false) : true;
   const showDonors = displaySettings ? (displaySettings.show_donors ?? false) : true;
   const showGoal = displaySettings ? (displaySettings.show_goal ?? false) : true;
   const showStats = showRaised || showDonors || showGoal;
+  const hasGoal = (org.goal ?? 0) > 0;
 
   return (
-    <Link href={`/org/${org.id}`} className="block group">
-      <div
-        className="card-hover rounded-2xl overflow-hidden border bg-white h-full flex flex-col"
-        style={{ borderColor: "#e5e1d8" }}
-      >
+    <div
+      className="group rounded-2xl overflow-hidden border bg-white h-full flex flex-col card-hover"
+      style={{ borderColor: "#e5e1d8" }}
+    >
+      {/* Main card content — wrapped in Link */}
+      <Link href={`/org/${org.id}`} className="flex-1 flex flex-col">
         {/* Image */}
         <div className="relative h-48 overflow-hidden bg-gray-100 flex-shrink-0">
           <img
@@ -83,8 +143,8 @@ export default function OrgCard({ org, compact = false, displaySettings }: OrgCa
             </p>
           )}
 
-          {/* Stats — only render if at least one stat is enabled */}
-          {showStats && (
+          {/* Stats — only when enabled and a real goal exists */}
+          {showStats && hasGoal && (
             <div className="mt-auto pt-4">
               {showRaised && (
                 <>
@@ -122,7 +182,12 @@ export default function OrgCard({ org, compact = false, displaySettings }: OrgCa
             </div>
           )}
         </div>
+      </Link>
+
+      {/* Add to Portfolio — outside the Link to avoid nested anchor */}
+      <div className="px-5 pb-4">
+        <AddToPortfolioButton orgId={org.id} />
       </div>
-    </Link>
+    </div>
   );
 }

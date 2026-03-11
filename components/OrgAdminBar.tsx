@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Pencil, X } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
+import { useEditMode } from "@/components/EditModeContext";
 
 const ADMIN_EMAIL = "sethmitzel@gmail.com";
 
@@ -15,6 +16,7 @@ interface Props {
 export default function OrgAdminBar({ orgId, orgName }: Props) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const { viewMode } = useEditMode();
 
   useEffect(() => {
     createClient().auth.getUser().then(({ data: { user } }) => {
@@ -22,7 +24,7 @@ export default function OrgAdminBar({ orgId, orgName }: Props) {
     });
   }, []);
 
-  if (!isAdmin || dismissed) return null;
+  if (!isAdmin || dismissed || viewMode !== "admin") return null;
 
   return (
     <div

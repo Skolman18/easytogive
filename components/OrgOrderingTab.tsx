@@ -22,14 +22,6 @@ import { GripVertical } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import Toggle from "@/components/Toggle";
 
-const CATEGORY_COLORS: Record<string, string> = {
-  churches: "#7c3aed",
-  "animal-rescue": "#f59e0b",
-  nonprofits: "#3b82f6",
-  education: "#6366f1",
-  environment: "#10b981",
-  local: "#f97316",
-};
 
 const CATEGORY_LABELS: Record<string, string> = {
   churches: "Church",
@@ -40,8 +32,32 @@ const CATEGORY_LABELS: Record<string, string> = {
   local: "Local Cause",
 };
 
-function SortableRow({ org, onToggle }: { org: any; onToggle: (id: string, field: string, val: boolean) => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: org.id });
+// Which DB column each page uses for ordering
+const PAGE_CONFIGS = {
+  home: {
+    label: "Home Page",
+    orderField: "home_sort_order",
+    description: "Controls the order organizations appear in the Browse section on the home page.",
+  },
+  discover: {
+    label: "Discover Page",
+    orderField: "sort_order",
+    description: "Controls the order organizations appear on the Discover page.",
+  },
+} as const;
+
+type PageKey = keyof typeof PAGE_CONFIGS;
+
+function SortableRow({
+  org,
+  onToggle,
+}: {
+  org: any;
+  onToggle: (id: string, field: string, val: boolean) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: org.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -50,7 +66,6 @@ function SortableRow({ org, onToggle }: { org: any; onToggle: (id: string, field
     zIndex: isDragging ? 10 : undefined,
   };
 
-  const catColor = CATEGORY_COLORS[org.category] || "#6b7280";
   const catLabel = CATEGORY_LABELS[org.category] || org.category;
 
   return (
@@ -74,17 +89,14 @@ function SortableRow({ org, onToggle }: { org: any; onToggle: (id: string, field
         {org.image_url ? (
           <img src={org.image_url} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full" style={{ backgroundColor: catColor + "20" }} />
+          <div className="w-full h-full bg-gray-200" />
         )}
       </div>
 
       {/* Name + category */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-900 truncate">{org.name}</p>
-        <span
-          className="inline-block px-1.5 py-0.5 rounded text-xs font-medium text-white"
-          style={{ backgroundColor: catColor }}
-        >
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
           {catLabel}
         </span>
       </div>
@@ -119,7 +131,8 @@ function SortableRow({ org, onToggle }: { org: any; onToggle: (id: string, field
   );
 }
 
-export default function OrgOrderingTab() {
+function OrderingList({ pageKey }: { pageKey: PageKey }) {
+  const config = PAGE_CONFIGS[pageKey];
   const [orgs, setOrgs] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -129,13 +142,16 @@ export default function OrgOrderingTab() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  useEffect(() => { loadOrgs(); }, []);
+  useEffect(() => {
+    loadOrgs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageKey]);
 
   async function loadOrgs() {
     const { data } = await (createClient() as any)
       .from("organizations")
-      .select("id, name, category, image_url, featured, verified, sort_order")
-      .order("sort_order", { ascending: true })
+      .select(`id, name, category, image_url, featured, verified, visible, sort_order, home_sort_order`)
+      .order(config.orderField, { ascending: true })
       .order("name");
     if (data) setOrgs(data);
   }
@@ -149,12 +165,14 @@ export default function OrgOrderingTab() {
     const reordered = arrayMove(orgs, oldIdx, newIdx);
     setOrgs(reordered);
 
-    // Save sort_order for all reordered items
     setSaving(true);
     const supabase = createClient() as any;
     await Promise.all(
       reordered.map((org, i) =>
-        supabase.from("organizations").update({ sort_order: i }).eq("id", org.id)
+        supabase
+          .from("organizations")
+          .update({ [config.orderField]: i })
+          .eq("id", org.id)
       )
     );
     setSaving(false);
@@ -163,9 +181,7 @@ export default function OrgOrderingTab() {
   }
 
   async function handleToggle(id: string, field: string, val: boolean) {
-    setOrgs((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, [field]: val } : o))
-    );
+    setOrgs((prev) => prev.map((o) => (o.id === id ? { ...o, [field]: val } : o)));
     await (createClient() as any)
       .from("organizations")
       .update({ [field]: val })
@@ -174,14 +190,20 @@ export default function OrgOrderingTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">Ordering & Visibility</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Drag rows to reorder. Toggles save instantly.</p>
+          <h2 className="text-base font-semibold text-gray-900">
+            {config.label} — Ordering &amp; Visibility
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">{config.description}</p>
         </div>
-        {saving && <p className="text-sm text-gray-400">Saving…</p>}
-        {message && <p className="text-sm text-green-600">{message}</p>}
+        <div className="text-sm">
+          {saving && <span className="text-gray-400">Saving…</span>}
+          {!saving && message && <span className="text-green-600">{message}</span>}
+        </div>
       </div>
+
+      <p className="text-xs text-gray-400 mb-4">Drag rows to reorder. Toggles save instantly.</p>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={orgs.map((o) => o.id)} strategy={verticalListSortingStrategy}>
@@ -194,6 +216,34 @@ export default function OrgOrderingTab() {
       {orgs.length === 0 && (
         <div className="text-center py-12 text-gray-400 text-sm">No organizations found.</div>
       )}
+    </div>
+  );
+}
+
+export default function OrgOrderingTab() {
+  const [page, setPage] = useState<PageKey>("home");
+
+  return (
+    <div>
+      {/* Sub-tabs */}
+      <div className="flex gap-0 border-b mb-6" style={{ borderColor: "#e5e7eb" }}>
+        {(Object.keys(PAGE_CONFIGS) as PageKey[]).map((key) => (
+          <button
+            key={key}
+            onClick={() => setPage(key)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
+              page === key
+                ? "border-green-600 text-green-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+            style={page === key ? { borderColor: "#1a7a4a", color: "#1a7a4a" } : {}}
+          >
+            {PAGE_CONFIGS[key].label}
+          </button>
+        ))}
+      </div>
+
+      <OrderingList key={page} pageKey={page} />
     </div>
   );
 }

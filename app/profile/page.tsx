@@ -148,14 +148,6 @@ function saveDashPrefs(prefs: DashPrefs) {
   localStorage.setItem(DASH_PREFS_KEY, JSON.stringify(prefs));
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  churches: "#7c3aed",
-  "animal-rescue": "#f59e0b",
-  nonprofits: "#3b82f6",
-  education: "#6366f1",
-  environment: "#10b981",
-  local: "#f97316",
-};
 
 function groupByReceipt(records: typeof GIVING_HISTORY) {
   const groups: Record<string, typeof GIVING_HISTORY> = {};
@@ -499,8 +491,7 @@ function ProfilePageInner() {
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div
-                              className="w-2 h-2 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: CATEGORY_COLORS[record.category] || "#1a7a4a" }}
+                              className="w-2 h-2 rounded-full flex-shrink-0 bg-gray-400"
                             />
                             <Link
                               href={`/org/${record.orgId}`}
@@ -571,7 +562,7 @@ function ProfilePageInner() {
                         <div className="flex items-center gap-2">
                           <div
                             className="w-2 h-2 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: CATEGORY_COLORS[cat] || "#1a7a4a" }}
+                            style={{ backgroundColor: "#1a7a4a" }}
                           />
                           <span className="text-xs font-medium text-gray-700 capitalize">
                             {cat.replace("-", " ")}
@@ -592,7 +583,7 @@ function ProfilePageInner() {
                           className="h-1.5 rounded-full transition-all duration-500"
                           style={{
                             width: `${pct}%`,
-                            backgroundColor: CATEGORY_COLORS[cat] || "#1a7a4a",
+                            backgroundColor: "#1a7a4a",
                           }}
                         />
                       </div>

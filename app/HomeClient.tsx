@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   ShieldCheck,
@@ -11,6 +12,7 @@ import {
   Heart,
   ChevronDown,
   CheckCircle,
+  Search,
 } from "lucide-react";
 import { CATEGORIES, CAUSE_TO_CATEGORY, CATEGORY_LABELS } from "@/lib/categories";
 import type { Organization } from "@/lib/placeholder-data";
@@ -158,7 +160,9 @@ export default function HomeClient({
   displaySettingsMap,
   stats = { orgCount: 0, totalRaised: 0, userCount: 0 },
 }: Props) {
+  const router = useRouter();
   const [activeChip, setActiveChip] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [userCity, setUserCity] = useState<string | null>(null);
   const [localOrgs, setLocalOrgs] = useState<Organization[]>([]);
   const [recommendedOrgs, setRecommendedOrgs] = useState<Organization[]>([]);
@@ -275,7 +279,7 @@ export default function HomeClient({
               settingKey="hero_subtext"
               value={
                 siteSettings?.hero_subtext ??
-                "Discover thousands of verified organizations, build your giving portfolio, and donate to multiple causes with one simple transaction."
+                "Discover verified organizations, churches, and missionaries. Build your giving portfolio and donate to multiple causes with one simple transaction."
               }
               as="p"
               className="text-lg text-gray-500 leading-relaxed mb-8 max-w-[480px]"
@@ -345,41 +349,34 @@ export default function HomeClient({
       </section>
 
       {/* ── STATS ─────────────────────────────────────────────────────── */}
-      <section
-        ref={statsRef}
-        className="border-b"
-        style={{ borderColor: "#f0ede6" }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              {
-                value: orgCountAnim.toLocaleString(),
-                label: "Verified Organizations",
-              },
-              {
-                value: formatRaised(raisedAnim),
-                label: "Raised Through EasyToGive",
-              },
-              {
-                value: userCountAnim.toLocaleString(),
-                label: "Active Givers",
-              },
-              {
-                value: "100%",
-                label: "Tax-Deductible",
-              },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="font-display text-2xl md:text-3xl font-bold text-gray-900 mb-1">
-                  {s.value}
-                </div>
-                <div className="text-xs text-gray-500">{s.label}</div>
-              </div>
-            ))}
+      {stats.orgCount > 0 && (
+        <section
+          ref={statsRef}
+          className="border-b"
+          style={{ borderColor: "#f0ede6" }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div className="flex flex-wrap justify-center gap-x-12 gap-y-6">
+              {[
+                { value: `${orgCountAnim.toLocaleString()}+`, label: "Verified Organizations" },
+                stats.userCount > 0
+                  ? { value: userCountAnim.toLocaleString(), label: "Active Givers" }
+                  : null,
+                { value: "100%", label: "Tax-Deductible Giving" },
+              ]
+                .filter(Boolean)
+                .map((s) => (
+                  <div key={s!.label} className="text-center">
+                    <div className="font-display text-2xl md:text-3xl font-bold text-gray-900 mb-1">
+                      {s!.value}
+                    </div>
+                    <div className="text-xs text-gray-500">{s!.label}</div>
+                  </div>
+                ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── RECOMMENDED FOR YOU ───────────────────────────────────────── */}
       {recommendedOrgs.length > 0 && (
@@ -422,6 +419,33 @@ export default function HomeClient({
             View all <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
+
+        {/* Search bar */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (searchQuery.trim()) router.push(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
+            else router.push("/discover");
+          }}
+          className="relative mb-6 max-w-xl"
+        >
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search organizations, causes, or locations…"
+            className="w-full pl-11 pr-28 py-3 rounded-full border text-sm outline-none focus:border-green-600 transition-colors"
+            style={{ borderColor: "#e5e1d8" }}
+          />
+          <button
+            type="submit"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-full text-xs font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: "#1a7a4a" }}
+          >
+            Search
+          </button>
+        </form>
 
         {/* Category chips — horizontal scroll */}
         <div
@@ -703,11 +727,10 @@ export default function HomeClient({
           style={{ backgroundColor: "#e8f5ee" }}
         >
           <h2 className="font-display text-4xl font-bold text-gray-900 mb-3">
-            Ready to give smarter?
+            Start making your giving count.
           </h2>
           <p className="text-gray-600 mb-8 max-w-md mx-auto text-sm leading-relaxed">
-            Join donors who have simplified their charitable giving with EasyToGive.
-            It&apos;s free to start.
+            Start your giving portfolio in 2 minutes. Free forever — no fees for donors.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Link
@@ -715,14 +738,14 @@ export default function HomeClient({
               className="px-7 py-3 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90"
               style={{ backgroundColor: "#1a7a4a" }}
             >
-              Get Started Free
+              Build My Portfolio →
             </Link>
             <Link
               href="/discover"
               className="px-7 py-3 rounded-full font-semibold text-sm border bg-white transition-all hover:bg-gray-50"
               style={{ color: "#374151", borderColor: "#d1d5db" }}
             >
-              Browse Causes
+              Explore Organizations
             </Link>
           </div>
         </div>

@@ -30,6 +30,13 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [causesBanner, setCausesBanner] = useState(false);
 
+  // Read ?q= from URL on mount (e.g. from homepage search)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    if (q) setQuery(q);
+  }, []);
+
   useEffect(() => {
     async function loadUserCauses() {
       const supabase = createClient() as any;
@@ -182,14 +189,13 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
             <button
               key={cat.value}
               onClick={() => setActiveCategory(cat.value)}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 whitespace-nowrap"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap"
               style={
                 activeCategory === cat.value
                   ? { backgroundColor: "#1a7a4a", color: "white" }
                   : { backgroundColor: "#e5e1d8", color: "#374151" }
               }
             >
-              <span>{cat.icon}</span>
               {cat.label}
             </button>
           ))}

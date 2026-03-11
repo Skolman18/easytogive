@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
               "font-src 'self' data:",
               "connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://www.youtube.com https://player.vimeo.com",
               "frame-src https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://vimeo.com https://js.stripe.com",
+              "media-src 'self' https://*.supabase.co blob:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "frame-ancestors 'none'",
             ].join("; "),
           },
           { key: "X-Frame-Options", value: "DENY" },
@@ -29,6 +33,7 @@ const nextConfig: NextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
+          { key: "X-XSS-Protection", value: "1; mode=block" },
         ],
       },
     ];

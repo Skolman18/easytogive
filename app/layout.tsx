@@ -6,6 +6,7 @@ import { EditModeProvider } from "@/components/EditModeContext";
 import EditModeButton from "@/components/EditModeButton";
 import LocationPrompt from "@/components/LocationPrompt";
 import CookieConsent from "@/components/CookieConsent";
+import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 
 // ── Env var audit (warns at startup, never crashes) ──────────────────────────
 const REQUIRED_ENV_VARS = [
@@ -40,6 +41,7 @@ export default function RootLayout({
           <EditModeButton />
           <LocationPrompt />
           <CookieConsent />
+          <AdminViewSwitcher />
         </EditModeProvider>
       </body>
     </html>
