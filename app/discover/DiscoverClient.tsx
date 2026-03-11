@@ -255,7 +255,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
                           : { backgroundColor: "#f3f4f6", color: "#374151" }
                       }
                     >
-                      {cat.icon} {cat.label}
+                      {cat.label}
                     </button>
                   ))}
                 </div>
