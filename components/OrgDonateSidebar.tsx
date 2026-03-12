@@ -61,8 +61,13 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
       const supabase = createClient();
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
+      if (!userId) {
+        setRecurringStatus("error");
+        setTimeout(() => setRecurringStatus("idle"), 3000);
+        return;
+      }
       await (supabase as any).from("recurring_donations").insert({
-        user_id: userId ?? null,
+        user_id: userId,
         org_id: org.id,
         org_name: org.name,
         amount_cents: Math.round(effectiveAmount * 100),

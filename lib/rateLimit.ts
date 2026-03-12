@@ -1,5 +1,9 @@
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
+/**
+ * In-memory rate limit. Resets on server restart. On serverless/multi-instance
+ * deployments, consider Redis or similar for shared state.
+ */
 export function checkRateLimit(
   identifier: string,
   action: string,

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -I https://easytogive.vercel.app/org/cedar-hills-community-church 2>&1 | head -1)",
+      "Bash(curl -s -I https://easytogive.vercel.app/privacy 2>&1 | head -1 && curl -s https://easytogive.vercel.app/privacy 2>&1 | grep -c \".\" | head -1)",
+      "Bash(curl -s -I https://easytogive.vercel.app/terms 2>&1 | head -1 && curl -s https://easytogive.vercel.app/terms 2>&1 | grep -c \".\" | head -1)",
+      "Bash(curl -s -I https://easytogive.vercel.app/tax-faq 2>&1 | head -1 && curl -s https://easytogive.vercel.app/tax-faq 2>&1 | grep -c \".\" | head -1)",
+      "Bash(curl -s -I https://easytogive.vercel.app/compliance 2>&1 | head -1 && curl -s https://easytogive.vercel.app/compliance 2>&1 | grep -c \".\" | head -1)",
+      "Bash(curl -s https://easytogive.vercel.app/auth/signup 2>&1 | grep -E \"Terms of Service|Privacy Policy\" | head -5)",
+      "Bash(curl -s https://easytogive.vercel.app/privacy 2>&1 | wc -c)",
+      "Bash(curl -s https://easytogive.vercel.app/terms 2>&1 | wc -c)",
+      "Bash(curl -s https://easytogive.vercel.app/tax-faq 2>&1 | wc -c)",
+      "Bash(curl -s https://easytogive.vercel.app/compliance 2>&1 | wc -c)",
+      "Bash(npx vercel --prod 2>&1 | tail -6)"
+    ]
+  }
+}

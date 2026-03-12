@@ -12,6 +12,7 @@ const DEFAULT_NAV_LINKS = [
   { href: "/missionaries", label: "Missionaries" },
   { href: "/portfolio", label: "My Portfolio" },
   { href: "/about", label: "About" },
+  { href: "/tax-information", label: "Tax Information" },
   { href: "/profile", label: "Profile" },
 ];
 

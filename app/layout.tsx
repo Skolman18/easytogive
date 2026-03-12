@@ -7,12 +7,15 @@ import EditModeButton from "@/components/EditModeButton";
 import LocationPrompt from "@/components/LocationPrompt";
 import CookieConsent from "@/components/CookieConsent";
 import AdminViewSwitcher from "@/components/AdminViewSwitcher";
+import StagingBanner from "@/components/StagingBanner";
 
 // ── Env var audit (warns at startup, never crashes) ──────────────────────────
 const REQUIRED_ENV_VARS = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "GROQ_API_KEY",
+  "STRIPE_SECRET_KEY",
+  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
 ];
 for (const key of REQUIRED_ENV_VARS) {
   if (!process.env[key]) {
@@ -34,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        <StagingBanner />
         <EditModeProvider>
           <Navbar />
           <main className="min-h-screen">{children}</main>

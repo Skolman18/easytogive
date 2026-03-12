@@ -10,8 +10,31 @@ const VALID_CATEGORIES = [
   "local",
 ];
 
+/** Allow only https URLs and block localhost / private IPs to prevent SSRF. */
+function isUrlAllowed(input: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(input);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:") return false;
+  const host = parsed.hostname.toLowerCase();
+  if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost")) return false;
+  if (host.startsWith("192.168.") || host.startsWith("10.") || host.startsWith("172.16.")) return false;
+  if (host === "[::1]" || host === "0.0.0.0") return false;
+  return true;
+}
+
 export async function POST(req: NextRequest) {
   try {
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json(
+        { error: "Autofill is temporarily unavailable." },
+        { status: 503 }
+      );
+    }
+
     // Rate limit: max 10 autofill requests per IP per hour
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
     const { allowed } = checkRateLimit(ip, "autofill-org", 10, 60 * 60 * 1000);
@@ -22,9 +45,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { url } = await req.json();
-    if (!url) {
+    let body: { url?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+    }
+
+    const { url } = body;
+    if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "url is required" }, { status: 400 });
+    }
+
+    if (!isUrlAllowed(url)) {
+      return NextResponse.json(
+        { error: "Only https URLs are allowed. Localhost and private URLs are not permitted." },
+        { status: 400 }
+      );
     }
 
     // Fetch the webpage
