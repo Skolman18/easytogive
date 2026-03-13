@@ -17,6 +17,7 @@ interface OrgCardProps {
   org: Organization;
   compact?: boolean;
   displaySettings?: OrgDisplaySettings;
+  politicalNotDeductible?: boolean;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -82,7 +83,12 @@ function AddToPortfolioButton({ orgId }: { orgId: string }) {
   );
 }
 
-export default function OrgCard({ org, compact = false, displaySettings }: OrgCardProps) {
+export default function OrgCard({
+  org,
+  compact = false,
+  displaySettings,
+  politicalNotDeductible = false,
+}: OrgCardProps) {
   const progress = getProgressPercent(org.raised, org.goal);
   const categoryLabel = CATEGORY_LABELS[org.category] || org.category;
 
@@ -115,6 +121,20 @@ export default function OrgCard({ org, compact = false, displaySettings }: OrgCa
               {categoryLabel}
             </span>
           </div>
+          {politicalNotDeductible && (
+            <div className="absolute top-3 left-3 translate-y-8">
+              <span
+                className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                style={{
+                  backgroundColor: "#fef2f2",
+                  color: "#b91c1c",
+                  border: "1px solid #fecaca",
+                }}
+              >
+                Not Tax Deductible
+              </span>
+            </div>
+          )}
           {org.verified && (
             <div className="absolute top-3 right-3">
               <span
