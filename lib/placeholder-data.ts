@@ -7,6 +7,7 @@ export interface Organization {
   name: string;
   tagline: string;
   description: string;
+  ourStory?: string | null;
   category: Category;
   location: string;
   raised: number;

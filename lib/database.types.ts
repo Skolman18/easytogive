@@ -36,6 +36,7 @@ export interface Database {
           visible: boolean;
           image_url: string;
           cover_url: string;
+          our_story: string | null;
           ein: string;
           founded: number | null;
           website: string;

@@ -12,6 +12,7 @@ function rowToOrg(row: OrganizationRow): Organization {
     name: row.name,
     tagline: row.tagline,
     description: row.description,
+    ourStory: row.our_story,
     category: row.category as Category,
     location: row.location,
     raised: row.raised,

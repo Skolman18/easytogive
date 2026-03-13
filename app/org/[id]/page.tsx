@@ -13,6 +13,7 @@ import {
   CheckCircle,
   ShieldCheck,
   Sparkles,
+  Quote,
 } from "lucide-react";
 import {
   ORGANIZATIONS,
@@ -94,6 +95,7 @@ export default async function OrgPage({
         name: supabaseOrg.name,
         tagline: supabaseOrg.tagline ?? "",
         description: supabaseOrg.description ?? "",
+        ourStory: (supabaseOrg.our_story ?? "") as string,
         category: supabaseOrg.category ?? "nonprofits",
         location: supabaseOrg.location ?? "",
         founded: supabaseOrg.founded ?? "",
@@ -367,6 +369,31 @@ export default async function OrgPage({
                 multiline
               />
             </div>
+
+            {/* Our Story */}
+            {(org as any).ourStory?.trim() && (
+              <div
+                className="rounded-xl p-6 border"
+                style={{ backgroundColor: "#e8f5ee", borderColor: "#bbf7d0" }}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    <Quote className="w-4.5 h-4.5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="font-display text-xl font-semibold text-gray-900 mb-2">
+                      Our Story
+                    </h2>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {(org as any).ourStory}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Video */}
             {(org as any).showVideo && (org as any).videoUrl && (

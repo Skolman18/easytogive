@@ -37,21 +37,31 @@ if (!dbUrl || dbUrl.includes("[YOUR-DB-PASSWORD]")) {
   process.exit(1);
 }
 
-const migrationFile = path.join(
-  process.cwd(),
-  "supabase/migrations/20260308000001_initial_schema.sql"
-);
+const migrationsDir = path.join(process.cwd(), "supabase/migrations");
 
 const sql = postgres(dbUrl, { max: 1 });
 
 async function run() {
   console.log("🔌  Connecting to Supabase database…");
   try {
-    const migrationSql = fs.readFileSync(migrationFile, "utf8");
-    console.log("📋  Running migration: 20260308000001_initial_schema.sql");
-    await sql.unsafe(migrationSql);
-    console.log("✅  Migration applied successfully.");
-    console.log("🌱  Organizations seeded.");
+    const files = fs
+      .readdirSync(migrationsDir)
+      .filter((f) => f.endsWith(".sql"))
+      .sort();
+
+    if (files.length === 0) {
+      console.log("⚠️  No migration files found in supabase/migrations.");
+      return;
+    }
+
+    for (const file of files) {
+      const migrationFile = path.join(migrationsDir, file);
+      const migrationSql = fs.readFileSync(migrationFile, "utf8");
+      console.log(`📋  Running migration: ${file}`);
+      await sql.unsafe(migrationSql);
+    }
+
+    console.log("✅  Migrations applied successfully.");
   } catch (err) {
     console.error("❌  Migration failed:", err);
     process.exit(1);

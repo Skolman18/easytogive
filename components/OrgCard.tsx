@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MapPin, CheckCircle, Users, Plus, Check } from "lucide-react";
+import { MapPin, CheckCircle, Users, Plus, Check, Quote, ChevronDown } from "lucide-react";
 import { Organization, formatCurrency, getProgressPercent } from "@/lib/placeholder-data";
 import { createClient } from "@/lib/supabase-browser";
 
@@ -89,8 +89,13 @@ export default function OrgCard({
   displaySettings,
   politicalNotDeductible = false,
 }: OrgCardProps) {
+  const [storyOpen, setStoryOpen] = useState(false);
   const progress = getProgressPercent(org.raised, org.goal);
   const categoryLabel = CATEGORY_LABELS[org.category] || org.category;
+
+  const storyRaw = (org.ourStory ?? "").trim();
+  const storyPreview =
+    storyRaw.length > 120 ? `${storyRaw.slice(0, 117).trim()}…` : storyRaw;
 
   // If no displaySettings passed, show everything (backward compat / placeholder data).
   const showRaised = displaySettings ? (displaySettings.show_raised ?? false) : true;
@@ -161,6 +166,58 @@ export default function OrgCard({
             <p className="text-sm text-gray-600 mt-2 leading-relaxed line-clamp-2">
               {org.tagline}
             </p>
+          )}
+
+          {/* Our Story (optional) */}
+          {storyRaw && (
+            <div className="mt-4">
+              <div className="border-t" style={{ borderColor: "#e5e1d8" }} />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setStoryOpen((v) => !v);
+                }}
+                className="w-full text-left cursor-pointer"
+                aria-expanded={storyOpen}
+              >
+                <div className="flex items-center justify-between py-2.5">
+                  <div className="flex items-center gap-2">
+                    <Quote className="w-4 h-4" style={{ color: "#1a7a4a" }} />
+                    <span
+                      className="text-[13px] font-semibold"
+                      style={{ color: "#1a7a4a" }}
+                    >
+                      Our Story
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className="w-4 h-4 text-gray-400 transition-transform"
+                    style={{ transform: storyOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                  />
+                </div>
+                <p
+                  className="text-sm"
+                  style={{ color: "#374151", lineHeight: "1.6" }}
+                >
+                  {storyPreview}
+                </p>
+              </button>
+
+              <div
+                className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
+                style={{ maxHeight: storyOpen ? 420 : 0 }}
+              >
+                <div className="pt-2 pb-1">
+                  <p
+                    className="text-sm"
+                    style={{ color: "#374151", lineHeight: "1.6" }}
+                  >
+                    {storyRaw}
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Stats — only when enabled and a real goal exists */}

@@ -45,6 +45,7 @@ const EMPTY_FORM = {
   recommended_orgs: [] as string[],
   contact_email: "",
   video_url: "", video_type: "", show_video: false,
+  our_story: "",
 };
 
 const DEFAULT_DISPLAY_SETTINGS = {
@@ -1468,10 +1469,15 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
   async function handleSubmit() {
     const supabase = createClient();
     if (!form.name || !form.id) return setMsg("Name and ID are required.", "err");
+    const ourStory = typeof form.our_story === "string" ? form.our_story.trim() : "";
+    if (ourStory.length > 1000) {
+      return setMsg("Our Story must be 1000 characters or less.", "err");
+    }
     const payload = {
       ...form,
       tags: Array.isArray(form.tags) ? form.tags : [],
       recommended_orgs: Array.isArray(form.recommended_orgs) ? form.recommended_orgs : [],
+      our_story: ourStory || null,
     };
     if (editing) {
       const { error } = await (supabase as any).from("organizations").update(payload).eq("id", editing);
@@ -1507,6 +1513,7 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
       video_url: org.video_url ?? "",
       video_type: org.video_type ?? "",
       show_video: org.show_video ?? false,
+      our_story: org.our_story ?? "",
     });
     setEditing(org.id);
     setActiveAdminTab("edit");
@@ -1731,6 +1738,35 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
               value={form.description || ""}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
+          </div>
+
+          {/* Our Story */}
+          <div>
+            <label className={labelCls}>Our Story</label>
+            <p className="text-xs text-gray-500 -mt-1 mb-2">
+              Tell donors who you are, why you exist, and what drives your mission. This appears on your organization card and profile page.
+            </p>
+            <textarea
+              rows={6}
+              maxLength={1000}
+              placeholder="We started in 2018 when our founder saw a need in the community..."
+              className={`${inputCls} resize-none`}
+              style={inputStyle}
+              value={form.our_story || ""}
+              onChange={(e) => setForm({ ...form, our_story: e.target.value })}
+            />
+            {(() => {
+              const len = String(form.our_story || "").length;
+              const warn = len > 900;
+              return (
+                <div
+                  className="text-xs mt-2"
+                  style={{ color: warn ? "#dc2626" : "#6b7280" }}
+                >
+                  {len} / 1000 characters
+                </div>
+              );
+            })()}
           </div>
 
           {/* Image upload */}
