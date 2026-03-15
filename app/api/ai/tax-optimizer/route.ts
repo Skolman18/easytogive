@@ -1,9 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
-
-const client = new Anthropic();
 
 export interface TaxOptimizerRequest {
   filingStatus: "single" | "mfj" | "mfs" | "hoh";
@@ -89,7 +86,7 @@ Show all calculations step by step. Be specific with numbers for ${year}.`;
 }
 
 export async function POST(req: NextRequest) {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.GROQ_API_KEY) {
     return new Response(JSON.stringify({ error: "AI not configured" }), {
       status: 503,
       headers: { "Content-Type": "application/json" },
@@ -115,41 +112,79 @@ export async function POST(req: NextRequest) {
 
   const encoder = new TextEncoder();
 
-  const messageStream = client.messages.stream({
-    model: "claude-opus-4-6",
-    max_tokens: 2048,
-    thinking: { type: "adaptive" },
-    system: `You are a knowledgeable tax education assistant specializing in US charitable giving deductions.
+  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      max_tokens: 2048,
+      stream: true,
+      messages: [
+        {
+          role: "system",
+          content: `You are a knowledgeable tax education assistant specializing in US charitable giving deductions.
 You provide clear, accurate, and educational information about how charitable donations affect federal income taxes.
 Always show your calculations step by step with specific numbers.
 Use markdown formatting: ## for section headers, **bold** for key figures, and bullet lists for options.
 End every response with a brief disclaimer: "⚠️ This is educational information, not professional tax advice. Consult a CPA or tax advisor for your specific situation."`,
-    messages: [{ role: "user", content: buildPrompt(body) }],
+        },
+        { role: "user", content: buildPrompt(body) },
+      ],
+    }),
   });
 
+  if (!groqRes.ok) {
+    const errText = await groqRes.text();
+    console.error("Groq API error:", errText);
+    return new Response(JSON.stringify({ error: "AI service unavailable. Please try again." }), {
+      status: 502,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Re-stream Groq's SSE response in our format: data: {"text": "..."}\n\n
   const readableStream = new ReadableStream({
     async start(controller) {
       try {
-        messageStream.on("text", (delta) => {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ text: delta })}\n\n`)
-          );
-        });
-        await messageStream.finalMessage();
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-      } catch (err: unknown) {
-        console.error("Tax optimizer stream error:", err);
-        const apiErr = err as { status?: number; message?: string };
-        let msg = "Something went wrong. Please try again.";
-        if (apiErr?.status === 400 && apiErr?.message?.includes("credit")) {
-          msg = "The AI service is temporarily unavailable. Please try again later.";
-        } else if (apiErr?.status === 429) {
-          msg = "Too many requests. Please wait a moment and try again.";
-        } else if (apiErr?.status === 401 || apiErr?.status === 403) {
-          msg = "AI service configuration error. Please contact support.";
+        const reader = groqRes.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed === "data: [DONE]") continue;
+            if (!trimmed.startsWith("data: ")) continue;
+
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              const text = json.choices?.[0]?.delta?.content;
+              if (text) {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ text })}\n\n`)
+                );
+              }
+            } catch {
+              // skip malformed lines
+            }
+          }
         }
+
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      } catch (err) {
+        console.error("Tax optimizer stream error:", err);
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`)
+          encoder.encode(`data: ${JSON.stringify({ error: "Something went wrong. Please try again." })}\n\n`)
         );
       } finally {
         controller.close();
