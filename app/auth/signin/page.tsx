@@ -146,7 +146,7 @@ function SignInForm() {
           <p className="text-center text-sm text-gray-500 mt-6">
             Don&apos;t have an account?{" "}
             <Link
-              href="/auth/signup"
+              href="/get-started"
               className="font-medium hover:underline"
               style={{ color: "#1a7a4a" }}
             >
