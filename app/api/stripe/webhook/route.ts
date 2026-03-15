@@ -129,9 +129,11 @@ export async function POST(req: NextRequest) {
           .maybeSingle();
 
         if (!existing) {
-          const donationAmountCents = meta.donationAmount
-            ? parseInt(meta.donationAmount, 10)
-            : pi.amount;
+          const parsedDonationAmount = meta.donationAmount ? parseInt(meta.donationAmount, 10) : NaN;
+          const donationAmountCents =
+            !isNaN(parsedDonationAmount) && parsedDonationAmount > 0
+              ? parsedDonationAmount
+              : pi.amount;
           const feeAmountCents = pi.application_fee_amount ?? 0;
           const feeCovered = meta.coverFee === "true";
           const receiptId = `ETG-${pi.id.replace("pi_", "").slice(0, 12).toUpperCase()}`;
@@ -153,6 +155,7 @@ export async function POST(req: NextRequest) {
               }).filter((a: { orgId: string; amountCents: number }) => a.orgId && a.amountCents > 0)
             : [];
 
+          let inserted = false;
           if (allocParts.length > 1) {
             // Portfolio donation — one record per allocation, first gets the receipt ID
             const rows = allocParts.map((a: { orgId: string; amountCents: number }, i: number) => ({
@@ -165,14 +168,19 @@ export async function POST(req: NextRequest) {
               receipt_id: i === 0 ? receiptId : `${receiptId}-${i}`,
               donated_at: now,
             }));
-            await supabase.from("donations").insert(rows);
-
+            const { error: insertErr } = await supabase.from("donations").insert(rows);
+            if (insertErr) {
+              // 23505 = unique_violation; means a concurrent webhook already inserted — skip
+              if ((insertErr as any).code === "23505") break;
+              throw insertErr;
+            }
+            inserted = true;
             for (const a of allocParts) {
               await incrementOrgStats(supabase, a.orgId, a.amountCents, meta.donorId || null);
             }
           } else {
             // Single org donation
-            await supabase.from("donations").insert({
+            const { error: insertErr } = await supabase.from("donations").insert({
               user_id: meta.donorId || null,
               org_id: meta.orgId || null,
               amount: donationAmountCents,
@@ -182,31 +190,39 @@ export async function POST(req: NextRequest) {
               receipt_id: receiptId,
               donated_at: now,
             });
-
+            if (insertErr) {
+              if ((insertErr as any).code === "23505") break;
+              throw insertErr;
+            }
+            inserted = true;
             if (meta.orgId) {
               await incrementOrgStats(supabase, meta.orgId, donationAmountCents, meta.donorId || null);
             }
           }
 
-          // Send receipt email
-          if (meta.donorId) {
-            const primaryOrgId = meta.orgId || (allocParts[0]?.orgId ?? null);
-            const [donor, orgInfo] = await Promise.all([
-              getDonorInfo(supabase, meta.donorId),
-              primaryOrgId ? getOrgInfo(supabase, primaryOrgId) : Promise.resolve({ name: meta.orgName ?? "EasyToGive", ein: null }),
-            ]);
-            if (donor.email) {
-              const baseUrl = process.env.NEXT_PUBLIC_URL ?? "https://easytogive.online";
-              await sendReceiptEmail({
-                to: donor.email,
-                donorName: donor.name,
-                orgName: allocParts.length > 1 ? "EasyToGive Portfolio" : orgInfo.name,
-                orgEin: allocParts.length > 1 ? null : orgInfo.ein,
-                amountCents: donationAmountCents,
-                receiptId,
-                donatedAt: now,
-                receiptUrl: `${baseUrl}/receipts/${encodeURIComponent(receiptId)}`,
-              });
+          // Send receipt email — catch separately so email failures don't undo the recorded donation
+          if (inserted && meta.donorId) {
+            try {
+              const primaryOrgId = meta.orgId || (allocParts[0]?.orgId ?? null);
+              const [donor, orgInfo] = await Promise.all([
+                getDonorInfo(supabase, meta.donorId),
+                primaryOrgId ? getOrgInfo(supabase, primaryOrgId) : Promise.resolve({ name: meta.orgName ?? "EasyToGive", ein: null }),
+              ]);
+              if (donor.email) {
+                const baseUrl = process.env.NEXT_PUBLIC_URL ?? "https://easytogive.online";
+                await sendReceiptEmail({
+                  to: donor.email,
+                  donorName: donor.name,
+                  orgName: allocParts.length > 1 ? "EasyToGive Portfolio" : orgInfo.name,
+                  orgEin: allocParts.length > 1 ? null : orgInfo.ein,
+                  amountCents: donationAmountCents,
+                  receiptId,
+                  donatedAt: now,
+                  receiptUrl: `${baseUrl}/receipts/${encodeURIComponent(receiptId)}`,
+                });
+              }
+            } catch (emailErr) {
+              console.error(`Receipt email failed for payment_intent ${pi.id}:`, emailErr);
             }
           }
         }
@@ -240,7 +256,7 @@ export async function POST(req: NextRequest) {
           const receiptId = `ETG-REC-${(invoice.id ?? "").replace("in_", "").slice(0, 12).toUpperCase()}`;
           const now = new Date().toISOString();
 
-          await supabase.from("donations").insert({
+          const { error: insertErr } = await supabase.from("donations").insert({
             user_id: meta.donorId || null,
             org_id: meta.orgId || null,
             amount: invoice.amount_paid,
@@ -250,32 +266,40 @@ export async function POST(req: NextRequest) {
             receipt_id: receiptId,
             donated_at: now,
           });
+          if (insertErr) {
+            if ((insertErr as any).code === "23505") break;
+            throw insertErr;
+          }
 
-          // Update org raised total (raised stored in dollars, amount in cents)
+          // Update org raised total (amount stored in cents)
           if (meta.orgId) {
             await incrementOrgStats(supabase, meta.orgId, invoice.amount_paid, meta.donorId || null);
           }
 
-          // Send recurring receipt email
+          // Send recurring receipt email — catch separately
           if (meta.donorId) {
-            const [donor, orgInfo] = await Promise.all([
-              getDonorInfo(supabase, meta.donorId),
-              meta.orgId ? getOrgInfo(supabase, meta.orgId) : Promise.resolve({ name: "EasyToGive", ein: null }),
-            ]);
-            if (donor.email) {
-              const baseUrl = process.env.NEXT_PUBLIC_URL ?? "https://easytogive.online";
-              await sendReceiptEmail({
-                to: donor.email,
-                donorName: donor.name,
-                orgName: orgInfo.name,
-                orgEin: orgInfo.ein,
-                amountCents: invoice.amount_paid,
-                receiptId,
-                donatedAt: now,
-                isRecurring: true,
-                frequency: meta.frequency,
-                receiptUrl: `${baseUrl}/receipts/${encodeURIComponent(receiptId)}`,
-              });
+            try {
+              const [donor, orgInfo] = await Promise.all([
+                getDonorInfo(supabase, meta.donorId),
+                meta.orgId ? getOrgInfo(supabase, meta.orgId) : Promise.resolve({ name: "EasyToGive", ein: null }),
+              ]);
+              if (donor.email) {
+                const baseUrl = process.env.NEXT_PUBLIC_URL ?? "https://easytogive.online";
+                await sendReceiptEmail({
+                  to: donor.email,
+                  donorName: donor.name,
+                  orgName: orgInfo.name,
+                  orgEin: orgInfo.ein,
+                  amountCents: invoice.amount_paid,
+                  receiptId,
+                  donatedAt: now,
+                  isRecurring: true,
+                  frequency: meta.frequency,
+                  receiptUrl: `${baseUrl}/receipts/${encodeURIComponent(receiptId)}`,
+                });
+              }
+            } catch (emailErr) {
+              console.error(`Recurring receipt email failed for invoice ${invoice.id}:`, emailErr);
             }
           }
         }

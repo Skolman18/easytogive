@@ -25,8 +25,10 @@ function isUrlAllowed(input: string): boolean {
   const host = parsed.hostname.toLowerCase();
   // Loopback / localhost
   if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost")) return false;
-  // IPv6 loopback and unspecified
-  if (host === "[::1]" || host === "0.0.0.0") return false;
+  // IPv6 loopback and unspecified (parsed.hostname strips brackets from IPv6 literals)
+  if (host === "::1" || host === "[::1]" || host === "::" || host === "0.0.0.0") return false;
+  // IPv6 private/link-local ranges
+  if (host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")) return false;
   // RFC-1918 private ranges
   if (host.startsWith("192.168.") || host.startsWith("10.")) return false;
   // 172.16.0.0/12 → 172.16.x.x through 172.31.x.x
