@@ -17,9 +17,13 @@ import {
   X,
   Upload,
   Image as ImageIcon,
+  TrendingUp,
+  Clock,
+  ShieldCheck,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { PreviewBanner, AdminNotesPanel } from "@/components/AdminPreviewOverlay";
+import ImpactUpdateForm from "@/components/ImpactUpdateForm";
 
 interface OrgData {
   id: string;
@@ -44,6 +48,17 @@ interface OrgStats {
   recent_donations: { amount: number; donated_at: string }[];
 }
 
+interface ImpactUpdate {
+  id: string;
+  stat_value: string;
+  stat_label: string;
+  stat_period: string;
+  message: string;
+  status: string;
+  rejection_note: string;
+  created_at: string;
+}
+
 function OrgDashboardInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -59,6 +74,8 @@ function OrgDashboardInner() {
   const [verifying, setVerifying] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [orgStats, setOrgStats] = useState<OrgStats | null>(null);
+  const [impactUpdates, setImpactUpdates] = useState<ImpactUpdate[]>([]);
+  const [impactLoading, setImpactLoading] = useState(false);
 
   // Edit profile state
   const [editOpen, setEditOpen] = useState(false);
@@ -139,13 +156,29 @@ function OrgDashboardInner() {
     }
   }, [stripeResult, selectedOrg?.stripe_account_id]); // eslint-disable-line
 
-  // Reload stats when org changes
+  // Reload stats + impact updates when org changes
   useEffect(() => {
     if (selectedOrg) {
       setOrgStats(null);
       loadOrgStats(createClient() as any, selectedOrg.id);
+      loadImpactUpdates(selectedOrg.id);
     }
   }, [selectedOrg?.id]); // eslint-disable-line
+
+  async function loadImpactUpdates(orgId: string) {
+    setImpactLoading(true);
+    try {
+      const supabase = createClient() as any;
+      const { data } = await supabase
+        .from("org_impact_updates")
+        .select("id, stat_value, stat_label, stat_period, message, status, rejection_note, created_at")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setImpactUpdates(data ?? []);
+    } catch { /* silent */ }
+    setImpactLoading(false);
+  }
 
   async function loadOrgStats(supabase: any, orgId: string) {
     try {
@@ -485,6 +518,96 @@ function OrgDashboardInner() {
             </div>
           </div>
         )}
+
+        {/* ── Impact Updates ── */}
+        <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
+          <div
+            className="px-6 py-4 border-b flex items-center gap-2"
+            style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
+          >
+            <TrendingUp className="w-4 h-4 text-gray-500" />
+            <h2 className="font-display font-semibold text-gray-900">Impact Updates</h2>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Share verifiable achievements with donors. Each update is reviewed by EasyToGive
+              before appearing on your public profile.
+            </p>
+
+            {/* Submission form */}
+            <ImpactUpdateForm
+              orgId={org.id}
+              onSubmitted={() => loadImpactUpdates(org.id)}
+            />
+
+            {/* Existing updates */}
+            {impactLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+              </div>
+            ) : impactUpdates.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Your Submissions</p>
+                {impactUpdates.map((u) => (
+                  <div
+                    key={u.id}
+                    className="rounded-xl border p-4"
+                    style={{ borderColor: "#e5e1d8" }}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <p className="font-semibold text-gray-900 text-sm">
+                        {u.stat_value} {u.stat_label}
+                        <span className="font-normal text-gray-400 ml-1">· {u.stat_period}</span>
+                      </p>
+                      {/* Status badge */}
+                      {u.status === "approved" && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0"
+                          style={{ backgroundColor: "#e8f5ee", color: "#166534" }}
+                        >
+                          <ShieldCheck className="w-3 h-3" />
+                          Approved
+                        </span>
+                      )}
+                      {u.status === "pending" && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0"
+                          style={{ backgroundColor: "#fffbeb", color: "#92400e" }}
+                        >
+                          <Clock className="w-3 h-3" />
+                          Under Review
+                        </span>
+                      )}
+                      {u.status === "rejected" && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0"
+                          style={{ backgroundColor: "#fef2f2", color: "#991b1b" }}
+                        >
+                          <X className="w-3 h-3" />
+                          Not Approved
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mb-1">{u.message}</p>
+                    {u.status === "rejected" && u.rejection_note && (
+                      <div
+                        className="mt-2 p-2.5 rounded-lg text-xs leading-relaxed"
+                        style={{ backgroundColor: "#fef2f2", color: "#991b1b" }}
+                      >
+                        <span className="font-semibold">Feedback: </span>{u.rejection_note}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-400 mt-2">
+                      {new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No impact updates submitted yet.</p>
+            )}
+          </div>
+        </div>
 
         {/* Stripe Connect card */}
         <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>

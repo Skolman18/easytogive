@@ -57,6 +57,7 @@ const ADMIN_TABS = [
   { id: "users", label: "Users" },
   { id: "waitlist", label: "Waitlist" },
   { id: "applications", label: "Applications" },
+  { id: "impact", label: "Impact Reviews" },
   { id: "missionaries", label: "Missionaries" },
   { id: "navigation", label: "Navigation" },
   { id: "roadmap", label: "Roadmap" },
@@ -648,6 +649,236 @@ function generateSlug(name: string): string {
       .replace(/^-|-$/g, "") +
     "-" +
     Math.random().toString(36).slice(2, 6)
+  );
+}
+
+// ─── Impact Review Tab ────────────────────────────────────────────────────────
+
+function ImpactReviewTab() {
+  const [updates, setUpdates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"pending" | "approved" | "rejected">("pending");
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectionNotes, setRejectionNotes] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const supabase = createClient() as any;
+
+  useEffect(() => {
+    load();
+  }, []); // eslint-disable-line
+
+  async function load() {
+    setLoading(true);
+    // Admin sees all; join org name via a second query since we can't easily join
+    const { data } = await supabase
+      .from("org_impact_updates")
+      .select("id, org_id, stat_value, stat_label, stat_period, message, proof_url, proof_note, status, rejection_note, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (data && data.length > 0) {
+      // Fetch org names
+      const orgIds = [...new Set(data.map((u: any) => u.org_id))];
+      const { data: orgs } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .in("id", orgIds);
+      const orgMap: Record<string, string> = {};
+      (orgs ?? []).forEach((o: any) => { orgMap[o.id] = o.name; });
+      setUpdates(data.map((u: any) => ({ ...u, org_name: orgMap[u.org_id] ?? u.org_id })));
+    } else {
+      setUpdates([]);
+    }
+    setLoading(false);
+  }
+
+  async function approve(id: string) {
+    setSaving(id);
+    await supabase
+      .from("org_impact_updates")
+      .update({ status: "approved", visible: true, reviewed_at: new Date().toISOString() })
+      .eq("id", id);
+    setUpdates((prev) => prev.map((u) => u.id === id ? { ...u, status: "approved", visible: true } : u));
+    setSaving(null);
+  }
+
+  async function reject(id: string) {
+    const note = rejectionNotes[id] ?? "";
+    setSaving(id);
+    await supabase
+      .from("org_impact_updates")
+      .update({ status: "rejected", visible: false, rejection_note: note, reviewed_at: new Date().toISOString() })
+      .eq("id", id);
+    setUpdates((prev) => prev.map((u) => u.id === id ? { ...u, status: "rejected", rejection_note: note } : u));
+    setRejectingId(null);
+    setSaving(null);
+  }
+
+  const filtered = updates.filter((u) => u.status === filter);
+  const pendingCount = updates.filter((u) => u.status === "pending").length;
+
+  if (loading) return <Spinner />;
+
+  return (
+    <div className="space-y-4">
+      {/* Filter tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {(["pending", "approved", "rejected"] as const).map((f) => {
+          const count = updates.filter((u) => u.status === f).length;
+          return (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors capitalize"
+              style={filter === f
+                ? { backgroundColor: "#1a7a4a", color: "white" }
+                : { backgroundColor: "#f0ede6", color: "#374151" }
+              }
+            >
+              {f === "pending" ? `Pending Review (${count})` : f === "approved" ? `Approved (${count})` : `Rejected (${count})`}
+            </button>
+          );
+        })}
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState message={`No ${filter} impact updates.`} />
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((u) => (
+            <div
+              key={u.id}
+              className="rounded-2xl border bg-white overflow-hidden"
+              style={{ borderColor: "#e5e1d8" }}
+            >
+              {/* Header */}
+              <div
+                className="px-5 py-3 border-b flex items-center justify-between gap-3"
+                style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
+              >
+                <div>
+                  <span className="font-semibold text-sm text-gray-900">{u.org_name}</span>
+                  <span className="text-xs text-gray-400 ml-2">
+                    {new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+                {u.status === "approved" && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: "#e8f5ee", color: "#166534" }}>Approved</span>
+                )}
+                {u.status === "pending" && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: "#fffbeb", color: "#92400e" }}>Pending</span>
+                )}
+                {u.status === "rejected" && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: "#fef2f2", color: "#991b1b" }}>Rejected</span>
+                )}
+              </div>
+
+              <div className="px-5 py-4 space-y-3">
+                {/* Stat */}
+                <div>
+                  <p
+                    className="font-display text-xl font-bold"
+                    style={{ color: "#1a7a4a" }}
+                  >
+                    {u.stat_value} {u.stat_label}
+                    <span className="text-sm font-normal text-gray-400 ml-2">· {u.stat_period}</span>
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1 leading-relaxed">{u.message}</p>
+                </div>
+
+                {/* Proof */}
+                <div
+                  className="rounded-xl p-3 space-y-1.5"
+                  style={{ backgroundColor: "#faf9f6", border: "1px solid #e5e1d8" }}
+                >
+                  <p className="text-xs font-semibold text-gray-600">Proof Submitted</p>
+                  {u.proof_url ? (
+                    <a
+                      href={u.proof_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium flex items-center gap-1 hover:underline break-all"
+                      style={{ color: "#1a7a4a" }}
+                    >
+                      {u.proof_url}
+                      <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                    </a>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">No proof URL provided</p>
+                  )}
+                  {u.proof_note && (
+                    <p className="text-xs text-gray-500 italic">&ldquo;{u.proof_note}&rdquo;</p>
+                  )}
+                </div>
+
+                {/* Rejection note (if already rejected) */}
+                {u.status === "rejected" && u.rejection_note && (
+                  <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#fef2f2", color: "#991b1b" }}>
+                    <span className="font-semibold">Rejection note: </span>{u.rejection_note}
+                  </div>
+                )}
+
+                {/* Actions (only for pending) */}
+                {u.status === "pending" && (
+                  <div className="space-y-2 pt-1">
+                    {rejectingId === u.id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={rejectionNotes[u.id] ?? ""}
+                          onChange={(e) => setRejectionNotes((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                          placeholder="Explain why this update isn't approved (sent to the org)..."
+                          rows={2}
+                          className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-red-400 resize-none"
+                          style={{ borderColor: "#e5e1d8" }}
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => reject(u.id)}
+                            disabled={saving === u.id}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+                            style={{ backgroundColor: "#dc2626" }}
+                          >
+                            {saving === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                            Confirm Rejection
+                          </button>
+                          <button
+                            onClick={() => setRejectingId(null)}
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => approve(u.id)}
+                          disabled={saving === u.id}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-opacity hover:opacity-90"
+                          style={{ backgroundColor: "#1a7a4a" }}
+                        >
+                          {saving === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          Approve & Publish
+                        </button>
+                        <button
+                          onClick={() => setRejectingId(u.id)}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors hover:bg-red-50"
+                          style={{ borderColor: "#fca5a5", color: "#dc2626" }}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1998,6 +2229,9 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
           }}
         />
       )}
+
+      {/* ── Impact Reviews tab ── */}
+      {activeAdminTab === "impact" && <ImpactReviewTab />}
 
       {/* ── Missionaries tab ── */}
       {activeAdminTab === "missionaries" && <MissionariesAdminTab />}
