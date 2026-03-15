@@ -137,10 +137,19 @@ End every response with a brief disclaimer: "⚠️ This is educational informat
         });
         await messageStream.finalMessage();
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Tax optimizer stream error:", err);
+        const apiErr = err as { status?: number; message?: string };
+        let msg = "Something went wrong. Please try again.";
+        if (apiErr?.status === 400 && apiErr?.message?.includes("credit")) {
+          msg = "The AI service is temporarily unavailable. Please try again later.";
+        } else if (apiErr?.status === 429) {
+          msg = "Too many requests. Please wait a moment and try again.";
+        } else if (apiErr?.status === 401 || apiErr?.status === 403) {
+          msg = "AI service configuration error. Please contact support.";
+        }
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ error: "Something went wrong. Please try again." })}\n\n`)
+          encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`)
         );
       } finally {
         controller.close();
