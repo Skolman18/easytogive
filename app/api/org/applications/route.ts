@@ -185,16 +185,25 @@ export async function PATCH(req: NextRequest) {
       data: { org_name: data.org_name, org_id: orgId, account_type: "organization" },
     });
     if (inviteErr) {
-      console.error("Failed to send org rep invite:", inviteErr.message);
-      // Org record was created successfully; return a partial-success response
-      // so admin knows to manually resend the invite
-      return NextResponse.json(
-        {
-          application: data,
-          warning: `Organization created but invite email failed: ${inviteErr.message}. Use Supabase Dashboard → Authentication → Users to resend the invite.`,
-        },
-        { status: 207 }
-      );
+      const alreadyRegistered =
+        inviteErr.message.toLowerCase().includes("already been registered") ||
+        inviteErr.message.toLowerCase().includes("already registered");
+
+      if (!alreadyRegistered) {
+        console.error("Failed to send org rep invite:", inviteErr.message);
+        // Org record was created successfully; return a partial-success response
+        // so admin knows to manually resend the invite
+        return NextResponse.json(
+          {
+            application: data,
+            warning: `Organization created but invite email failed: ${inviteErr.message}. Use Supabase Dashboard → Authentication → Users to resend the invite.`,
+          },
+          { status: 207 }
+        );
+      }
+      // User already has an account — org is accessible via contact_email match
+      // and the approval email (above) already directs them to /org/dashboard.
+      // No action needed.
     }
   }
 
