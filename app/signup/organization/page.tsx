@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -119,6 +119,15 @@ function OrgSignupInner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [einError, setEinError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // Scroll error into view whenever it changes
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [error]);
 
   const einConfig = getEinConfig(form.category, form.subcategory);
 
@@ -150,6 +159,13 @@ function OrgSignupInner() {
     if (subOptions.length > 1 && !effectiveSubcategory) {
       setError("Please select a subcategory.");
       return;
+    }
+    if (einConfig.show && form.ein.trim()) {
+      const einPattern = /^\d{2}-\d{7}$/;
+      if (!einPattern.test(form.ein.trim())) {
+        setEinError("EIN must be in the format 12-3456789.");
+        return;
+      }
     }
     if (einConfig.required && !form.ein.trim()) {
       setError("EIN is required for this organization type.");
@@ -217,11 +233,27 @@ function OrgSignupInner() {
             <Clock className="w-4 h-4" />
             We&apos;ll review your application and get back to you within 2 business days.
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 mb-8">
             Once approved, we&apos;ll send an invite to{" "}
             <span className="font-medium text-gray-700">{form.email}</span>{" "}
             so you can set up your account and complete your profile.
           </p>
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/discover"
+              className="w-full py-3 rounded-full font-semibold text-white text-center transition-all hover:opacity-90"
+              style={{ backgroundColor: "#1a7a4a" }}
+            >
+              Browse Organizations
+            </Link>
+            <Link
+              href="/"
+              className="w-full py-3 rounded-full font-semibold text-center transition-all border"
+              style={{ color: "#374151", borderColor: "#e5e1d8" }}
+            >
+              Return to Home
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -433,25 +465,40 @@ function OrgSignupInner() {
                   <input
                     type="text"
                     value={form.ein}
-                    onChange={(e) => setForm({ ...form, ein: e.target.value })}
+                    onChange={(e) => {
+                      setForm({ ...form, ein: e.target.value });
+                      setEinError(null);
+                    }}
                     required={einConfig.required}
                     className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
-                    style={{ borderColor: "#e5e1d8" }}
+                    style={{ borderColor: einError ? "#fca5a5" : "#e5e1d8" }}
                     placeholder="12-3456789"
                   />
+                  {einError && (
+                    <p className="text-xs mt-1" style={{ color: "#dc2626" }}>{einError}</p>
+                  )}
                 </div>
               )}
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Brief description of your mission
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Brief description of your mission
+                  </label>
+                  <span
+                    className="text-xs"
+                    style={{ color: form.description.length > 380 ? "#dc2626" : "#9ca3af" }}
+                  >
+                    {form.description.length}/400
+                  </span>
+                </div>
                 <textarea
                   value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, 400) })}
                   required
                   rows={4}
+                  maxLength={400}
                   className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors resize-none"
                   style={{ borderColor: "#e5e1d8" }}
                   placeholder="Describe what your organization does and who it serves…"
@@ -460,6 +507,7 @@ function OrgSignupInner() {
 
               {error && (
                 <div
+                  ref={errorRef}
                   className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
                   style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#dc2626" }}
                 >
@@ -503,7 +551,10 @@ function OrgSignupInner() {
 
           {!isPreview && (
             <p className="text-center text-xs text-gray-400 mt-5">
-              By submitting you agree to our Terms of Service and Privacy Policy.
+              By submitting you agree to our{" "}
+              <a href="/terms" className="underline hover:text-gray-600">Terms of Service</a>
+              {" "}and{" "}
+              <a href="/privacy" className="underline hover:text-gray-600">Privacy Policy</a>.
             </p>
           )}
         </div>

@@ -490,6 +490,59 @@ function OrgDashboardInner() {
           </div>
         )}
 
+        {/* Getting started checklist — shown until all steps done */}
+        {userEmail !== ADMIN_EMAIL && (() => {
+          const hasProfile = !!(org.tagline && org.description && org.image_url);
+          const hasStripe = isConnected;
+          const isLive = org.visible;
+          const allDone = hasProfile && hasStripe && isLive;
+          if (allDone) return null;
+          const steps = [
+            { done: hasProfile, label: "Complete your profile", sub: "Add a tagline, description, and logo", action: openEdit },
+            { done: hasStripe, label: "Connect your bank account", sub: "So you can receive donations", action: handleConnectStripe },
+            { done: isLive, label: "Go live", sub: "Contact us once your profile is ready", action: null },
+          ];
+          return (
+            <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
+              <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
+                <CheckCircle className="w-4 h-4 text-gray-400" />
+                <h2 className="font-display font-semibold text-gray-900">Get started</h2>
+                <span className="ml-auto text-xs text-gray-400">
+                  {steps.filter(s => s.done).length}/{steps.length} complete
+                </span>
+              </div>
+              <div className="divide-y" style={{ borderColor: "#f0ede6" }}>
+                {steps.map((step, i) => (
+                  <div key={i} className="px-6 py-4 flex items-start gap-3">
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ backgroundColor: step.done ? "#e8f5ee" : "#f0ede6" }}
+                    >
+                      {step.done
+                        ? <CheckCircle className="w-3.5 h-3.5" style={{ color: "#1a7a4a" }} />
+                        : <span className="text-xs font-bold text-gray-400">{i + 1}</span>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold ${step.done ? "line-through text-gray-400" : "text-gray-900"}`}>{step.label}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{step.sub}</p>
+                    </div>
+                    {!step.done && step.action && (
+                      <button
+                        onClick={step.action}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+                        style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                      >
+                        Start
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Donation Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
@@ -702,9 +755,10 @@ function OrgDashboardInner() {
                       Connect your bank account to receive donations
                     </p>
                     <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                      Donors can already find and give to your organization, but payouts
-                      are on hold until you connect a bank account through Stripe.
-                      The process takes about 5 minutes.
+                      {org.visible
+                        ? "Donors can find and give to your organization, but payouts are on hold until you connect a bank account through Stripe."
+                        : "Connect a bank account so you're ready to receive donations as soon as your profile goes live."}
+                      {" "}The process takes about 5 minutes.
                     </p>
                   </div>
                 </div>
