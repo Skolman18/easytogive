@@ -15,6 +15,8 @@ import {
   Pencil,
   Save,
   X,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { PreviewBanner, AdminNotesPanel } from "@/components/AdminPreviewOverlay";
@@ -27,6 +29,7 @@ interface OrgData {
   our_story: string;
   website: string;
   image_url: string;
+  cover_url: string;
   stripe_account_id: string | null;
   stripe_onboarding_complete: boolean;
   visible: boolean;
@@ -49,10 +52,12 @@ function OrgDashboardInner() {
 
   // Edit profile state
   const [editOpen, setEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", tagline: "", description: "", our_story: "", website: "", image_url: "" });
+  const [editForm, setEditForm] = useState({ name: "", tagline: "", description: "", our_story: "", website: "", image_url: "", cover_url: "" });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   const ADMIN_EMAIL = "sethmitzel@gmail.com";
 
@@ -73,7 +78,7 @@ function OrgDashboardInner() {
       // Do NOT filter by visible here — org reps need to access their org even before it goes public.
       let query = supabase
         .from("organizations")
-        .select("id, name, tagline, description, our_story, website, image_url, stripe_account_id, stripe_onboarding_complete, visible");
+        .select("id, name, tagline, description, our_story, website, image_url, cover_url, stripe_account_id, stripe_onboarding_complete, visible");
 
       if (!isAdmin) {
         query = query.or(
@@ -90,6 +95,7 @@ function OrgDashboardInner() {
         our_story: o.our_story ?? "",
         website: o.website ?? "",
         image_url: o.image_url ?? "",
+        cover_url: o.cover_url ?? "",
         stripe_account_id: o.stripe_account_id ?? null,
         stripe_onboarding_complete: o.stripe_onboarding_complete ?? false,
         visible: o.visible ?? false,
@@ -177,6 +183,29 @@ function OrgDashboardInner() {
     }
   }
 
+  async function uploadImage(file: File, type: "logo" | "cover") {
+    if (!org) return;
+    const setUploading = type === "logo" ? setUploadingLogo : setUploadingCover;
+    setUploading(true);
+    setEditError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("orgId", org.id);
+      fd.append("type", type);
+      const res = await fetch("/api/org/upload-image", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Upload failed.");
+      const field = type === "logo" ? "image_url" : "cover_url";
+      setEditForm((f) => ({ ...f, [field]: json.url }));
+      // Also update the live org data so the preview reflects it
+      setSelectedOrg((prev) => prev ? { ...prev, [field]: json.url } : prev);
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : "Upload failed.");
+    }
+    setUploading(false);
+  }
+
   function openEdit() {
     if (!org) return;
     setEditForm({
@@ -186,6 +215,7 @@ function OrgDashboardInner() {
       our_story: org.our_story,
       website: org.website,
       image_url: org.image_url,
+      cover_url: org.cover_url,
     });
     setEditError(null);
     setEditSuccess(false);
@@ -544,7 +574,6 @@ function OrgDashboardInner() {
                 { key: "name", label: "Organization Name" },
                 { key: "tagline", label: "Tagline" },
                 { key: "website", label: "Website URL" },
-                { key: "image_url", label: "Logo / Image URL" },
               ].map(({ key, label }) => (
                 <div key={key}>
                   <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -557,6 +586,74 @@ function OrgDashboardInner() {
                   />
                 </div>
               ))}
+
+              {/* Logo upload */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Logo / Profile Image</label>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden border"
+                    style={{ borderColor: "#e5e1d8", backgroundColor: "#f0ede6" }}
+                  >
+                    {editForm.image_url ? (
+                      <img src={editForm.image_url} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors hover:bg-gray-50"
+                      style={{ borderColor: "#e5e1d8", color: "#374151" }}>
+                      {uploadingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      {uploadingLogo ? "Uploading…" : "Upload Logo"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="sr-only"
+                        disabled={uploadingLogo}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) uploadImage(f, "logo");
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    <p className="text-xs text-gray-400 mt-1">JPEG, PNG, WebP or GIF · max 5 MB</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cover photo upload */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cover Photo</label>
+                <div
+                  className="w-full h-28 rounded-xl overflow-hidden border flex items-center justify-center mb-2"
+                  style={{ borderColor: "#e5e1d8", backgroundColor: "#f0ede6" }}
+                >
+                  {editForm.cover_url ? (
+                    <img src={editForm.cover_url} alt="Cover" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-gray-300" />
+                  )}
+                </div>
+                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors hover:bg-gray-50"
+                  style={{ borderColor: "#e5e1d8", color: "#374151" }}>
+                  {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {uploadingCover ? "Uploading…" : "Upload Cover Photo"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="sr-only"
+                    disabled={uploadingCover}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadImage(f, "cover");
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <p className="text-xs text-gray-400 mt-1">Recommended: 1200 × 400 px · max 5 MB</p>
+              </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
                 <textarea
