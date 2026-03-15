@@ -6,8 +6,6 @@ const FOOTER_LINKS = {
     { href: "/discover", label: "Discover Orgs" },
     { href: "/portfolio", label: "My Portfolio" },
     { href: "/wallet", label: "Giving History" },
-  ],
-  Tools: [
     { href: "/tools/tax-optimizer", label: "AI Tax Optimizer" },
   ],
   Company: [
