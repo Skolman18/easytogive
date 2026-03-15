@@ -13,7 +13,8 @@ function rowToOrg(row: OrganizationRow): Organization {
     tagline: row.tagline,
     description: row.description,
     ourStory: row.our_story,
-    category: row.category as Category,
+    category: row.category,
+    subcategory: (row as any).subcategory ?? null,
     location: row.location,
     raised: row.raised,
     goal: row.goal,
@@ -36,6 +37,7 @@ async function getOrganizations(): Promise<Organization[]> {
   const { data, error } = await supabase
     .from("organizations")
     .select("*")
+    .neq("visible", false)
     .order("sort_order", { ascending: true })
     .order("name");
 
@@ -43,10 +45,7 @@ async function getOrganizations(): Promise<Organization[]> {
     return ORGANIZATIONS;
   }
 
-  // Filter out hidden orgs if the visible column exists
-  return data
-    .filter((row: any) => row.visible !== false)
-    .map(rowToOrg);
+  return data.map(rowToOrg);
 }
 
 async function getDisplaySettingsMap(): Promise<Record<string, OrgDisplaySettings>> {

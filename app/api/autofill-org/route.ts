@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { createClient as createServerClient } from "@/lib/supabase-server";
+
+const ADMIN_EMAIL = "sethmitzel@gmail.com";
 
 const VALID_CATEGORIES = [
   "nonprofits",
@@ -19,15 +22,31 @@ function isUrlAllowed(input: string): boolean {
     return false;
   }
   if (parsed.protocol !== "https:") return false;
+  if (input.length > 2000) return false;
   const host = parsed.hostname.toLowerCase();
+  // Loopback / localhost
   if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost")) return false;
-  if (host.startsWith("192.168.") || host.startsWith("10.") || host.startsWith("172.16.")) return false;
+  // IPv6 loopback and unspecified
   if (host === "[::1]" || host === "0.0.0.0") return false;
+  // RFC-1918 private ranges
+  if (host.startsWith("192.168.") || host.startsWith("10.")) return false;
+  // 172.16.0.0/12 → 172.16.x.x through 172.31.x.x
+  const m = host.match(/^172\.(\d+)\./);
+  if (m && parseInt(m[1], 10) >= 16 && parseInt(m[1], 10) <= 31) return false;
+  // Link-local (169.254.0.0/16) — includes AWS/GCP/Azure metadata endpoints
+  if (host.startsWith("169.254.")) return false;
   return true;
 }
 
 export async function POST(req: NextRequest) {
   try {
+    // Admin only
+    const serverSupabase = await createServerClient();
+    const { data: { user } } = await serverSupabase.auth.getUser();
+    if (!user || user.email !== ADMIN_EMAIL) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json(
         { error: "Autofill is temporarily unavailable." },

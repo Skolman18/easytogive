@@ -8,7 +8,8 @@ export interface Organization {
   tagline: string;
   description: string;
   ourStory?: string | null;
-  category: Category;
+  category: string;
+  subcategory?: string | null;
   location: string;
   raised: number;
   goal: number;
@@ -51,7 +52,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Serving our neighbors since 1978",
     description:
       "Grace Community Church has been a cornerstone of our city for over four decades. We run weekly food pantries, after-school tutoring programs, and emergency housing assistance for families in crisis. Every dollar given goes directly to community programs with zero administrative overhead taken from donations.",
-    category: "churches",
+    category: "community",
+    subcategory: "church",
     location: "Austin, TX",
     raised: 128400,
     goal: 200000,
@@ -76,7 +78,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Every animal deserves a loving home",
     description:
       "We are a no-kill shelter dedicated to rescuing abandoned and abused animals across the tri-county area. Our foster network of 200+ volunteers has helped place over 12,000 animals into permanent homes since 2005. We also offer low-cost spay/neuter clinics and pet food banks for families facing hardship.",
-    category: "animal-rescue",
+    category: "community",
+    subcategory: "animal_welfare",
     location: "Nashville, TN",
     raised: 67200,
     goal: 100000,
@@ -101,7 +104,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Protecting waterways for future generations",
     description:
       "The Clean Rivers Project organizes watershed cleanups, advocates for stronger water quality legislation, and runs environmental education programs in K-12 schools. Our citizen science network monitors water quality at 47 sites across the state, providing critical data to regulatory agencies.",
-    category: "environment",
+    category: "community",
+    subcategory: "community_development",
     location: "Portland, OR",
     raised: 94100,
     goal: 150000,
@@ -126,7 +130,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Reading opens every door",
     description:
       "Literacy First provides free tutoring, books, and reading programs to underserved children ages 5-18. Our signature Summer Reading Camp has helped over 6,000 children gain grade-level reading skills since 2008. We partner with 34 public schools and 12 libraries to deliver programming where it's needed most.",
-    category: "education",
+    category: "community",
+    subcategory: "education",
     location: "Chicago, IL",
     raised: 211500,
     goal: 300000,
@@ -151,7 +156,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Building community, one family at a time",
     description:
       "A hyperlocal nonprofit serving the east side of Denver through emergency rent assistance, utility bill support, and a free store stocked with household essentials. We believe every neighbor deserves dignity, and we provide wraparound support without bureaucratic barriers.",
-    category: "local",
+    category: "community",
+    subcategory: "community_development",
     location: "Denver, CO",
     raised: 43800,
     goal: 75000,
@@ -176,7 +182,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Faith in action, love in service",
     description:
       "Highland Presbyterian is a welcoming congregation with a deep commitment to justice and mercy. Our outreach arm operates a weekly meal service for unhoused neighbors, a refugee resettlement program, and a community garden that donates 100% of its harvest to local food banks.",
-    category: "churches",
+    category: "community",
+    subcategory: "church",
     location: "Louisville, KY",
     raised: 88900,
     goal: 120000,
@@ -201,7 +208,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Closing the opportunity gap in science and tech",
     description:
       "STEM for All provides free robotics clubs, coding bootcamps, and science fair mentorship to Title I schools. Our hardware lending library lets students borrow laptops, microscopes, and lab equipment. Over 90% of our alumni report pursuing STEM-related studies or careers.",
-    category: "education",
+    category: "community",
+    subcategory: "education",
     location: "Atlanta, GA",
     raised: 156700,
     goal: 250000,
@@ -226,7 +234,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Greening our cities, cooling our streets",
     description:
       "We plant, maintain, and protect trees in urban neighborhoods that lack green space — with a focus on heat islands and communities with limited access to parks. Each tree is maintained for five years to ensure survival. We've planted 42,000 trees across 18 cities and counting.",
-    category: "environment",
+    category: "community",
+    subcategory: "community_development",
     location: "Phoenix, AZ",
     raised: 72300,
     goal: 110000,
@@ -251,7 +260,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Sanctuary for animals great and small",
     description:
       "A licensed wildlife rehabilitation center and domestic animal sanctuary in the Texas Hill Country. We care for injured wildlife, exotic animals surrendered from unsuitable situations, and senior dogs and cats who have trouble finding adopters. Our acreage gives every animal room to heal.",
-    category: "animal-rescue",
+    category: "community",
+    subcategory: "animal_welfare",
     location: "Fredericksburg, TX",
     raised: 38400,
     goal: 80000,
@@ -276,7 +286,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Investing in people, not programs",
     description:
       "The Eastside Community Fund gives unrestricted cash grants directly to low-income residents experiencing financial emergencies — medical bills, car repairs, childcare gaps — with no strings attached. We trust our neighbors to know what they need. 95 cents of every dollar goes directly to recipients.",
-    category: "local",
+    category: "community",
+    subcategory: "community_development",
     location: "Seattle, WA",
     raised: 189200,
     goal: 250000,
@@ -301,7 +312,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Hope for the whole person",
     description:
       "Bethel Tabernacle runs one of the largest urban ministry networks in the mid-Atlantic, including addiction recovery programs, transitional housing, a GED prep academy, and a community health clinic. We serve everyone regardless of faith background, and every program is free of charge.",
-    category: "churches",
+    category: "community",
+    subcategory: "church",
     location: "Baltimore, MD",
     raised: 312000,
     goal: 500000,
@@ -326,7 +338,8 @@ export const ORGANIZATIONS: Organization[] = [
     tagline: "Clean oceans, thriving seas",
     description:
       "Ocean Keepers organizes beach cleanups, ocean plastic removal expeditions, and advocates for single-use plastic bans at the local and state level. Our underwater cleanup dives have removed over 80,000 pounds of ghost gear — abandoned fishing nets that entangle marine wildlife.",
-    category: "environment",
+    category: "community",
+    subcategory: "community_development",
     location: "San Diego, CA",
     raised: 118600,
     goal: 180000,

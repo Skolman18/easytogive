@@ -26,20 +26,8 @@ import EditableField from "@/components/EditableField";
 import OrgImpactFeed from "@/components/OrgImpactFeed";
 import OrgVideoEmbed from "@/components/OrgVideoEmbed";
 import { createClient } from "@/lib/supabase-server";
+import { CATEGORY_LABELS } from "@/lib/categories";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  churches: "Church",
-  "animal-rescue": "Animal Rescue",
-  nonprofits: "Nonprofit",
-  education: "Education",
-  environment: "Environment",
-  local: "Local Cause",
-};
-
-
-export async function generateStaticParams() {
-  return ORGANIZATIONS.map((org) => ({ id: org.id }));
-}
 
 export async function generateMetadata({
   params,
@@ -58,7 +46,7 @@ export async function generateMetadata({
   const name = (org as any)?.name ?? "Organization";
   const tagline = (org as any)?.tagline ?? "";
   const image = (org as any)?.image_url ?? (org as any)?.imageUrl ?? "";
-  const url = `https://easytogive.com/org/${id}`;
+  const url = `https://easytogive.online/org/${id}`;
 
   return {
     title: `${name} — Donate on EasyToGive`,
@@ -96,7 +84,8 @@ export default async function OrgPage({
         tagline: supabaseOrg.tagline ?? "",
         description: supabaseOrg.description ?? "",
         ourStory: (supabaseOrg.our_story ?? "") as string,
-        category: supabaseOrg.category ?? "nonprofits",
+        category: supabaseOrg.category ?? "community",
+        subcategory: supabaseOrg.subcategory ?? null,
         location: supabaseOrg.location ?? "",
         founded: supabaseOrg.founded ?? "",
         website: supabaseOrg.website ?? "",
@@ -119,7 +108,11 @@ export default async function OrgPage({
 
   if (!org) notFound();
 
-  const categoryLabel = CATEGORY_LABELS[org.category] || org.category;
+  const subcategory = (org as any).subcategory;
+  const categoryLabel =
+    (subcategory && CATEGORY_LABELS[subcategory]) ||
+    CATEGORY_LABELS[org.category] ||
+    org.category;
 
   // Normalized shape for recommended + related org cards
   interface CardOrg {

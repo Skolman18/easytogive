@@ -36,6 +36,7 @@ async function getOrganizations(): Promise<Organization[]> {
   const { data, error } = await supabase
     .from("organizations")
     .select("*")
+    .neq("visible", false)
     .order("home_sort_order", { ascending: true })
     .order("name");
 
@@ -43,10 +44,7 @@ async function getOrganizations(): Promise<Organization[]> {
     return ORGANIZATIONS;
   }
 
-  // Filter hidden orgs if the visible column exists (degrades gracefully without it)
-  return data
-    .filter((row: any) => row.visible !== false)
-    .map(rowToOrg);
+  return data.map(rowToOrg);
 }
 
 const DEFAULT_HERO = {

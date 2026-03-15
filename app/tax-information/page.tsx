@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import type React from "react";
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Tax Information | EasyToGive",
@@ -253,38 +255,30 @@ export default function TaxInformationPage() {
                       </tr>
                     </thead>
                     <tbody className="text-gray-700">
-                      {[
-                        [
-                          "501(c)(3) nonprofits",
-                          "Yes",
-                          "Must have IRS determination letter",
-                        ],
-                        [
-                          "Churches & religious orgs",
-                          "Yes",
-                          "Automatically tax-exempt, no 990 required",
-                        ],
-                        [
-                          "Missionaries (through org)",
-                          "Yes",
-                          "Must give through a qualified org, not direct to individual",
-                        ],
-                        [
-                          "GoFundMe / personal campaigns",
-                          "No",
-                          "Gifts to individuals are not deductible",
-                        ],
-                        [
-                          "Political organizations",
-                          "No",
-                          "Never deductible",
-                        ],
-                        [
-                          "Raffle tickets / auction items",
-                          "Partial",
-                          "Only the amount above fair market value",
-                        ],
-                      ].map(([org, deductible, notes]) => (
+                      {([
+                        {
+                          org: "501(c)(3) nonprofits",
+                          deductible: "Yes",
+                          notes: (
+                            <>
+                              Must have IRS determination letter —{" "}
+                              <a
+                                href="https://apps.irs.gov/app/eos/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-0.5 underline underline-offset-2"
+                                style={{ color: "#1a7a4a" }}
+                              >
+                                Verify on IRS.gov <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </>
+                          ),
+                        },
+                        { org: "Churches & religious orgs", deductible: "Yes", notes: "Automatically tax-exempt, no 990 required" },
+                        { org: "Missionaries (through org)", deductible: "Yes", notes: "Must give through a qualified org, not direct to individual" },
+                        { org: "GoFundMe / personal campaigns", deductible: "No", notes: "Gifts to individuals are not deductible" },
+                        { org: "Raffle tickets / auction items", deductible: "Partial", notes: "Only the amount above fair market value" },
+                      ] as { org: string; deductible: string; notes: React.ReactNode }[]).map(({ org, deductible, notes }) => (
                         <tr key={org}>
                           <td className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>
                             {org}
@@ -440,7 +434,16 @@ export default function TaxInformationPage() {
             <p className="text-sm text-gray-700 leading-relaxed mb-4">
               If you are age 70½ or older with an IRA, a QCD is almost certainly the most tax-efficient giving strategy available.
               A QCD lets you transfer money directly from your IRA to a qualifying charity — up to $111,000 per person in 2026 —
-              and exclude the entire amount from your taxable income.
+              and exclude the entire amount from your taxable income.{" "}
+              <a
+                href="https://www.irs.gov/publications/p590b"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 underline underline-offset-2"
+                style={{ color: "#1a7a4a" }}
+              >
+                IRS Publication 590-B <ExternalLink className="w-3 h-3" />
+              </a>
             </p>
             <div
               className="rounded-lg px-4 py-3 text-xs sm:text-sm leading-relaxed mb-4"
@@ -515,7 +518,165 @@ export default function TaxInformationPage() {
 
           <hr className="border-t" style={{ borderColor: "#e5e1d8" }} />
 
-          {/* Section 5 — Non-Cash Donations */}
+          {/* Section 5 — Giving to Missionaries */}
+          <section>
+            <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">
+              Giving to Missionaries
+            </h2>
+            <p className="text-sm font-medium text-gray-600 mb-4">
+              How missionary support works — and how to make sure your gift is tax deductible
+            </p>
+            <p className="text-sm text-gray-700 leading-relaxed mb-4">
+              Giving to missionaries is one of the most personal forms of charitable giving — but it also comes with specific IRS
+              rules that every donor should understand. The most important rule: you cannot donate directly to an individual
+              missionary and claim a tax deduction. The gift must go through a qualified 501(c)(3) organization.
+            </p>
+            <p className="text-sm text-gray-700 leading-relaxed mb-6">
+              Most missionaries operate under a sending organization — a church, mission agency, or parachurch organization
+              that holds 501(c)(3) status. When you give through the sending org with the missionary designated as the
+              recipient, your gift is tax deductible as long as the organization retains full legal control over how the
+              funds are used.
+            </p>
+
+            {/* Green example box */}
+            <div
+              className="rounded-xl p-5 mb-6"
+              style={{ backgroundColor: "#e8f5ee", border: "1px solid #bbf7d0" }}
+            >
+              <p className="font-display text-sm font-bold text-gray-900 mb-3">
+                How Missionary Giving Works on EasyToGive
+              </p>
+              <ul className="space-y-1.5 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span style={{ color: "#1a7a4a" }} className="mt-0.5 flex-shrink-0">•</span>
+                  Every missionary on EasyToGive is affiliated with a verified sending organization
+                </li>
+                <li className="flex items-start gap-2">
+                  <span style={{ color: "#1a7a4a" }} className="mt-0.5 flex-shrink-0">•</span>
+                  Your donation goes to the sending org, designated for that missionary's support
+                </li>
+                <li className="flex items-start gap-2">
+                  <span style={{ color: "#1a7a4a" }} className="mt-0.5 flex-shrink-0">•</span>
+                  You receive a tax receipt from EasyToGive showing the sending organization's name and EIN
+                </li>
+                <li className="flex items-start gap-2">
+                  <span style={{ color: "#1a7a4a" }} className="mt-0.5 flex-shrink-0">•</span>
+                  The sending org is responsible for disbursing funds to the missionary
+                </li>
+                <li className="flex items-start gap-2">
+                  <span style={{ color: "#1a7a4a" }} className="mt-0.5 flex-shrink-0">•</span>
+                  Your gift is fully tax deductible as a donation to a 501(c)(3) organization
+                </li>
+              </ul>
+            </div>
+
+            <h3 className="font-display text-lg font-semibold text-gray-900 mb-3">
+              What Makes Missionary Support Tax Deductible
+            </h3>
+            <div className="overflow-x-auto rounded-lg border mb-6" style={{ borderColor: "#e5e1d8" }}>
+              <table className="min-w-full text-left text-xs sm:text-sm">
+                <thead className="text-xs font-semibold" style={{ backgroundColor: "#f9fafb", color: "#111827" }}>
+                  <tr>
+                    <th className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>Requirement</th>
+                    <th className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>What It Means</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-700">
+                  {[
+                    [
+                      "Give through a 501(c)(3)",
+                      "The missionary must be affiliated with a qualified sending organization — not operating independently",
+                    ],
+                    [
+                      "Organization controls the funds",
+                      "The sending org must have discretion over how funds are used — you cannot legally earmark funds as a condition of the gift",
+                    ],
+                    [
+                      "No personal benefit",
+                      "You cannot receive goods or services in exchange for the donation",
+                    ],
+                  ].map(([req, meaning]) => (
+                    <tr key={req}>
+                      <td className="px-4 py-2 border-b font-medium" style={{ borderColor: "#e5e1d8" }}>{req}</td>
+                      <td className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>{meaning}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Blue callout */}
+            <div
+              className="rounded-lg px-4 py-4 text-xs sm:text-sm leading-relaxed mb-6"
+              style={{ backgroundColor: "#eff6ff", borderLeft: "3px solid #1d4ed8" }}
+            >
+              <p className="font-semibold text-gray-900 mb-1">The Designation Rule</p>
+              <p className="text-gray-700">
+                You can express a preference for your gift to support a specific missionary — and sending organizations
+                generally honor those preferences. However, the organization must retain the legal right to redirect funds
+                if necessary. This is called "advisory" giving and is fully IRS-compliant. EasyToGive's missionary giving
+                is structured this way.
+              </p>
+            </div>
+
+            <h3 className="font-display text-lg font-semibold text-gray-900 mb-3">
+              Missionary Giving vs. Direct Support
+            </h3>
+            <div className="overflow-x-auto rounded-lg border mb-6" style={{ borderColor: "#e5e1d8" }}>
+              <table className="min-w-full text-left text-xs sm:text-sm">
+                <thead className="text-xs font-semibold" style={{ backgroundColor: "#f9fafb", color: "#111827" }}>
+                  <tr>
+                    <th className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>Method</th>
+                    <th className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>Tax Deductible</th>
+                    <th className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-700">
+                  {[
+                    ["Through EasyToGive (sending org)", "Yes", "Full deduction, automatic receipt, IRS compliant"],
+                    ["Check to sending org", "Yes", "Deductible but manual receipt tracking"],
+                    ["Direct to missionary (PayPal, Venmo, cash)", "No", "Gift to individual — never deductible"],
+                    ["Church missions fund", "Yes", "If church is 501(c)(3) — always deductible"],
+                  ].map(([method, deductible, notes]) => (
+                    <tr key={method}>
+                      <td className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>{method}</td>
+                      <td className="px-4 py-2 border-b font-semibold" style={{ borderColor: "#e5e1d8", color: deductible === "Yes" ? "#1a7a4a" : "#b91c1c" }}>{deductible}</td>
+                      <td className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>{notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Red warning box */}
+            <div
+              className="rounded-lg px-4 py-4 text-xs sm:text-sm leading-relaxed mb-4"
+              style={{ backgroundColor: "#fef2f2", borderLeft: "3px solid #b91c1c" }}
+            >
+              <p className="font-semibold text-gray-900 mb-1">Direct Payments Are Never Deductible</p>
+              <p className="text-gray-700">
+                Sending money directly to a missionary via PayPal, Venmo, Cash App, or cash is a personal gift — not a
+                charitable donation. It is never tax deductible regardless of how it is labeled. Always give through the
+                missionary's sending organization.
+              </p>
+            </div>
+
+            <p className="text-xs text-gray-500">
+              <a
+                href="https://www.irs.gov/charities-non-profits/charitable-organizations/charitable-contributions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 underline underline-offset-2"
+                style={{ color: "#1a7a4a" }}
+              >
+                Learn more: IRS guidance on contributions to individuals <ExternalLink className="w-3 h-3" />
+              </a>
+            </p>
+          </section>
+
+          <hr className="border-t" style={{ borderColor: "#e5e1d8" }} />
+
+          {/* Section 6 — Non-Cash Donations */}
           <section>
             <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">
               Non-Cash Donations
@@ -568,12 +729,33 @@ export default function TaxInformationPage() {
                   </tr>
                 </thead>
                 <tbody className="text-gray-700">
-                  {[
-                    ["Under $250 cash", "Bank record or receipt from charity"],
-                    ["$250+ cash or non-cash", "Written acknowledgment from charity by tax filing date"],
-                    ["Non-cash $500-$5,000", "IRS Form 8283, Section A"],
-                    ["Non-cash over $5,000", "Qualified independent appraisal + IRS Form 8283, Section B"],
-                  ].map(([value, docs]) => (
+                  {([
+                    { value: "Under $250 cash", docs: "Bank record or receipt from charity" },
+                    { value: "$250+ cash or non-cash", docs: "Written acknowledgment from charity by tax filing date" },
+                    {
+                      value: "Non-cash $500–$5,000",
+                      docs: (
+                        <>
+                          <a href="https://www.irs.gov/forms-pubs/about-form-8283" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 underline underline-offset-2" style={{ color: "#1a7a4a" }}>
+                            IRS Form 8283 <ExternalLink className="w-3 h-3" />
+                          </a>
+                          , Section A
+                        </>
+                      ),
+                    },
+                    {
+                      value: "Non-cash over $5,000",
+                      docs: (
+                        <>
+                          Qualified independent appraisal +{" "}
+                          <a href="https://www.irs.gov/forms-pubs/about-form-8283" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 underline underline-offset-2" style={{ color: "#1a7a4a" }}>
+                            IRS Form 8283 <ExternalLink className="w-3 h-3" />
+                          </a>
+                          , Section B
+                        </>
+                      ),
+                    },
+                  ] as { value: string; docs: React.ReactNode }[]).map(({ value, docs }) => (
                     <tr key={value}>
                       <td className="px-4 py-2 border-b" style={{ borderColor: "#e5e1d8" }}>
                         {value}
@@ -603,7 +785,7 @@ export default function TaxInformationPage() {
 
           <hr className="border-t" style={{ borderColor: "#e5e1d8" }} />
 
-          {/* Section 6 — Recurring Giving */}
+          {/* Section 7 — Recurring Giving */}
           <section>
             <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">
               Tax Benefits of Recurring Giving
@@ -685,6 +867,124 @@ export default function TaxInformationPage() {
               </table>
             </div>
           </section>
+        </div>
+      </section>
+
+      {/* IRS Resources */}
+      <section className="py-12 sm:py-16" style={{ backgroundColor: "#f3f2ef" }}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">
+              Official IRS Resources
+            </h2>
+            <p className="text-sm text-gray-600">
+              Everything you need directly from the IRS — no searching required.
+            </p>
+          </div>
+
+          {/* For Donors */}
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-4">For Donors</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+            {[
+              {
+                label: "Publication 526 — Charitable Contributions",
+                description: "The IRS's complete guide to charitable deductions. Covers what qualifies, how much you can deduct, and recordkeeping requirements.",
+                linkText: "View on IRS.gov",
+                url: "https://www.irs.gov/publications/p526",
+              },
+              {
+                label: "Schedule A — Itemized Deductions",
+                description: "The form you attach to your 1040 to claim itemized deductions including charitable contributions.",
+                linkText: "Download Form",
+                url: "https://www.irs.gov/forms-pubs/about-schedule-a-form-1040",
+              },
+              {
+                label: "Form 8283 — Non-Cash Charitable Contributions",
+                description: "Required when your total non-cash donations exceed $500. Section B required for donations over $5,000.",
+                linkText: "Download Form",
+                url: "https://www.irs.gov/forms-pubs/about-form-8283",
+              },
+              {
+                label: "Publication 561 — Determining Value of Donated Property",
+                description: "How to determine the fair market value of donated goods, stock, and property.",
+                linkText: "View on IRS.gov",
+                url: "https://www.irs.gov/publications/p561",
+              },
+              {
+                label: "IRS Exempt Organizations Search",
+                description: "Verify that an organization is a qualified 501(c)(3) before you donate. Search by name or EIN.",
+                linkText: "Search Organizations",
+                url: "https://apps.irs.gov/app/eos/",
+              },
+              {
+                label: "Publication 590-B — IRA Distributions (QCD Rules)",
+                description: "The IRS guide covering Qualified Charitable Distributions from IRAs — the best giving strategy for donors over 70½.",
+                linkText: "View on IRS.gov",
+                url: "https://www.irs.gov/publications/p590b",
+              },
+            ].map((r) => (
+              <div
+                key={r.label}
+                className="bg-white rounded-xl p-4 border flex flex-col gap-3 transition-colors hover:border-green-600"
+                style={{ borderColor: "#e5e1d8" }}
+              >
+                <div className="font-display text-sm font-semibold text-gray-900 leading-snug">{r.label}</div>
+                <p className="text-xs text-gray-600 leading-relaxed flex-1">{r.description}</p>
+                <a
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold underline underline-offset-2"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  {r.linkText} <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                </a>
+              </div>
+            ))}
+          </div>
+
+          {/* For Organizations */}
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-4">For Organizations</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                label: "Form 1023 — Apply for 501(c)(3) Status",
+                description: "The application organizations file with the IRS to receive tax-exempt status.",
+                linkText: "View on IRS.gov",
+                url: "https://www.irs.gov/forms-pubs/about-form-1023",
+              },
+              {
+                label: "Form 990 — Return of Organization Exempt From Income Tax",
+                description: "The annual information return most tax-exempt organizations must file with the IRS.",
+                linkText: "View on IRS.gov",
+                url: "https://www.irs.gov/forms-pubs/about-form-990",
+              },
+              {
+                label: "Written Acknowledgment Requirements",
+                description: "IRS rules on the written receipts organizations must provide to donors for gifts of $250 or more.",
+                linkText: "View on IRS.gov",
+                url: "https://www.irs.gov/charities-non-profits/charitable-organizations/written-acknowledgment-requirements",
+              },
+            ].map((r) => (
+              <div
+                key={r.label}
+                className="bg-white rounded-xl p-4 border flex flex-col gap-3 transition-colors hover:border-green-600"
+                style={{ borderColor: "#e5e1d8" }}
+              >
+                <div className="font-display text-sm font-semibold text-gray-900 leading-snug">{r.label}</div>
+                <p className="text-xs text-gray-600 leading-relaxed flex-1">{r.description}</p>
+                <a
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold underline underline-offset-2"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  {r.linkText} <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

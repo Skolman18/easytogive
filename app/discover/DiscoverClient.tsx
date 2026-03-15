@@ -4,16 +4,16 @@ import { useState, useMemo, useEffect } from "react";
 import { Search, X, SlidersHorizontal, ChevronDown, Sparkles } from "lucide-react";
 import OrgCard from "@/components/OrgCard";
 import type { OrgDisplaySettings } from "@/components/OrgCard";
-import { CATEGORIES, CAUSE_TO_CATEGORY } from "@/lib/categories";
+import { CATEGORIES, SUBCATEGORY_OPTIONS, CATEGORY_LABELS, CAUSE_TO_CATEGORY } from "@/lib/categories";
 import type { Organization } from "@/lib/placeholder-data";
-import type { Category } from "@/lib/categories";
+import type { TopCategory } from "@/lib/categories";
 import { createClient } from "@/lib/supabase-browser";
 
 const SORT_OPTIONS = [
   { value: "featured", label: "Featured" },
-  { value: "raised", label: "Most Raised" },
-  { value: "donors", label: "Most Donors" },
-  { value: "newest", label: "Newest" },
+  { value: "raised",   label: "Most Raised" },
+  { value: "donors",   label: "Most Donors" },
+  { value: "newest",   label: "Newest" },
 ];
 
 interface Props {
@@ -23,14 +23,15 @@ interface Props {
 
 export default function DiscoverClient({ organizations, displaySettingsMap }: Props) {
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<Category | "all">("all");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [activeSubcategory, setActiveSubcategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState("featured");
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   const [locationFilter, setLocationFilter] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [causesBanner, setCausesBanner] = useState(false);
 
-  // Read ?q= from URL on mount (e.g. from homepage search)
+  // Read ?q= from URL on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
@@ -48,8 +49,6 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
         .eq("id", userData.user.id)
         .single();
       if (!profile?.causes?.length) return;
-
-      // Find first matching category
       const matchedCat = (profile.causes as string[])
         .map((c: string) => CAUSE_TO_CATEGORY[c])
         .find(Boolean);
@@ -61,15 +60,29 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
     loadUserCauses();
   }, []);
 
+  function selectCategory(cat: string) {
+    setActiveCategory(cat);
+    setActiveSubcategory("all");
+    setCausesBanner(false);
+  }
+
   const hasActiveFilters =
     activeCategory !== "all" || showVerifiedOnly || locationFilter.trim() || query.trim();
 
   function clearAll() {
     setQuery("");
     setActiveCategory("all");
+    setActiveSubcategory("all");
     setShowVerifiedOnly(false);
     setLocationFilter("");
+    setCausesBanner(false);
   }
+
+  // Subcategory chips for the active top-level category
+  const subOptions: string[] =
+    activeCategory !== "all"
+      ? [...(SUBCATEGORY_OPTIONS[activeCategory as TopCategory] ?? [])]
+      : [];
 
   const filtered = useMemo(() => {
     let orgs = [...organizations];
@@ -94,21 +107,36 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
       orgs = orgs.filter((o) => o.category === activeCategory);
     }
 
+    if (activeCategory !== "all" && activeSubcategory !== "all") {
+      orgs = orgs.filter((o) => o.subcategory === activeSubcategory);
+    }
+
     if (showVerifiedOnly) {
       orgs = orgs.filter((o) => o.verified);
     }
 
     orgs.sort((a, b) => {
-      if (sortBy === "raised") return b.raised - a.raised;
-      if (sortBy === "donors") return b.donors - a.donors;
-      if (sortBy === "newest") return (b.founded ?? 0) - (a.founded ?? 0);
+      if (sortBy === "raised")  return b.raised - a.raised;
+      if (sortBy === "donors")  return b.donors - a.donors;
+      if (sortBy === "newest")  return (b.founded ?? 0) - (a.founded ?? 0);
       if (a.featured && !b.featured) return -1;
       if (!a.featured && b.featured) return 1;
       return 0;
     });
 
     return orgs;
-  }, [organizations, query, locationFilter, activeCategory, sortBy, showVerifiedOnly]);
+  }, [organizations, query, locationFilter, activeCategory, activeSubcategory, sortBy, showVerifiedOnly]);
+
+  // ── chip helpers ──────────────────────────────────────────────────────────
+  const chipStyle = (active: boolean) =>
+    active
+      ? { backgroundColor: "#1a7a4a", color: "white" }
+      : { backgroundColor: "#e5e1d8", color: "#374151" };
+
+  const subChipStyle = (active: boolean) =>
+    active
+      ? { backgroundColor: "#1a7a4a", color: "white" }
+      : { backgroundColor: "white", color: "#374151", border: "1px solid #d1d5db" };
 
   return (
     <div style={{ backgroundColor: "#faf9f6" }} className="min-h-screen">
@@ -153,7 +181,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        {/* ── Causes pre-filter banner ─────────────────────────────── */}
+        {/* Causes pre-filter banner */}
         {causesBanner && (
           <div
             className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl mb-5 text-sm"
@@ -164,7 +192,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
               <span className="font-medium">Showing causes matched to your interests</span>
             </div>
             <button
-              onClick={() => { setActiveCategory("all"); setCausesBanner(false); }}
+              onClick={clearAll}
               className="text-xs font-semibold underline whitespace-nowrap hover:no-underline"
             >
               Show all
@@ -172,36 +200,51 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
           </div>
         )}
 
-        {/* ── Desktop: category chips — horizontal scroll ─────────── */}
-        <div className="hidden sm:flex items-center gap-2 overflow-x-auto pb-2 mb-5" style={{ scrollbarWidth: "none" }}>
+        {/* ── Desktop: top-level category chips ───────────────────────────── */}
+        <div className="hidden sm:flex items-center gap-2 overflow-x-auto pb-2 mb-3" style={{ scrollbarWidth: "none" }}>
           <button
-            onClick={() => setActiveCategory("all")}
+            onClick={() => selectCategory("all")}
             className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap"
-            style={
-              activeCategory === "all"
-                ? { backgroundColor: "#1a7a4a", color: "white" }
-                : { backgroundColor: "#e5e1d8", color: "#374151" }
-            }
+            style={chipStyle(activeCategory === "all")}
           >
-            All Categories
+            All
           </button>
           {CATEGORIES.map((cat) => (
             <button
               key={cat.value}
-              onClick={() => setActiveCategory(cat.value)}
+              onClick={() => selectCategory(cat.value)}
               className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap"
-              style={
-                activeCategory === cat.value
-                  ? { backgroundColor: "#1a7a4a", color: "white" }
-                  : { backgroundColor: "#e5e1d8", color: "#374151" }
-              }
+              style={chipStyle(activeCategory === cat.value)}
             >
               {cat.label}
             </button>
           ))}
         </div>
 
-        {/* ── Mobile: collapsible filter drawer ─────────────────────── */}
+        {/* ── Desktop: subcategory chips (row 2) ──────────────────────────── */}
+        {subOptions.length > 1 && (
+          <div className="hidden sm:flex items-center gap-2 overflow-x-auto pb-2 mb-5" style={{ scrollbarWidth: "none" }}>
+            <button
+              onClick={() => setActiveSubcategory("all")}
+              className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap"
+              style={subChipStyle(activeSubcategory === "all")}
+            >
+              All {CATEGORY_LABELS[activeCategory] ?? activeCategory}
+            </button>
+            {subOptions.map((sub) => (
+              <button
+                key={sub}
+                onClick={() => setActiveSubcategory(sub)}
+                className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap"
+                style={subChipStyle(activeSubcategory === sub)}
+              >
+                {CATEGORY_LABELS[sub] ?? sub}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── Mobile: collapsible filter drawer ─────────────────────────── */}
         <div className="sm:hidden mb-4">
           <button
             onClick={() => setFiltersOpen(!filtersOpen)}
@@ -212,10 +255,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
               <SlidersHorizontal className="w-4 h-4" />
               Filters
               {hasActiveFilters && (
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: "#1a7a4a" }}
-                />
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#1a7a4a" }} />
               )}
             </span>
             <ChevronDown
@@ -229,12 +269,12 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
               className="mt-2 rounded-xl bg-white border p-4 space-y-4"
               style={{ borderColor: "#e5e1d8" }}
             >
-              {/* Category */}
+              {/* Top-level category */}
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Category</p>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setActiveCategory("all")}
+                    onClick={() => selectCategory("all")}
                     className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
                     style={
                       activeCategory === "all"
@@ -247,7 +287,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
                   {CATEGORIES.map((cat) => (
                     <button
                       key={cat.value}
-                      onClick={() => setActiveCategory(cat.value)}
+                      onClick={() => selectCategory(cat.value)}
                       className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
                       style={
                         activeCategory === cat.value
@@ -260,6 +300,42 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
                   ))}
                 </div>
               </div>
+
+              {/* Subcategory (mobile) */}
+              {subOptions.length > 1 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    {CATEGORY_LABELS[activeCategory] ?? activeCategory} Type
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setActiveSubcategory("all")}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                      style={
+                        activeSubcategory === "all"
+                          ? { backgroundColor: "#1a7a4a", color: "white" }
+                          : { backgroundColor: "#f3f4f6", color: "#374151" }
+                      }
+                    >
+                      All
+                    </button>
+                    {subOptions.map((sub) => (
+                      <button
+                        key={sub}
+                        onClick={() => setActiveSubcategory(sub)}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                        style={
+                          activeSubcategory === sub
+                            ? { backgroundColor: "#1a7a4a", color: "white" }
+                            : { backgroundColor: "#f3f4f6", color: "#374151" }
+                        }
+                      >
+                        {CATEGORY_LABELS[sub] ?? sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Location */}
               <div>
@@ -308,14 +384,13 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
           )}
         </div>
 
-        {/* ── Desktop: filters row ───────────────────────────────────── */}
+        {/* ── Desktop: filters row (result count, location, verified, sort) ─ */}
         <div className="hidden sm:flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-sm text-gray-500">
               {filtered.length} result{filtered.length !== 1 ? "s" : ""}
             </span>
 
-            {/* Location filter */}
             <div className="relative">
               <input
                 type="text"
@@ -335,7 +410,6 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
               )}
             </div>
 
-            {/* Verified */}
             <button
               onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border"
@@ -356,7 +430,6 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
               Verified only
             </button>
 
-            {/* Clear all */}
             {hasActiveFilters && (
               <button
                 onClick={clearAll}
@@ -401,7 +474,11 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
         {filtered.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((org) => (
-              <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
+              <OrgCard
+                key={org.id}
+                org={org}
+                displaySettings={displaySettingsMap?.[org.id]}
+              />
             ))}
           </div>
         ) : (

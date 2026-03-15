@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart, Users, Lock, RefreshCw } from "lucide-react";
 import CheckoutModal from "@/components/CheckoutModal";
@@ -43,7 +43,35 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<Frequency>("monthly");
-  const [recurringStatus, setRecurringStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [stripeConnected, setStripeConnected] = useState(false);
+  const [donorId, setDonorId] = useState<string | undefined>(undefined);
+  const [donorEmail, setDonorEmail] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    // Check if this org has a connected Stripe account
+    async function checkConnect() {
+      try {
+        const supabase = createClient() as any;
+        const { data } = await supabase
+          .from("organizations")
+          .select("stripe_account_id, stripe_onboarding_complete")
+          .eq("id", org.id)
+          .single();
+        if (data?.stripe_onboarding_complete) setStripeConnected(true);
+      } catch { /* silent — fall back to direct charge */ }
+    }
+    // Get current donor ID + email for metadata
+    async function getDonorId() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) setDonorId(user.id);
+        if (user?.email) setDonorEmail(user.email);
+      } catch { /* silent */ }
+    }
+    checkConnect();
+    getDonorId();
+  }, [org.id]);
 
   const ds = { ...DEFAULT_DISPLAY, ...displaySettings };
   const progress = getProgressPercent(org.raised, org.goal);
@@ -52,34 +80,6 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
   function openCheckout() {
     if (effectiveAmount < 0.50) return;
     setModalOpen(true);
-  }
-
-  async function handleStartRecurring() {
-    if (effectiveAmount < 0.50) return;
-    setRecurringStatus("saving");
-    try {
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-      if (!userId) {
-        setRecurringStatus("error");
-        setTimeout(() => setRecurringStatus("idle"), 3000);
-        return;
-      }
-      await (supabase as any).from("recurring_donations").insert({
-        user_id: userId,
-        org_id: org.id,
-        org_name: org.name,
-        amount_cents: Math.round(effectiveAmount * 100),
-        frequency,
-        active: true,
-      });
-      setRecurringStatus("saved");
-      setTimeout(() => setRecurringStatus("idle"), 3000);
-    } catch {
-      setRecurringStatus("error");
-      setTimeout(() => setRecurringStatus("idle"), 3000);
-    }
   }
 
   const showProgressSection = ds.show_raised || ds.show_goal || ds.show_donors;
@@ -250,19 +250,13 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
         {/* Donate / Start Recurring button */}
         {isRecurring ? (
           <button
-            onClick={handleStartRecurring}
-            disabled={effectiveAmount < 0.50 || recurringStatus === "saving"}
+            onClick={openCheckout}
+            disabled={effectiveAmount < 0.50}
             className="w-full py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2 mb-3 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: recurringStatus === "saved" ? "#16a34a" : "#1a7a4a" }}
+            style={{ backgroundColor: "#1a7a4a" }}
           >
             <RefreshCw className="w-4 h-4" />
-            {recurringStatus === "saving"
-              ? "Setting up…"
-              : recurringStatus === "saved"
-              ? "Recurring giving set up!"
-              : recurringStatus === "error"
-              ? "Error — try again"
-              : `Give ${effectiveAmount >= 0.50 ? formatCurrency(effectiveAmount) : ""} ${FREQUENCIES.find((f) => f.value === frequency)?.label ?? ""}`}
+            {`Give ${effectiveAmount >= 0.50 ? formatCurrency(effectiveAmount) : ""} ${FREQUENCIES.find((f) => f.value === frequency)?.label ?? ""}`}
           </button>
         ) : (
           <button
@@ -295,6 +289,11 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
         onClose={() => setModalOpen(false)}
         amountDollars={effectiveAmount}
         singleOrgName={org.name}
+        stripeAccountConnected={stripeConnected}
+        donorId={donorId}
+        donorEmail={donorEmail}
+        isRecurring={isRecurring}
+        frequency={frequency}
         allocations={[
           {
             orgId: org.id,

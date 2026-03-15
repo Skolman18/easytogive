@@ -21,6 +21,10 @@ import {
   ArrowUp,
   ArrowDown,
   AlertCircle,
+  Receipt,
+  ExternalLink,
+  X,
+  RefreshCw,
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-browser";
@@ -38,6 +42,87 @@ import {
 } from "@/lib/placeholder-data";
 
 const ADMIN_EMAIL = "sethmitzel@gmail.com";
+
+interface DonationRecord {
+  id: string;
+  org_id: string;
+  org_name: string;
+  org_image_url: string | null;
+  org_ein: string | null;
+  amount: number;
+  fee_amount: number;
+  fee_covered: boolean;
+  donated_at: string;
+  receipt_id: string | null;
+}
+
+function downloadReceiptPDF(record: DonationRecord, user: { email?: string } | null, donorName: string) {
+  const win = window.open("", "_blank");
+  if (!win) return;
+  const date = new Date(record.donated_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const total = (record.amount + (record.fee_covered ? record.fee_amount : 0)).toFixed(2);
+  win.document.write(`<!DOCTYPE html><html><head><title>EasyToGive Receipt</title><style>
+    body{font-family:Arial,sans-serif;max-width:600px;margin:40px auto;color:#111;padding:0 20px}
+    h1{color:#1a7a4a;margin-bottom:2px}h2{margin-top:4px;font-size:20px}
+    .sub{color:#6b7280;font-size:13px;margin-bottom:20px}
+    .divider{border:none;border-top:1px solid #e5e1d8;margin:16px 0}
+    .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0ede6;font-size:14px}
+    .label{color:#6b7280}.value{font-weight:500}
+    .total-row{display:flex;justify-content:space-between;padding:10px 0;font-weight:700;font-size:15px;color:#1a7a4a}
+    .note{font-size:11px;color:#6b7280;margin-top:20px;line-height:1.6}
+    .irs-link{color:#1a7a4a}
+    @media print{.no-print{display:none}}
+    .btn{display:inline-block;margin-top:20px;padding:10px 24px;background:#1a7a4a;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+  </style></head><body>
+    <h1>EasyToGive</h1><h2>Donation Receipt</h2>
+    <p class="sub">This serves as your official donation receipt for tax purposes.</p>
+    <hr class="divider" />
+    <div class="row"><span class="label">Receipt Number</span><span class="value">${record.receipt_id ?? record.id.slice(0, 8).toUpperCase()}</span></div>
+    <div class="row"><span class="label">Date</span><span class="value">${date}</span></div>
+    <div class="row"><span class="label">Donor Name</span><span class="value">${donorName || "—"}</span></div>
+    <div class="row"><span class="label">Donor Email</span><span class="value">${user?.email || "—"}</span></div>
+    <div class="row"><span class="label">Organization</span><span class="value">${record.org_name}</span></div>
+    <div class="row"><span class="label">Organization EIN</span><span class="value">${record.org_ein ?? "See organization directly"}</span></div>
+    <div class="row"><span class="label">Donation Amount</span><span class="value">$${record.amount.toFixed(2)}</span></div>
+    <div class="row"><span class="label">Platform Fee</span><span class="value">$${record.fee_amount.toFixed(2)} ${record.fee_covered ? "(covered by you)" : "(covered by EasyToGive)"}</span></div>
+    <div class="total-row"><span>Total Charged</span><span>$${total}</span></div>
+    <hr class="divider" />
+    <p class="note">EasyToGive is a technology platform. Please verify the tax-exempt status of the organization you donated to before claiming a deduction. Political donations are never tax deductible.<br /><a class="irs-link" href="https://apps.irs.gov/app/eos/">Verify organization status → apps.irs.gov/app/eos/</a></p>
+    <button class="btn no-print" onclick="window.print()">Print / Save as PDF</button>
+  </body></html>`);
+  win.document.close();
+}
+
+function downloadYearSummaryPDF(records: DonationRecord[], year: string, user: { email?: string } | null, donorName: string) {
+  const win = window.open("", "_blank");
+  if (!win) return;
+  const total = records.reduce((s, r) => s + r.amount, 0).toFixed(2);
+  const rows = records.map((r) => {
+    const date = new Date(r.donated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return `<tr><td>${date}</td><td>${r.org_name}</td><td>$${r.amount.toFixed(2)}</td><td>${r.fee_covered ? "Yes" : "No"}</td></tr>`;
+  }).join("");
+  win.document.write(`<!DOCTYPE html><html><head><title>EasyToGive Giving Summary ${year}</title><style>
+    body{font-family:Arial,sans-serif;max-width:700px;margin:40px auto;color:#111;padding:0 20px}
+    h1{color:#1a7a4a}h2{font-size:16px;color:#374151}
+    table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+    th{background:#f3f4f6;text-align:left;padding:8px 10px;border-bottom:2px solid #e5e1d8}
+    td{padding:7px 10px;border-bottom:1px solid #f0ede6}
+    .total{font-weight:700;font-size:15px;color:#1a7a4a;margin-top:10px}
+    .note{font-size:11px;color:#6b7280;margin-top:20px;line-height:1.6}
+    .irs-link{color:#1a7a4a}
+    @media print{.no-print{display:none}}
+    .btn{display:inline-block;margin-top:20px;padding:10px 24px;background:#1a7a4a;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+  </style></head><body>
+    <h1>EasyToGive</h1>
+    <h2>Giving Summary — ${year}</h2>
+    <p style="font-size:14px;color:#374151">Donor: ${donorName || user?.email || "—"} &nbsp;|&nbsp; Email: ${user?.email || "—"}</p>
+    <p class="total">Total donated: $${total}</p>
+    <table><thead><tr><th>Date</th><th>Organization</th><th>Amount</th><th>Fee Covered</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="note">EasyToGive is a technology platform. Please verify the tax-exempt status of each organization before claiming a deduction. Political donations are never tax deductible.<br /><a class="irs-link" href="https://apps.irs.gov/app/eos/">Verify organization status → apps.irs.gov/app/eos/</a></p>
+    <button class="btn no-print" onclick="window.print()">Print / Save as PDF</button>
+  </body></html>`);
+  win.document.close();
+}
 
 // ─── Compact avatar upload ────────────────────────────────────────────────────
 function AvatarUpload({
@@ -122,6 +207,8 @@ function AvatarUpload({
 
 const ALL_BASE_TABS = [
   { id: "history", label: "Giving History", icon: Clock },
+  { id: "receipts", label: "Receipts", icon: Receipt },
+  { id: "recurring", label: "Recurring Giving", icon: RefreshCw },
   { id: "tax", label: "Tax Documents", icon: FileText },
   { id: "watchlist", label: "Watchlist", icon: Bookmark },
   { id: "settings", label: "Settings", icon: Settings },
@@ -218,6 +305,18 @@ function ProfilePageInner() {
     defaultTab: "history",
   });
 
+  const [receiptsYear, setReceiptsYear] = useState<number>(2026);
+  const [donationRecords, setDonationRecords] = useState<DonationRecord[]>([]);
+  const [loadingReceipts, setLoadingReceipts] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<DonationRecord | null>(null);
+
+  const [recurringDonations, setRecurringDonations] = useState<{
+    id: string; org_id: string; org_name: string;
+    amount_cents: number; frequency: string;
+    stripe_subscription_id: string | null; created_at: string;
+  }[]>([]);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
   useEffect(() => {
     const prefs = loadDashPrefs();
     setDashPrefs(prefs);
@@ -229,10 +328,75 @@ function ProfilePageInner() {
       } else {
         setUser(user);
         loadProfile(user.id);
+        loadDonations(user.id, receiptsYear);
+        loadRecurring(user.id);
         setLoadingUser(false);
       }
     });
   }, [router]);
+
+  async function loadDonations(userId: string, year: number) {
+    setLoadingReceipts(true);
+    const supabase = createClient() as any;
+    let query = supabase
+      .from("donations")
+      .select("id, org_id, amount, fee_amount, fee_covered, donated_at, receipt_id, organizations(name, image_url, ein)")
+      .eq("user_id", userId)
+      .order("donated_at", { ascending: false });
+    if (year !== 0) {
+      query = query
+        .gte("donated_at", `${year}-01-01`)
+        .lt("donated_at", `${year + 1}-01-01`);
+    }
+    const { data } = await query;
+    if (data) {
+      setDonationRecords(
+        data.map((d: any) => ({
+          id: d.id,
+          org_id: d.org_id,
+          org_name: d.organizations?.name ?? "Unknown Organization",
+          org_image_url: d.organizations?.image_url ?? null,
+          org_ein: d.organizations?.ein ?? null,
+          amount: (d.amount ?? 0) / 100,
+          fee_amount: (d.fee_amount ?? 0) / 100,
+          fee_covered: d.fee_covered ?? false,
+          donated_at: d.donated_at,
+          receipt_id: d.receipt_id ?? null,
+        }))
+      );
+    }
+    setLoadingReceipts(false);
+  }
+
+  async function loadRecurring(userId: string) {
+    const { data } = await (createClient() as any)
+      .from("recurring_donations")
+      .select("id, org_id, org_name, amount_cents, frequency, stripe_subscription_id, created_at")
+      .eq("user_id", userId)
+      .eq("active", true)
+      .order("created_at", { ascending: false });
+    if (data) setRecurringDonations(data);
+  }
+
+  async function cancelRecurring(id: string) {
+    if (!user) return;
+    setCancellingId(id);
+    try {
+      await fetch("/api/stripe/cancel-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recurringDonationId: id }),
+      });
+      setRecurringDonations((prev) => prev.filter((r) => r.id !== id));
+    } catch { /* silent */ }
+    setCancellingId(null);
+  }
+
+  // reload receipts when year changes
+  useEffect(() => {
+    if (user) loadDonations(user.id, receiptsYear);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, receiptsYear]);
 
   async function loadProfile(userId: string) {
     const { data } = await (createClient() as any)
@@ -652,6 +816,26 @@ function ProfilePageInner() {
                 </p>
               </div>
             </div>
+            <div className="rounded-2xl border p-5 flex items-start justify-between gap-4" style={{ borderColor: "#e5e1d8", backgroundColor: "white" }}>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#e8f5ee" }}>
+                  <span className="text-lg">✦</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 mb-1">AI Tax Optimizer</p>
+                  <p className="text-sm text-gray-600">
+                    Find out how much your donations reduce your taxes — or how much more to give to hit a savings target.
+                  </p>
+                </div>
+              </div>
+              <a
+                href="/tools/tax-optimizer"
+                className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white whitespace-nowrap"
+                style={{ backgroundColor: "#1a7a4a" }}
+              >
+                Try it →
+              </a>
+            </div>
             <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
               <div className="px-6 py-4 border-b" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
                 <h2 className="font-display font-semibold text-gray-900">Tax Documents</h2>
@@ -682,6 +866,252 @@ function ProfilePageInner() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Receipts */}
+        {activeTab === "receipts" && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <h2 className="font-display text-xl font-semibold text-gray-900">Donation Receipts</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Every receipt in one place — ready for tax time.</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <select
+                  value={receiptsYear === 0 ? "all" : receiptsYear}
+                  onChange={(e) => setReceiptsYear(e.target.value === "all" ? 0 : parseInt(e.target.value))}
+                  className="px-3 py-2 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 bg-white"
+                  style={{ borderColor: "#e5e1d8" }}
+                >
+                  {[2026, 2025, 2024, 2023].map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                  <option value="all">All Time</option>
+                </select>
+                {donationRecords.length > 0 && (
+                  <button
+                    onClick={() => downloadYearSummaryPDF(donationRecords, receiptsYear === 0 ? "All Time" : receiptsYear.toString(), user, profile.full_name)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download All
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {loadingReceipts ? (
+              <div className="py-20 text-center text-gray-400">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+              </div>
+            ) : donationRecords.length > 0 ? (
+              <>
+                {/* Summary card */}
+                <div
+                  className="rounded-2xl p-5 border"
+                  style={{ backgroundColor: "#e8f5ee", borderColor: "#1a7a4a" }}
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <div className="font-display text-2xl font-bold" style={{ color: "#1a7a4a" }}>
+                        ${donationRecords.reduce((s, r) => s + r.amount, 0).toFixed(2)}
+                      </div>
+                      <div className="text-xs text-gray-600 mt-0.5">
+                        Total donated{receiptsYear !== 0 ? ` in ${receiptsYear}` : " all time"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-display text-2xl font-bold text-gray-900">{donationRecords.length}</div>
+                      <div className="text-xs text-gray-600 mt-0.5">Number of donations</div>
+                    </div>
+                    <div>
+                      <div className="font-display text-2xl font-bold text-gray-900">
+                        {new Set(donationRecords.map((r) => r.org_id)).size}
+                      </div>
+                      <div className="text-xs text-gray-600 mt-0.5">Organizations supported</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Receipt rows */}
+                <div className="space-y-3">
+                  {donationRecords.map((record) => (
+                    <div
+                      key={record.id}
+                      className="bg-white rounded-2xl border shadow-sm overflow-hidden"
+                      style={{ borderColor: "#e5e1d8" }}
+                    >
+                      <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div
+                            className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-white text-xs font-bold"
+                            style={{ backgroundColor: "#1a7a4a" }}
+                          >
+                            {record.org_image_url ? (
+                              <img src={record.org_image_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              record.org_name.slice(0, 2).toUpperCase()
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-sm text-gray-900 truncate">{record.org_name}</div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(record.donated_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                            </div>
+                            {record.fee_covered && (
+                              <span className="inline-block text-xs px-2 py-0.5 rounded-full mt-0.5" style={{ backgroundColor: "#f3f4f6", color: "#6b7280" }}>
+                                You covered the fee
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                          <span className="font-bold text-sm" style={{ color: "#1a7a4a" }}>
+                            ${record.amount.toFixed(2)}
+                          </span>
+                          <button
+                            onClick={() => setSelectedReceipt(record)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors hover:bg-gray-50"
+                            style={{ borderColor: "#e5e1d8", color: "#374151" }}
+                          >
+                            View Receipt
+                          </button>
+                          {record.receipt_id && (
+                            <Link
+                              href={`/receipts/${record.receipt_id}`}
+                              target="_blank"
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors hover:bg-gray-50"
+                              style={{ borderColor: "#e5e1d8", color: "#374151" }}
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              Open
+                            </Link>
+                          )}
+                          <button
+                            onClick={() => downloadReceiptPDF(record, user, profile.full_name)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                            style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                          >
+                            <Download className="w-3 h-3" />
+                            PDF
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-20 bg-white rounded-2xl border" style={{ borderColor: "#e5e1d8" }}>
+                <Receipt className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="font-display text-xl font-semibold text-gray-900 mb-2">
+                  No donations in {receiptsYear === 0 ? "your history" : receiptsYear}
+                </h3>
+                <p className="text-gray-500 mb-6 text-sm">Start giving to see your receipts here.</p>
+                <Link
+                  href="/discover"
+                  className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: "#1a7a4a" }}
+                >
+                  Discover Organizations
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Recurring Giving */}
+        {activeTab === "recurring" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-display text-xl font-semibold text-gray-900">Recurring Giving</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Your active recurring donations</p>
+              </div>
+              <a
+                href="/portfolio"
+                className="text-sm font-semibold flex items-center gap-1.5"
+                style={{ color: "#1a7a4a" }}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Set up new
+              </a>
+            </div>
+
+            {recurringDonations.length === 0 ? (
+              <div
+                className="rounded-2xl border p-10 text-center"
+                style={{ borderColor: "#e5e1d8", backgroundColor: "#faf9f6" }}
+              >
+                <RefreshCw className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium mb-1">No active recurring gifts</p>
+                <p className="text-sm text-gray-400 mb-5">
+                  Set up recurring giving from any org page or your portfolio.
+                </p>
+                <a
+                  href="/discover"
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white inline-block"
+                  style={{ backgroundColor: "#1a7a4a" }}
+                >
+                  Discover organizations
+                </a>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recurringDonations.map((r) => {
+                  const freqLabel = r.frequency
+                    ? r.frequency.charAt(0).toUpperCase() + r.frequency.slice(1)
+                    : "Recurring";
+                  return (
+                    <div
+                      key={r.id}
+                      className="bg-white rounded-2xl border p-5 flex items-center justify-between gap-4"
+                      style={{ borderColor: "#e5e1d8" }}
+                    >
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: "#e8f5ee" }}
+                        >
+                          <Heart className="w-5 h-5" style={{ color: "#1a7a4a" }} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{r.org_name}</p>
+                          <p className="text-sm text-gray-500">
+                            <span style={{ color: "#1a7a4a" }} className="font-semibold">
+                              {formatCurrency(r.amount_cents / 100)}
+                            </span>
+                            {" · "}
+                            {freqLabel}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {r.org_id && (
+                          <a
+                            href={`/org/${r.org_id}`}
+                            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => cancelRecurring(r.id)}
+                          disabled={cancellingId === r.id}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:opacity-50"
+                          style={{ borderColor: "#fca5a5", color: "#dc2626", backgroundColor: "#fef2f2" }}
+                        >
+                          {cancellingId === r.id ? "Cancelling…" : "Cancel"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -1039,6 +1469,108 @@ function ProfilePageInner() {
           </div>
         )}
       </div>
+
+      {/* Receipt Modal */}
+      {selectedReceipt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedReceipt(null); }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-y-auto"
+            style={{ maxHeight: "90vh" }}
+          >
+            <div className="px-6 py-5">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <div className="font-display text-base font-bold" style={{ color: "#1a7a4a" }}>EasyToGive</div>
+                  <h2 className="font-display text-xl font-bold text-gray-900">Donation Receipt</h2>
+                </div>
+                <button
+                  onClick={() => setSelectedReceipt(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 flex-shrink-0 mt-0.5"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">This serves as your official donation receipt for tax purposes.</p>
+
+              <hr style={{ borderColor: "#e5e1d8" }} className="mb-4" />
+
+              <div className="space-y-0.5">
+                {(
+                  [
+                    ["Receipt Number", selectedReceipt.receipt_id ?? selectedReceipt.id.slice(0, 8).toUpperCase()],
+                    ["Date", new Date(selectedReceipt.donated_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })],
+                    ["Donor Name", profile.full_name || user?.email?.split("@")[0] || "—"],
+                    ["Donor Email", user?.email || "—"],
+                    ["Organization", selectedReceipt.org_name],
+                    ["Organization EIN", selectedReceipt.org_ein ?? "See organization directly"],
+                  ] as [string, string][]
+                ).map(([label, value]) => (
+                  <div key={label} className="flex items-start justify-between gap-4 py-2 border-b text-sm" style={{ borderColor: "#f0ede6" }}>
+                    <span className="text-gray-500 flex-shrink-0">{label}</span>
+                    <span className="text-gray-900 text-right break-all">{value}</span>
+                  </div>
+                ))}
+                <div className="flex items-start justify-between gap-4 py-2 border-b text-sm" style={{ borderColor: "#f0ede6" }}>
+                  <span className="text-gray-500 flex-shrink-0">Donation Amount</span>
+                  <span className="font-semibold" style={{ color: "#1a7a4a" }}>${selectedReceipt.amount.toFixed(2)}</span>
+                </div>
+                <div className="flex items-start justify-between gap-4 py-2 border-b text-sm" style={{ borderColor: "#f0ede6" }}>
+                  <span className="text-gray-500 flex-shrink-0">Platform Fee</span>
+                  <span className="text-gray-900 text-right">
+                    ${selectedReceipt.fee_amount.toFixed(2)}{" "}
+                    {selectedReceipt.fee_covered ? "(covered by you)" : "(covered by EasyToGive)"}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4 py-2 text-sm font-semibold">
+                  <span className="text-gray-700">Total Charged</span>
+                  <span style={{ color: "#1a7a4a" }}>
+                    ${(selectedReceipt.amount + (selectedReceipt.fee_covered ? selectedReceipt.fee_amount : 0)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <hr style={{ borderColor: "#e5e1d8" }} className="my-4" />
+
+              <p className="text-xs text-gray-500 mb-2 leading-relaxed">
+                EasyToGive is a technology platform. Please verify the tax-exempt status of the organization
+                you donated to before claiming a deduction. Political donations are never tax deductible.
+              </p>
+              <a
+                href="https://apps.irs.gov/app/eos/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold mb-5"
+                style={{ color: "#1a7a4a" }}
+              >
+                Verify organization status on IRS.gov <ExternalLink className="w-3 h-3" />
+              </a>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => downloadReceiptPDF(selectedReceipt, user, profile.full_name)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: "#1a7a4a" }}
+                >
+                  <Download className="w-4 h-4" />
+                  Download PDF Receipt
+                </button>
+                <button
+                  onClick={() => setSelectedReceipt(null)}
+                  className="px-4 py-2.5 rounded-lg text-sm font-medium border"
+                  style={{ borderColor: "#e5e1d8", color: "#374151" }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,27 +18,19 @@ import {
   Loader2,
   ExternalLink,
   Film,
+  Eye,
+  PlayCircle,
 } from "lucide-react";
+import { CATEGORY_LABELS, SUBCATEGORY_OPTIONS, TOP_LEVEL_CATEGORIES } from "@/lib/categories";
+import type { TopCategory } from "@/lib/categories";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const CATEGORIES = [
-  "nonprofits", "education", "environment",
-  "churches", "animal-rescue", "local",
-];
-
-const CATEGORY_LABELS: Record<string, string> = {
-  churches: "Church",
-  "animal-rescue": "Animal Rescue",
-  nonprofits: "Nonprofit",
-  education: "Education",
-  environment: "Environment",
-  local: "Local Cause",
-};
+const CATEGORIES = [...TOP_LEVEL_CATEGORIES];
 
 const EMPTY_FORM = {
   id: "", name: "", tagline: "", description: "",
-  category: "nonprofits", location: "", ein: "",
+  category: "community", subcategory: "", location: "", ein: "",
   founded: 2020, website: "", goal: 50000,
   tags: [] as string[], verified: false, featured: false,
   image_url: "", cover_url: "", sort_order: 0,
@@ -64,6 +56,7 @@ const ADMIN_TABS = [
   { id: "orgs", label: "Organizations" },
   { id: "users", label: "Users" },
   { id: "waitlist", label: "Waitlist" },
+  { id: "applications", label: "Applications" },
   { id: "missionaries", label: "Missionaries" },
   { id: "navigation", label: "Navigation" },
   { id: "roadmap", label: "Roadmap" },
@@ -327,6 +320,7 @@ function OrgsTab({ onEdit }: { onEdit: (org: any) => void }) {
   const [orgs, setOrgs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const load = useCallback(async () => {
     const { data } = await (createClient() as any)
@@ -355,7 +349,9 @@ function OrgsTab({ onEdit }: { onEdit: (org: any) => void }) {
 
   const filtered = orgs.filter((o) => {
     const q = search.toLowerCase();
-    return (o.name || "").toLowerCase().includes(q) || (o.location || "").toLowerCase().includes(q);
+    const matchSearch = (o.name || "").toLowerCase().includes(q) || (o.location || "").toLowerCase().includes(q);
+    const matchCat = categoryFilter === "all" || o.category === categoryFilter;
+    return matchSearch && matchCat;
   });
 
   const thCls = "text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap";
@@ -363,19 +359,44 @@ function OrgsTab({ onEdit }: { onEdit: (org: any) => void }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-        <p className="text-sm text-gray-500">
-          <span className="font-semibold text-gray-900">{orgs.length}</span> organizations listed
-        </p>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name or location…"
-            className="pl-8 pr-4 py-2 border rounded-lg text-sm outline-none focus:border-green-600 transition-colors bg-white"
-            style={{ borderColor: "#e5e7eb", width: 240 }}
-          />
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-sm text-gray-500">
+            <span className="font-semibold text-gray-900">{orgs.length}</span> organizations listed
+          </p>
+          <a
+            href="/signup/organization?preview=true"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-semibold transition-all hover:bg-green-50"
+            style={{ borderColor: "#1a7a4a", color: "#1a7a4a" }}
+          >
+            <PlayCircle className="w-3.5 h-3.5" />
+            Preview Org Onboarding Flow
+          </a>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="text-sm border rounded-lg px-3 py-2 text-gray-700 outline-none focus:border-green-600 bg-white"
+            style={{ borderColor: "#e5e7eb" }}
+          >
+            <option value="all">All Categories</option>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>{CATEGORY_LABELS[c] ?? c}</option>
+            ))}
+          </select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name or location…"
+              className="pl-8 pr-4 py-2 border rounded-lg text-sm outline-none focus:border-green-600 transition-colors bg-white"
+              style={{ borderColor: "#e5e7eb", width: 240 }}
+            />
+          </div>
         </div>
       </div>
 
@@ -428,10 +449,13 @@ function OrgsTab({ onEdit }: { onEdit: (org: any) => void }) {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className="px-2 py-0.5 rounded-full text-xs font-medium"
+                      className="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
                       style={{ backgroundColor: "#f3f4f6", color: "#6b7280", border: "1px solid #e5e7eb" }}
                     >
                       {CATEGORY_LABELS[org.category] ?? org.category}
+                      {org.subcategory && (
+                        <> › {CATEGORY_LABELS[org.subcategory] ?? org.subcategory}</>
+                      )}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500 max-w-[140px] truncate">{org.location || "—"}</td>
@@ -466,6 +490,16 @@ function OrgsTab({ onEdit }: { onEdit: (org: any) => void }) {
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
+                      <a
+                        href={`/org/dashboard?preview=true&orgId=${org.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg border text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition-colors"
+                        style={{ borderColor: "#fde68a" }}
+                        title="Preview as Org"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </a>
                       <button
                         onClick={() => handleDelete(org.id)}
                         className="p-1.5 rounded-lg border text-red-400 bg-red-50 hover:bg-red-100 transition-colors"
@@ -1092,54 +1126,85 @@ function NavLinksTab() {
       </p>
 
       <div className="rounded-xl border overflow-hidden bg-white" style={{ borderColor: "#e5e7eb" }}>
-        {links.map((link, i) => (
-          <div
-            key={link.id}
-            className="flex items-center gap-3 px-4 py-3 border-b last:border-0"
-            style={{ borderColor: "#f3f4f6", opacity: link.visible ? 1 : 0.45 }}
-          >
-            {/* Up/down */}
-            <div className="flex flex-col gap-0.5 flex-shrink-0">
-              <button
-                onClick={() => move(i, -1)}
-                disabled={i === 0}
-                className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-20 transition-colors"
-                aria-label="Move up"
-              >
-                <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
-              </button>
-              <button
-                onClick={() => move(i, 1)}
-                disabled={i === links.length - 1}
-                className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-20 transition-colors"
-                aria-label="Move down"
-              >
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-              </button>
-            </div>
+        {links
+          .filter((l) => l.href !== "/missionaries" && l.href !== "/politics")
+          .map((link) => {
+            const actualIdx = links.findIndex((l) => l.id === link.id);
+            const isExplore = link.href === "#explore";
+            return (
+              <div key={link.id}>
+                <div
+                  className="flex items-center gap-3 px-4 py-3 border-b"
+                  style={{ borderColor: "#f3f4f6", opacity: link.visible ? 1 : 0.45 }}
+                >
+                  {/* Up/down */}
+                  <div className="flex flex-col gap-0.5 flex-shrink-0">
+                    <button
+                      onClick={() => move(actualIdx, -1)}
+                      disabled={actualIdx === 0}
+                      className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-20 transition-colors"
+                      aria-label="Move up"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                    <button
+                      onClick={() => move(actualIdx, 1)}
+                      disabled={actualIdx === links.length - 1}
+                      className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-20 transition-colors"
+                      aria-label="Move down"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  </div>
 
-            {/* Order badge */}
-            <span className="w-5 text-xs font-mono text-gray-300 flex-shrink-0">{i + 1}</span>
+                  {/* Order badge */}
+                  <span className="w-5 text-xs font-mono text-gray-300 flex-shrink-0">{actualIdx + 1}</span>
 
-            {/* Label + href */}
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm text-gray-900">{link.label}</div>
-              <div className="text-xs text-gray-400 font-mono">{link.href}</div>
-            </div>
+                  {/* Label + href */}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-gray-900">{link.label}</div>
+                    <div className="text-xs text-gray-400 font-mono">{isExplore ? "dropdown" : link.href}</div>
+                  </div>
 
-            {/* Visible toggle */}
-            <button
-              onClick={() => toggleVisible(i)}
-              className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors flex-shrink-0 ${
-                link.visible
-                  ? "bg-green-100 text-green-700 hover:bg-green-200"
-                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-              }`}
-            >
-              {link.visible ? "Visible" : "Hidden"}
-            </button>
-          </div>
-        ))}
+                  {/* Visible toggle */}
+                  <button
+                    onClick={() => toggleVisible(actualIdx)}
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors flex-shrink-0 ${
+                      link.visible
+                        ? "bg-green-100 text-green-700 hover:bg-green-200"
+                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    }`}
+                  >
+                    {link.visible ? "Visible" : "Hidden"}
+                  </button>
+                </div>
+
+                {/* Sub-items shown below the Explore row */}
+                {isExplore && (
+                  <>
+                    {[
+                      { label: "Missionaries", href: "/missionaries" },
+                    ].map((child) => (
+                      <div
+                        key={child.href}
+                        className="flex items-center gap-3 py-2.5 border-b"
+                        style={{ borderColor: "#f3f4f6", paddingLeft: 40, paddingRight: 16 }}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs text-gray-700">{child.label}</div>
+                          <div className="text-xs text-gray-400 font-mono">{child.href}</div>
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400 flex-shrink-0">
+                          Sub-item
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            );
+          })}
       </div>
 
       <button
@@ -1423,6 +1488,298 @@ function VideoSection({
   );
 }
 
+// ─── Org Applications Tab ─────────────────────────────────────────────────────
+
+type AppStatus = "pending" | "approved" | "rejected";
+
+interface OrgApplication {
+  id: string;
+  org_name: string;
+  contact_name: string;
+  email: string;
+  website: string;
+  ein: string;
+  category: string;
+  subcategory: string;
+  description: string;
+  status: AppStatus;
+  admin_notes: string;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+function OrgApplicationsTab({ onCreateOrg }: { onCreateOrg?: (app: OrgApplication) => void }) {
+  const [apps, setApps] = useState<OrgApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<AppStatus | "all">("pending");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  // Track which approved applications have their org already made visible
+  const [visibleOrgs, setVisibleOrgs] = useState<Record<string, boolean>>({});
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/org/applications");
+    const data = await res.json();
+    const list: OrgApplication[] = data.applications ?? [];
+    setApps(list);
+    // Pre-fill notes textarea with existing admin_notes
+    const n: Record<string, string> = {};
+    list.forEach((a) => { n[a.id] = a.admin_notes ?? ""; });
+    setNotes(n);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function updateStatus(id: string, status: AppStatus) {
+    setSaving(id);
+    const res = await fetch("/api/org/applications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status, admin_notes: notes[id] ?? "" }),
+    });
+    if (res.ok) {
+      setApps((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status, admin_notes: notes[id] ?? "" } : a))
+      );
+    }
+    setSaving(null);
+  }
+
+  async function saveNotes(id: string) {
+    setSaving(id + "_notes");
+    await fetch("/api/org/applications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, admin_notes: notes[id] ?? "" }),
+    });
+    setSaving(null);
+  }
+
+  async function makeOrgVisible(app: OrgApplication) {
+    setSaving(app.id + "_visible");
+    const supabase = createClient() as any;
+    // Find the org record that was created when this application was approved
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("id, visible")
+      .eq("contact_email", app.email)
+      .maybeSingle();
+
+    if (!org) {
+      alert("No organization found for this application. It may not have been created yet.");
+      setSaving(null);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("organizations")
+      .update({ visible: true })
+      .eq("id", org.id);
+
+    if (error) {
+      alert("Failed to make org visible: " + error.message);
+    } else {
+      setVisibleOrgs((prev) => ({ ...prev, [app.id]: true }));
+    }
+    setSaving(null);
+  }
+
+  const filtered = filter === "all" ? apps : apps.filter((a) => a.status === filter);
+  const counts = {
+    all: apps.length,
+    pending: apps.filter((a) => a.status === "pending").length,
+    approved: apps.filter((a) => a.status === "approved").length,
+    rejected: apps.filter((a) => a.status === "rejected").length,
+  };
+
+  const statusStyle: Record<AppStatus, { bg: string; text: string }> = {
+    pending:  { bg: "#eff6ff", text: "#1d4ed8" },
+    approved: { bg: "#e8f5ee", text: "#1a7a4a" },
+    rejected: { bg: "#fef2f2", text: "#dc2626" },
+  };
+
+  if (loading) return <Spinner />;
+  if (apps.length === 0) return <EmptyState message="No org applications yet." />;
+
+  return (
+    <div className="space-y-4 py-4">
+      {/* Filter pills */}
+      <div className="flex gap-2 flex-wrap">
+        {(["all", "pending", "approved", "rejected"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className="px-3 py-1 rounded-full text-xs font-semibold border transition-colors"
+            style={
+              filter === f
+                ? { backgroundColor: "#1a7a4a", color: "white", borderColor: "#1a7a4a" }
+                : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }
+            }
+          >
+            {f.charAt(0).toUpperCase() + f.slice(1)} ({counts[f]})
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <EmptyState message={`No ${filter} applications.`} />
+      )}
+
+      {filtered.map((app) => {
+        const isExpanded = expanded === app.id;
+        const ss = statusStyle[app.status];
+        return (
+          <div
+            key={app.id}
+            className="border rounded-xl overflow-hidden"
+            style={{ borderColor: "#e5e7eb" }}
+          >
+            {/* Row header */}
+            <button
+              type="button"
+              className="w-full text-left px-4 py-3 flex items-center justify-between gap-3 hover:bg-gray-50 transition-colors"
+              onClick={() => setExpanded(isExpanded ? null : app.id)}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0"
+                  style={{ backgroundColor: ss.bg, color: ss.text }}
+                >
+                  {app.status}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm text-gray-900 truncate">{app.org_name}</p>
+                  <p className="text-xs text-gray-500 truncate">{app.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-xs text-gray-400">{formatDate(app.created_at)}</span>
+                <ChevronDown
+                  className="w-4 h-4 text-gray-400 transition-transform"
+                  style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                />
+              </div>
+            </button>
+
+            {/* Expanded details */}
+            {isExpanded && (
+              <div className="px-4 pb-4 border-t space-y-4" style={{ borderColor: "#e5e7eb" }}>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 pt-3 text-sm">
+                  {[
+                    ["Contact", app.contact_name],
+                    ["Email", app.email],
+                    ["Website", app.website || "—"],
+                    ["EIN", app.ein || "—"],
+                    ["Category", [app.category, app.subcategory].filter(Boolean).join(" › ")],
+                    ["Submitted", formatDate(app.created_at)],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <span className="text-xs font-medium text-gray-500 block">{label}</span>
+                      <span className="text-gray-900 break-all">{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {app.description && (
+                  <div>
+                    <span className="text-xs font-medium text-gray-500 block mb-1">Description</span>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{app.description}</p>
+                  </div>
+                )}
+
+                {/* Admin notes */}
+                <div>
+                  <label className="text-xs font-medium text-gray-500 block mb-1">Admin notes</label>
+                  <textarea
+                    value={notes[app.id] ?? ""}
+                    onChange={(e) => setNotes((prev) => ({ ...prev, [app.id]: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-green-600 resize-none"
+                    style={{ borderColor: "#e5e1d8" }}
+                    placeholder="Internal notes…"
+                  />
+                  <button
+                    onClick={() => saveNotes(app.id)}
+                    disabled={saving === app.id + "_notes"}
+                    className="mt-1 text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                  >
+                    {saving === app.id + "_notes" ? "Saving…" : "Save notes"}
+                  </button>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex flex-wrap gap-2">
+                {app.status !== "approved" && (
+                  <button
+                    onClick={() => updateStatus(app.id, "approved")}
+                    disabled={saving === app.id}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    {saving === app.id ? "Saving…" : "Approve"}
+                  </button>
+                )}
+                {app.status === "approved" && onCreateOrg && (
+                  <button
+                    onClick={() => onCreateOrg(app)}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                    style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                  >
+                    Create Org →
+                  </button>
+                )}
+                {app.status === "approved" && (
+                  visibleOrgs[app.id] ? (
+                    <span
+                      className="px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5"
+                      style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                    >
+                      <Check className="w-3.5 h-3.5" /> Live
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => makeOrgVisible(app)}
+                      disabled={saving === app.id + "_visible"}
+                      className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                      style={{ backgroundColor: "#0d1117", color: "white" }}
+                    >
+                      {saving === app.id + "_visible" ? "Publishing…" : "Make Live →"}
+                    </button>
+                  )
+                )}
+                {app.status !== "rejected" && (
+                  <button
+                    onClick={() => updateStatus(app.id, "rejected")}
+                    disabled={saving === app.id}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                    style={{ backgroundColor: "#fef2f2", color: "#dc2626" }}
+                  >
+                    {saving === app.id ? "Saving…" : "Reject"}
+                  </button>
+                )}
+                {app.status !== "pending" && (
+                  <button
+                    onClick={() => updateStatus(app.id, "pending")}
+                    disabled={saving === app.id}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold border transition-colors disabled:opacity-50"
+                    style={{ borderColor: "#e5e7eb", color: "#6b7280" }}
+                  >
+                    Reset to Pending
+                  </button>
+                )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main AdminPanel ──────────────────────────────────────────────────────────
 
 interface Props {
@@ -1619,6 +1976,29 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
       {/* ── Waitlist tab ── */}
       {activeAdminTab === "waitlist" && <WaitlistTab />}
 
+      {/* ── Applications tab ── */}
+      {activeAdminTab === "applications" && (
+        <OrgApplicationsTab
+          onCreateOrg={(app) => {
+            setForm({
+              ...EMPTY_FORM,
+              name: app.org_name,
+              ein: app.ein ?? "",
+              website: app.website ?? "",
+              category: app.category ?? "community",
+              subcategory: app.subcategory ?? "",
+              description: app.description ?? "",
+              contact_email: app.email ?? "",
+            });
+            setEditing(null);
+            setActiveAdminTab("edit");
+            setTimeout(() => {
+              document.getElementById("admin-form-top")?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
+          }}
+        />
+      )}
+
       {/* ── Missionaries tab ── */}
       {activeAdminTab === "missionaries" && <MissionariesAdminTab />}
 
@@ -1717,10 +2097,26 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
             <div>
               <label className={labelCls}>Category</label>
               <select className={inputCls} style={inputStyle}
-                value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value, subcategory: "" })}>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{CATEGORY_LABELS[c] ?? c}</option>
+                ))}
               </select>
             </div>
+            {form.category && (SUBCATEGORY_OPTIONS[form.category as TopCategory] ?? []).length > 0 && (
+              <div>
+                <label className={labelCls}>Subcategory</label>
+                <select className={inputCls} style={inputStyle}
+                  value={form.subcategory || ""}
+                  onChange={(e) => setForm({ ...form, subcategory: e.target.value })}>
+                  <option value="">— select —</option>
+                  {(SUBCATEGORY_OPTIONS[form.category as TopCategory] ?? []).map((s) => (
+                    <option key={s} value={s}>{CATEGORY_LABELS[s] ?? s}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className={labelCls}>Tags (comma separated)</label>
               <input className={inputCls} style={inputStyle}

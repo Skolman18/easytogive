@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { MapPin, CheckCircle, Users, Plus, Check, Quote, ChevronDown } from "lucide-react";
 import { Organization, formatCurrency, getProgressPercent } from "@/lib/placeholder-data";
 import { createClient } from "@/lib/supabase-browser";
+import { CATEGORY_LABELS } from "@/lib/categories";
 
 export interface OrgDisplaySettings {
   show_raised?: boolean;
@@ -17,17 +18,7 @@ interface OrgCardProps {
   org: Organization;
   compact?: boolean;
   displaySettings?: OrgDisplaySettings;
-  politicalNotDeductible?: boolean;
 }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  churches: "Church",
-  "animal-rescue": "Animal Rescue",
-  nonprofits: "Nonprofit",
-  education: "Education",
-  environment: "Environment",
-  local: "Local Cause",
-};
 
 function AddToPortfolioButton({ orgId }: { orgId: string }) {
   const router = useRouter();
@@ -87,11 +78,20 @@ export default function OrgCard({
   org,
   compact = false,
   displaySettings,
-  politicalNotDeductible = false,
 }: OrgCardProps) {
   const [storyOpen, setStoryOpen] = useState(false);
   const progress = getProgressPercent(org.raised, org.goal);
-  const categoryLabel = CATEGORY_LABELS[org.category] || org.category;
+  // Prefer subcategory label, fall back to top-level category label
+  const badgeLabel =
+    (org.subcategory && CATEGORY_LABELS[org.subcategory]) ||
+    CATEGORY_LABELS[org.category] ||
+    org.category;
+
+  // Badge style varies by top-level category
+  const isMissionary = org.category === "missionaries";
+  const badgeStyle = isMissionary
+    ? { backgroundColor: "#e8f5ee", color: "#1a7a4a", border: "1px solid #bbf7d0" }
+    : { backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #e5e7eb" };
 
   const storyRaw = (org.ourStory ?? "").trim();
   const storyPreview =
@@ -118,28 +118,14 @@ export default function OrgCard({
             alt={org.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 flex flex-col gap-1">
             <span
               className="px-2.5 py-0.5 rounded-full text-xs font-medium"
-              style={{ backgroundColor: "#f3f4f6", color: "#6b7280", border: "1px solid #e5e7eb" }}
+              style={badgeStyle}
             >
-              {categoryLabel}
+              {badgeLabel}
             </span>
           </div>
-          {politicalNotDeductible && (
-            <div className="absolute top-3 left-3 translate-y-8">
-              <span
-                className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                style={{
-                  backgroundColor: "#fef2f2",
-                  color: "#b91c1c",
-                  border: "1px solid #fecaca",
-                }}
-              >
-                Not Tax Deductible
-              </span>
-            </div>
-          )}
           {org.verified && (
             <div className="absolute top-3 right-3">
               <span

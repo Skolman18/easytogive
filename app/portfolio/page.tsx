@@ -100,6 +100,7 @@ export default function PortfolioPage() {
   const [orgs, setOrgs] = useState<PortfolioOrg[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Donation
   const [donationAmount, setDonationAmount] = useState(100);
@@ -111,7 +112,6 @@ export default function PortfolioPage() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<Frequency>("monthly");
   const [recurringDonations, setRecurringDonations] = useState<RecurringDonation[]>([]);
-  const [recurringStatus, setRecurringStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   // Add Charity panel
   const [addPanelOpen, setAddPanelOpen] = useState(false);
@@ -146,6 +146,7 @@ export default function PortfolioPage() {
         return;
       }
       setUserId(userData.user.id);
+      setUserEmail(userData.user.email ?? null);
 
       // Step 1: load portfolio rows
       const { data: portfolioRows } = await (supabase as any)
@@ -353,48 +354,27 @@ export default function PortfolioPage() {
   };
 
   const handleCancelRecurring = async (id: string) => {
-    await (createClient() as any)
-      .from("recurring_donations")
-      .update({ active: false })
-      .eq("id", id);
+    try {
+      await fetch("/api/stripe/cancel-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recurringDonationId: id }),
+      });
+    } catch { /* silent — still remove from UI */ }
     setRecurringDonations((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const handleStartPortfolioRecurring = async () => {
-    if (effectiveAmount < 0.50 || !isValid) return;
-    setRecurringStatus("saving");
-    try {
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      await Promise.all(
-        orgs
-          .filter((o) => o.percentage > 0)
-          .map((o) =>
-            (supabase as any).from("recurring_donations").insert({
-              user_id: uid ?? null,
-              org_id: o.orgId,
-              org_name: o.orgName,
-              amount_cents: Math.round(effectiveAmount * (o.percentage / 100) * 100),
-              frequency,
-              active: true,
-            })
-          )
-      );
-      setRecurringStatus("saved");
-      const { data } = await (supabase as any)
-        .from("recurring_donations")
-        .select("*")
-        .eq("user_id", uid)
-        .eq("active", true)
-        .order("created_at", { ascending: false });
-      if (data) setRecurringDonations(data);
-      setTimeout(() => setRecurringStatus("idle"), 3000);
-    } catch {
-      setRecurringStatus("error");
-      setTimeout(() => setRecurringStatus("idle"), 3000);
-    }
-  };
+  async function reloadRecurringDonations() {
+    if (!userId) return;
+    const supabase = createClient();
+    const { data } = await (supabase as any)
+      .from("recurring_donations")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("active", true)
+      .order("created_at", { ascending: false });
+    if (data) setRecurringDonations(data);
+  }
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -1026,17 +1006,13 @@ export default function PortfolioPage() {
                   {/* Donate / Start Recurring button */}
                   {isRecurring ? (
                     <button
-                      onClick={handleStartPortfolioRecurring}
-                      disabled={!isValid || effectiveAmount < 0.50 || recurringStatus === "saving"}
+                      onClick={() => setCheckoutOpen(true)}
+                      disabled={!isValid || effectiveAmount < 0.50}
                       className="w-full py-3.5 rounded-xl font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
                       style={{ backgroundColor: "#1a7a4a" }}
                     >
                       <RefreshCw className="w-4 h-4" />
-                      {recurringStatus === "saving"
-                        ? "Setting up…"
-                        : recurringStatus === "saved"
-                        ? "Recurring giving set up!"
-                        : isValid && effectiveAmount >= 0.50
+                      {isValid && effectiveAmount >= 0.50
                         ? `Give ${formatCurrency(effectiveAmount)} ${FREQUENCIES.find((f) => f.value === frequency)?.label ?? ""}`
                         : "Set Up Recurring Giving"}
                     </button>
@@ -1229,6 +1205,11 @@ export default function PortfolioPage() {
         onClose={() => setCheckoutOpen(false)}
         amountDollars={effectiveAmount}
         allocations={checkoutAllocations}
+        donorId={userId ?? undefined}
+        donorEmail={userEmail ?? undefined}
+        isRecurring={isRecurring}
+        frequency={frequency}
+        onSuccess={reloadRecurringDonations}
       />
     </>
   );

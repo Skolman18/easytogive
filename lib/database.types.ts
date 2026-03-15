@@ -9,13 +9,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type OrgCategory =
-  | "churches"
-  | "animal-rescue"
-  | "nonprofits"
-  | "education"
-  | "environment"
-  | "local";
+export type OrgCategory = "community" | "missionaries" | "politics";
 
 export interface Database {
   public: {
@@ -26,7 +20,8 @@ export interface Database {
           name: string;
           tagline: string;
           description: string;
-          category: OrgCategory;
+          category: string;
+          subcategory: string | null;
           location: string;
           raised: number;
           goal: number;

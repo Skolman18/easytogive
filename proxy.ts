@@ -34,7 +34,10 @@ export async function proxy(request: NextRequest) {
   const isProtected =
     pathname.startsWith("/profile") ||
     pathname.startsWith("/portfolio") ||
-    pathname.startsWith("/onboarding");
+    pathname.startsWith("/org/dashboard") ||
+    pathname.startsWith("/receipts") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/admin");
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
@@ -47,5 +50,15 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profile/:path*", "/portfolio/:path*", "/onboarding/:path*", "/onboarding"],
+  matcher: [
+    "/profile/:path*",
+    "/portfolio/:path*",
+    "/org/dashboard/:path*",
+    "/org/dashboard",
+    "/receipts/:path*",
+    "/onboarding/:path*",
+    "/onboarding",
+    "/admin/:path*",
+    "/admin",
+  ],
 };

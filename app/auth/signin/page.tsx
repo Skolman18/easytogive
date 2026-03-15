@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase-browser";
 
 function SignInForm() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/discover";
+  const rawRedirect = searchParams.get("redirectTo") ?? "";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,9 +27,17 @@ function SignInForm() {
       setError(error.message);
       setLoading(false);
     } else {
+      // Only allow same-origin redirects to prevent open-redirect abuse.
+      let dest = "/discover";
+      try {
+        const resolved = new URL(rawRedirect, window.location.origin);
+        if (resolved.origin === window.location.origin) {
+          dest = resolved.pathname + resolved.search;
+        }
+      } catch { /* invalid URL — keep default */ }
       // Hard navigation: ensures cookies are sent with the next request and
       // avoids router.push + router.refresh() conflicts in Next.js App Router.
-      window.location.href = redirectTo;
+      window.location.href = dest;
     }
   }
 

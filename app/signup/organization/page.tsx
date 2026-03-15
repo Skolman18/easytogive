@@ -1,68 +1,206 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Building2, Loader2, AlertCircle, CheckCircle, Clock } from "lucide-react";
-import { createClient } from "@/lib/supabase-browser";
+import {
+  Building2, Loader2, AlertCircle, CheckCircle, Clock,
+  Users, Globe, Check,
+} from "lucide-react";
+import { SUBCATEGORY_OPTIONS, CATEGORY_LABELS } from "@/lib/categories";
+import type { TopCategory } from "@/lib/categories";
+import { PreviewBanner, AdminNotesPanel } from "@/components/AdminPreviewOverlay";
 
-const CATEGORIES = [
-  { value: "nonprofits", label: "Nonprofit (501c3)" },
-  { value: "churches", label: "Church / Faith Organization" },
-  { value: "animal-rescue", label: "Animal Rescue" },
-  { value: "education", label: "Education" },
-  { value: "environment", label: "Environment" },
-  { value: "local", label: "Local Cause / Community Group" },
+// ─── Top-level category card definitions ─────────────────────────────────────
+
+const TOP_CATEGORIES: {
+  value: TopCategory;
+  label: string;
+  sublabel: string;
+  Icon: React.ElementType;
+}[] = [
+  {
+    value: "community",
+    label: "Community",
+    sublabel: "Nonprofits, churches, food banks, schools, and more",
+    Icon: Users,
+  },
+  {
+    value: "missionaries",
+    label: "Missionaries",
+    sublabel: "Missionary workers and sending organizations",
+    Icon: Globe,
+  },
 ];
 
-export default function OrgSignupPage() {
+// ─── EIN visibility logic ─────────────────────────────────────────────────────
+
+function getEinConfig(category: string, subcategory: string) {
+  if (category === "politics") return { show: false, required: false, helper: "" };
+  if (category === "missionaries") return {
+    show: true, required: false,
+    helper: "EIN is optional for missionary organizations.",
+  };
+  if (category === "community" && subcategory === "church") return {
+    show: true, required: false,
+    helper: "Churches are not required to have an EIN.",
+  };
+  if (category === "community") return {
+    show: true, required: true, helper: "",
+  };
+  return { show: true, required: false, helper: "" };
+}
+
+// ─── Preview success screen ───────────────────────────────────────────────────
+
+function PreviewSuccessScreen({ form }: { form: Record<string, string> }) {
+  const router = useRouter();
+
+  const fields: { label: string; value: string }[] = [
+    { label: "Organization", value: form.orgName },
+    { label: "Contact", value: form.contactName },
+    { label: "Email", value: form.email },
+    { label: "Website", value: form.website || "—" },
+    { label: "Category", value: [CATEGORY_LABELS[form.category] ?? form.category, form.subcategory ? (CATEGORY_LABELS[form.subcategory] ?? form.subcategory) : ""].filter(Boolean).join(" › ") },
+    { label: "EIN", value: form.ein || "—" },
+    { label: "Description", value: form.description },
+  ];
+
+  return (
+    <>
+      <PreviewBanner />
+      <div className="min-h-screen bg-white flex items-center justify-center px-4 py-16">
+        <div className="w-full max-w-md">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ backgroundColor: "#fef08a" }}
+          >
+            <CheckCircle className="w-10 h-10 text-yellow-600" />
+          </div>
+          <h1 className="font-display text-3xl font-bold text-gray-900 mb-1 text-center">
+            Preview: Application submitted
+          </h1>
+          <p className="text-center text-sm text-yellow-700 font-medium mb-6 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2">
+            ⚠️ Preview only — no real Supabase record was created
+          </p>
+
+          <div
+            className="rounded-xl border divide-y text-sm mb-6"
+            style={{ borderColor: "#e5e1d8" }}
+          >
+            {fields.map(({ label, value }) => (
+              <div key={label} className="flex gap-3 px-4 py-3">
+                <span className="text-gray-500 w-24 flex-shrink-0">{label}</span>
+                <span className="text-gray-900 break-all">{value}</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => router.push("/profile?tab=admin")}
+            className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90"
+            style={{ backgroundColor: "#dc2626" }}
+          >
+            Exit Preview → Return to Admin
+          </button>
+        </div>
+      </div>
+      <AdminNotesPanel />
+    </>
+  );
+}
+
+// ─── Inner page (uses useSearchParams) ───────────────────────────────────────
+
+function OrgSignupInner() {
+  const searchParams = useSearchParams();
+  const isPreview = searchParams.get("preview") === "true";
+
   const [form, setForm] = useState({
     orgName: "",
     contactName: "",
     email: "",
-    password: "",
     website: "",
     ein: "",
     category: "",
+    subcategory: "",
     description: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const einConfig = getEinConfig(form.category, form.subcategory);
+
+  const subOptions =
+    form.category
+      ? SUBCATEGORY_OPTIONS[form.category as TopCategory] ?? []
+      : [];
+
+  // Auto-select when only one subcategory (missionaries → missionary)
+  const autoSubcategory =
+    subOptions.length === 1 ? subOptions[0] : form.subcategory;
+
+  function selectCategory(cat: string) {
+    const subs = SUBCATEGORY_OPTIONS[cat as TopCategory] ?? [];
+    setForm((prev) => ({
+      ...prev,
+      category: cat,
+      subcategory: subs.length === 1 ? subs[0] : "",
+    }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!form.category) {
+      setError("Please select a category.");
       return;
     }
+    const effectiveSubcategory = autoSubcategory;
+    if (subOptions.length > 1 && !effectiveSubcategory) {
+      setError("Please select a subcategory.");
+      return;
+    }
+    if (einConfig.required && !form.ein.trim()) {
+      setError("EIN is required for this organization type.");
+      return;
+    }
+
+    // Preview mode: skip real Supabase write
+    if (isPreview) {
+      setSuccess(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: {
-          full_name: form.contactName,
-          org_name: form.orgName,
-          website: form.website,
-          ein: form.ein,
-          category: form.category,
-          description: form.description,
-          account_type: "organization",
-          status: "pending_review",
-        },
-      },
+    const res = await fetch("/api/org/apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        org_name: form.orgName,
+        contact_name: form.contactName,
+        email: form.email,
+        website: form.website,
+        ein: form.ein,
+        category: form.category,
+        subcategory: effectiveSubcategory,
+        description: form.description,
+      }),
     });
+    const data = await res.json();
 
-    if (error) {
-      setError(error.message);
+    if (data.error) {
+      setError(data.error);
       setLoading(false);
     } else {
       setSuccess(true);
     }
+  }
+
+  if (success && isPreview) {
+    return <PreviewSuccessScreen form={form} />;
   }
 
   if (success) {
@@ -71,9 +209,9 @@ export default function OrgSignupPage() {
         <div className="w-full max-w-md text-center">
           <div
             className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ backgroundColor: "#eff6ff" }}
+            style={{ backgroundColor: "#e8f5ee" }}
           >
-            <CheckCircle className="w-10 h-10 text-blue-600" />
+            <CheckCircle className="w-10 h-10" style={{ color: "#1a7a4a" }} />
           </div>
           <h1 className="font-display text-3xl font-bold text-gray-900 mb-3">
             Application submitted!
@@ -99,218 +237,318 @@ export default function OrgSignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-lg mx-auto px-4 py-16">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-600">
-              <Building2 className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-display text-xl font-semibold text-gray-900">
-              EasyToGive
-            </span>
-          </Link>
-          <h1 className="font-display text-3xl font-bold text-gray-900 mt-6 mb-1">
-            List your organization
-          </h1>
-          <p className="text-gray-500 text-sm max-w-sm mx-auto">
-            Reach thousands of motivated donors. All organizations are reviewed
-            before going live.
-          </p>
-        </div>
-
-        {/* Review notice */}
-        <div
-          className="flex items-center gap-3 p-4 rounded-xl mb-6 text-sm"
-          style={{ backgroundColor: "#eff6ff", color: "#1d4ed8" }}
-        >
-          <Clock className="w-4 h-4 flex-shrink-0" />
-          <span>
-            We&apos;ll review your application and get back to you within{" "}
-            <strong>2 business days</strong>.
-          </span>
-        </div>
-
-        <div
-          className="bg-white rounded-2xl border p-8 shadow-sm"
-          style={{ borderColor: "#e5e1d8" }}
-        >
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Org name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Organization name
-              </label>
-              <input
-                type="text"
-                value={form.orgName}
-                onChange={(e) => setForm({ ...form, orgName: e.target.value })}
-                required
-                className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-blue-500 transition-colors"
-                style={{ borderColor: "#e5e1d8" }}
-                placeholder="Green Future Foundation"
-              />
-            </div>
-
-            {/* Contact name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Your name (primary contact)
-              </label>
-              <input
-                type="text"
-                value={form.contactName}
-                onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-                required
-                autoComplete="name"
-                className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-blue-500 transition-colors"
-                style={{ borderColor: "#e5e1d8" }}
-                placeholder="Jane Smith"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Email address
-              </label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-                autoComplete="email"
-                className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-blue-500 transition-colors"
-                style={{ borderColor: "#e5e1d8" }}
-                placeholder="jane@yourorg.org"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Password{" "}
-                <span className="text-gray-400 font-normal">(min. 6 characters)</span>
-              </label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-                autoComplete="new-password"
-                className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-blue-500 transition-colors"
-                style={{ borderColor: "#e5e1d8" }}
-                placeholder="••••••••"
-              />
-            </div>
-
-            {/* Website */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Website
-              </label>
-              <input
-                type="url"
-                value={form.website}
-                onChange={(e) => setForm({ ...form, website: e.target.value })}
-                className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-blue-500 transition-colors"
-                style={{ borderColor: "#e5e1d8" }}
-                placeholder="https://yourorg.org"
-              />
-            </div>
-
-            {/* EIN */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                EIN{" "}
-                <span className="text-gray-400 font-normal">(Tax ID, format: 12-3456789)</span>
-              </label>
-              <input
-                type="text"
-                value={form.ein}
-                onChange={(e) => setForm({ ...form, ein: e.target.value })}
-                className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-blue-500 transition-colors"
-                style={{ borderColor: "#e5e1d8" }}
-                placeholder="12-3456789"
-              />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Category
-              </label>
-              <select
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                required
-                className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-blue-500 transition-colors bg-white"
-                style={{ borderColor: "#e5e1d8" }}
-              >
-                <option value="">Select a category…</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Brief description of your mission
-              </label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                required
-                rows={4}
-                className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-blue-500 transition-colors resize-none"
-                style={{ borderColor: "#e5e1d8" }}
-                placeholder="Describe what your organization does and who it serves…"
-              />
-            </div>
-
-            {error && (
+    <>
+      {isPreview && <PreviewBanner />}
+      <div className="min-h-screen bg-white">
+        <div className="max-w-lg mx-auto px-4 py-16">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-flex items-center gap-2">
               <div
-                className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
-                style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#dc2626" }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: "#1a7a4a" }}
               >
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                {error}
+                <Building2 className="w-4 h-4 text-white" />
               </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-full font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-blue-600"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Submitting application…
-                </>
-              ) : (
-                "Submit Application"
-              )}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Already listed?{" "}
-            <Link href="/auth/signin" className="font-medium hover:underline text-blue-600">
-              Sign in
+              <span className="font-display text-xl font-semibold text-gray-900">
+                EasyToGive
+              </span>
             </Link>
-          </p>
+            <h1 className="font-display text-3xl font-bold text-gray-900 mt-6 mb-1">
+              List your organization
+            </h1>
+            <p className="text-gray-500 text-sm max-w-sm mx-auto">
+              Reach thousands of motivated donors. All organizations are reviewed
+              before going live.
+            </p>
+          </div>
+
+          {/* Review notice */}
+          <div
+            className="flex items-center gap-3 p-4 rounded-xl mb-6 text-sm"
+            style={{ backgroundColor: "#eff6ff", color: "#1d4ed8" }}
+          >
+            <Clock className="w-4 h-4 flex-shrink-0" />
+            <span>
+              We&apos;ll review your application and get back to you within{" "}
+              <strong>2 business days</strong>.
+            </span>
+          </div>
+
+          <div
+            className="bg-white rounded-2xl border p-8 shadow-sm"
+            style={{ borderColor: "#e5e1d8" }}
+          >
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+              {/* Org name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Organization name
+                </label>
+                <input
+                  type="text"
+                  value={form.orgName}
+                  onChange={(e) => setForm({ ...form, orgName: e.target.value })}
+                  required
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                  style={{ borderColor: "#e5e1d8" }}
+                  placeholder="Green Future Foundation"
+                />
+              </div>
+
+              {/* Contact name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Your name (primary contact)
+                </label>
+                <input
+                  type="text"
+                  value={form.contactName}
+                  onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+                  required
+                  autoComplete="name"
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                  style={{ borderColor: "#e5e1d8" }}
+                  placeholder="Jane Smith"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  required
+                  autoComplete="email"
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                  style={{ borderColor: "#e5e1d8" }}
+                  placeholder="jane@yourorg.org"
+                />
+              </div>
+
+              {/* Website */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Website
+                </label>
+                <input
+                  type="url"
+                  value={form.website}
+                  onChange={(e) => setForm({ ...form, website: e.target.value })}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                  style={{ borderColor: "#e5e1d8" }}
+                  placeholder="https://yourorg.org"
+                />
+              </div>
+
+              {/* ── Category — step 1: three cards ──────────────────────────── */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {TOP_CATEGORIES.map(({ value, label, sublabel, Icon }) => {
+                    const selected = form.category === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => selectCategory(value)}
+                        className="relative rounded-xl border p-4 text-left transition-all focus:outline-none"
+                        style={{
+                          borderColor: selected ? "#1a7a4a" : "#e5e1d8",
+                          backgroundColor: selected ? "#e8f5ee" : "white",
+                          borderWidth: selected ? 2 : 1,
+                        }}
+                      >
+                        {selected && (
+                          <div
+                            className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: "#1a7a4a" }}
+                          >
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                        <Icon
+                          className="w-5 h-5 mb-2"
+                          style={{ color: selected ? "#1a7a4a" : "#6b7280" }}
+                        />
+                        <div
+                          className="text-sm font-semibold mb-0.5"
+                          style={{ color: selected ? "#1a7a4a" : "#111827" }}
+                        >
+                          {label}
+                        </div>
+                        <div className="text-xs text-gray-500 leading-snug">{sublabel}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── Subcategory — step 2 ─────────────────────────────────────── */}
+              {form.category === "missionaries" && (
+                <p className="text-sm text-gray-500 italic">
+                  You will be listed in the{" "}
+                  <span className="font-medium" style={{ color: "#1a7a4a" }}>Missionaries</span>{" "}
+                  section.
+                </p>
+              )}
+
+              {form.category && form.category !== "missionaries" && subOptions.length > 1 && form.category !== "" && (
+                <div
+                  className="space-y-1"
+                  style={{
+                    animation: "fadeSlideIn 0.2s ease-out",
+                  }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Subcategory
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {subOptions.map((sub) => {
+                      const selected = form.subcategory === sub;
+                      return (
+                        <button
+                          key={sub}
+                          type="button"
+                          onClick={() => setForm({ ...form, subcategory: sub })}
+                          className="px-3.5 py-2 rounded-lg border text-sm font-medium transition-all"
+                          style={{
+                            borderColor: selected ? "#1a7a4a" : "#e5e1d8",
+                            backgroundColor: selected ? "#e8f5ee" : "white",
+                            color: selected ? "#1a7a4a" : "#374151",
+                          }}
+                        >
+                          {CATEGORY_LABELS[sub] ?? sub}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* EIN */}
+              {einConfig.show && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    EIN{" "}
+                    {einConfig.required ? (
+                      <span className="text-gray-400 font-normal">(Tax ID, format: 12-3456789)</span>
+                    ) : (
+                      <span className="text-gray-400 font-normal">(optional)</span>
+                    )}
+                  </label>
+                  {einConfig.helper && (
+                    <p className="text-xs text-gray-400 mb-1.5">{einConfig.helper}</p>
+                  )}
+                  <input
+                    type="text"
+                    value={form.ein}
+                    onChange={(e) => setForm({ ...form, ein: e.target.value })}
+                    required={einConfig.required}
+                    className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                    style={{ borderColor: "#e5e1d8" }}
+                    placeholder="12-3456789"
+                  />
+                </div>
+              )}
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Brief description of your mission
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  required
+                  rows={4}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors resize-none"
+                  style={{ borderColor: "#e5e1d8" }}
+                  placeholder="Describe what your organization does and who it serves…"
+                />
+              </div>
+
+              {error && (
+                <div
+                  className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
+                  style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#dc2626" }}
+                >
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-full font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ backgroundColor: isPreview ? "#b45309" : "#1a7a4a" }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Submitting application…
+                  </>
+                ) : isPreview ? (
+                  "Submit Application (Preview)"
+                ) : (
+                  "Submit Application"
+                )}
+              </button>
+            </form>
+
+            {!isPreview && (
+              <p className="text-center text-sm text-gray-500 mt-6">
+                Already listed?{" "}
+                <Link
+                  href="/auth/signin"
+                  className="font-medium hover:underline"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  Sign in
+                </Link>
+              </p>
+            )}
+          </div>
+
+          {!isPreview && (
+            <p className="text-center text-xs text-gray-400 mt-5">
+              By submitting you agree to our Terms of Service and Privacy Policy.
+            </p>
+          )}
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-5">
-          By submitting you agree to our Terms of Service and Privacy Policy.
-        </p>
+        <style jsx global>{`
+          @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
       </div>
-    </div>
+      {isPreview && <AdminNotesPanel />}
+    </>
+  );
+}
+
+// ─── Page (Suspense wrapper required for useSearchParams) ──────────────────────
+
+export default function OrgSignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} />
+        </div>
+      }
+    >
+      <OrgSignupInner />
+    </Suspense>
   );
 }

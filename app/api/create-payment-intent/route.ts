@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 const MAX_DESCRIPTION_LENGTH = 500;
@@ -8,16 +9,27 @@ const MAX_METADATA_VALUE_LENGTH = 500;
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) {
-    throw new Error("STRIPE_SECRET_KEY is not configured");
-  }
+  if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
   return new Stripe(key, { apiVersion: "2026-02-25.clover" });
+}
+
+// Use anon key to read public org data (organizations table has public read RLS)
+function getSupabasePublic() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  );
 }
 
 export interface CreatePaymentIntentBody {
   amountCents: number;
-  description: string;
+  description?: string;
   metadata?: Record<string, string>;
+  // Connect fields (optional — falls back to direct charge if omitted)
+  orgId?: string;
+  donorId?: string;
+  coverFee?: boolean;
 }
 
 function sanitizeMetadata(metadata: Record<string, string> | undefined): Record<string, string> {
@@ -57,29 +69,76 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
-    const { amountCents, description, metadata } = body;
+    const { amountCents, description, metadata, orgId, donorId, coverFee } = body;
 
+    // amountCents = what the DONOR was quoted (donation amount, before fee if not covering)
     if (typeof amountCents !== "number" || amountCents < 50) {
-      return NextResponse.json(
-        { error: "Minimum donation amount is $0.50." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Minimum donation amount is $0.50." }, { status: 400 });
     }
-
     if (amountCents > 99999900) {
-      return NextResponse.json(
-        { error: "Donation amount exceeds the maximum limit." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Donation amount exceeds the maximum limit." }, { status: 400 });
     }
 
     const safeDescription =
       typeof description === "string"
         ? description.slice(0, MAX_DESCRIPTION_LENGTH).trim() || "Donation"
         : "Donation";
-    const safeMetadata = sanitizeMetadata(metadata);
 
     const stripe = getStripe();
+
+    // ── Stripe Connect path (org has a connected account) ──────────────────
+    if (orgId) {
+      const supabase = getSupabasePublic();
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("stripe_account_id, stripe_onboarding_complete, name")
+        .eq("id", orgId)
+        .single();
+
+      if (org?.stripe_account_id && org?.stripe_onboarding_complete) {
+        const donationAmountCents = amountCents; // the base donation
+        const platformFeeCents = Math.max(1, Math.round(donationAmountCents * 0.01)); // 1% fee, min 1¢
+        // If donor covers fee: charge them donation + fee; org receives full donation
+        // If donor doesn't cover: charge just the donation; org receives donation minus fee
+        const chargeAmountCents = coverFee
+          ? donationAmountCents + platformFeeCents
+          : donationAmountCents;
+
+        const connectMetadata: Record<string, string> = {
+          platform: "easytogive",
+          orgId: orgId.slice(0, 500),
+          orgName: (org.name ?? "").slice(0, 500),
+          donationAmount: String(donationAmountCents),
+          coverFee: String(!!coverFee),
+          ...(donorId ? { donorId: donorId.slice(0, 500) } : {}),
+        };
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: chargeAmountCents,
+          currency: "usd",
+          description: safeDescription || `EasyToGive donation to ${org.name}`,
+          application_fee_amount: platformFeeCents,
+          transfer_data: { destination: org.stripe_account_id },
+          metadata: connectMetadata,
+          automatic_payment_methods: { enabled: true },
+        });
+
+        return NextResponse.json({
+          clientSecret: paymentIntent.client_secret,
+          platformFee: platformFeeCents / 100,
+          chargeAmount: chargeAmountCents / 100,
+        });
+      }
+    }
+
+    // ── Direct charge fallback (no Connect account yet, or portfolio donation) ──
+    const safeMetadata = sanitizeMetadata({
+      ...metadata,
+      ...(orgId ? { orgId: orgId.slice(0, 500) } : {}),
+      ...(donorId ? { donorId: donorId.slice(0, 500) } : {}),
+      platform: "easytogive",
+    });
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountCents,
       currency: "usd",
@@ -88,7 +147,11 @@ export async function POST(req: NextRequest) {
       automatic_payment_methods: { enabled: true },
     });
 
-    return NextResponse.json({ clientSecret: paymentIntent.client_secret });
+    return NextResponse.json({
+      clientSecret: paymentIntent.client_secret,
+      platformFee: 0,
+      chargeAmount: amountCents / 100,
+    });
   } catch (err) {
     console.error("Stripe PaymentIntent error:", err);
     return NextResponse.json(

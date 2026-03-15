@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Menu, X, Heart, LogOut, ChevronDown } from "lucide-react";
+import { Menu, X, Heart, LogOut } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-browser";
 
 const DEFAULT_NAV_LINKS = [
   { href: "/discover", label: "Discover" },
+  { href: "#explore", label: "Explore" },
   { href: "/missionaries", label: "Missionaries" },
   { href: "/portfolio", label: "My Portfolio" },
   { href: "/about", label: "About" },
@@ -20,8 +21,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [exploreOpen, setExploreOpen] = useState(false);
-  const [mobileExploreOpen, setMobileExploreOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
@@ -106,60 +105,38 @@ export default function Navbar() {
 
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-0.5">
-            {/* Explore dropdown */}
-            <div
-              className="relative"
-              onMouseEnter={() => setExploreOpen(true)}
-              onMouseLeave={() => setExploreOpen(false)}
-            >
-              <button
-                type="button"
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium flex items-center gap-1 transition-colors ${
-                  pathname === "/missionaries" || pathname === "/politics"
-                    ? "text-gray-900 bg-gray-100"
-                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                <span>Explore</span>
-                <ChevronDown
-                  className="w-3.5 h-3.5 transition-transform"
-                  style={{ transform: exploreOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                />
-              </button>
-              {exploreOpen && (
-                <div
-                  className="absolute mt-2 right-0 w-52 rounded-lg border bg-white shadow-lg overflow-hidden"
-                  style={{ borderColor: "#e5e1d8" }}
-                >
+            {navLinks
+              .filter((l) => l.href !== "/missionaries" && l.href !== "/politics")
+              .map((link) => {
+                if (link.href === "#explore") {
+                  return (
+                    <Link
+                      key="#explore"
+                      href="/missionaries"
+                      className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        pathname === "/missionaries"
+                          ? "text-gray-900 bg-gray-100"
+                          : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
+                    >
+                      Missionaries
+                    </Link>
+                  );
+                }
+                return (
                   <Link
-                    href="/missionaries"
-                    className="block px-4 py-3 text-sm text-gray-900 hover:bg-[#e8f5ee] hover:text-[#1a7a4a]"
+                    key={link.href}
+                    href={link.href}
+                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      pathname === link.href
+                        ? "text-gray-900 bg-gray-100"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
                   >
-                    Missionaries
+                    {link.label}
                   </Link>
-                  <Link
-                    href="/politics"
-                    className="block px-4 py-3 text-sm text-gray-900 hover:bg-[#e8f5ee] hover:text-[#1a7a4a]"
-                  >
-                    Politics
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? "text-gray-900 bg-gray-100"
-                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+                );
+              })}
           </div>
 
           {/* Desktop auth + CTA */}
@@ -243,61 +220,40 @@ export default function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t bg-white px-4 py-3 space-y-1" style={{ borderColor: "#f0ede6" }}>
-          {/* Mobile Explore group */}
-          <div className="mb-1">
-            <button
-              type="button"
-              onClick={() => setMobileExploreOpen((open) => !open)}
-              className="flex items-center justify-between w-full px-4 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-            >
-              <span>Explore</span>
-              <ChevronDown
-                className="w-4 h-4 text-gray-400 transition-transform"
-                style={{ transform: mobileExploreOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-              />
-            </button>
-            {mobileExploreOpen && (
-              <div className="mt-1 pl-4 space-y-1">
+          {navLinks
+            .filter((l) => l.href !== "/missionaries" && l.href !== "/politics")
+            .map((link) => {
+              if (link.href === "#explore") {
+                return (
+                  <Link
+                    key="#explore"
+                    href="/missionaries"
+                    onClick={() => setMobileOpen(false)}
+                    className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      pathname === "/missionaries"
+                        ? "text-gray-900 bg-gray-100"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
+                  >
+                    Missionaries
+                  </Link>
+                );
+              }
+              return (
                 <Link
-                  href="/missionaries"
-                  onClick={() => { setMobileOpen(false); setMobileExploreOpen(false); }}
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    pathname === "/missionaries"
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    pathname === link.href
                       ? "text-gray-900 bg-gray-100"
                       : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                   }`}
                 >
-                  Missionaries
+                  {link.label}
                 </Link>
-                <Link
-                  href="/politics"
-                  onClick={() => { setMobileOpen(false); setMobileExploreOpen(false); }}
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    pathname === "/politics"
-                      ? "text-gray-900 bg-gray-100"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                  }`}
-                >
-                  Politics
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileOpen(false)}
-              className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                pathname === link.href
-                  ? "text-gray-900 bg-gray-100"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+              );
+            })}
           <div className="pt-2 border-t space-y-1" style={{ borderColor: "#f0ede6" }}>
             {user ? (
               <>
