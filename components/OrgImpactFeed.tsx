@@ -30,11 +30,13 @@ const PERIOD_LABELS: Record<string, string> = {
   "this year": "This Year",
 };
 
+const ADMIN_EMAIL = "sethmitzel@gmail.com";
+
 export default function OrgImpactFeed({ orgId }: { orgId: string }) {
   const [updates, setUpdates] = useState<ImpactUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [canPost, setCanPost] = useState(false);
 
   // Form state
   const [statValue, setStatValue] = useState("");
@@ -62,7 +64,7 @@ export default function OrgImpactFeed({ orgId }: { orgId: string }) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    setIsLoggedIn(!!user);
+    setCanPost(user?.email === ADMIN_EMAIL);
   }
 
   async function loadUpdates() {
@@ -106,10 +108,12 @@ export default function OrgImpactFeed({ orgId }: { orgId: string }) {
   }
 
   if (loading) return null;
+  // Hide entirely if no updates and user can't post — nothing to show
+  if (updates.length === 0 && !canPost) return null;
 
   return (
     <div className="rounded-2xl border bg-white p-6" style={{ borderColor: "#e5e1d8" }}>
-      <h2 className="font-display text-xl font-semibold text-gray-900 mb-5">Impact</h2>
+      <h2 className="font-display text-lg font-semibold text-gray-900 mb-5">Impact Updates</h2>
 
       {updates.length === 0 ? (
         <p className="text-sm text-gray-400 mb-4">No impact updates yet.</p>
@@ -140,7 +144,7 @@ export default function OrgImpactFeed({ orgId }: { orgId: string }) {
         </div>
       )}
 
-      {isLoggedIn && (
+      {canPost && (
         <div>
           <button
             onClick={() => setFormOpen(!formOpen)}
