@@ -33,6 +33,15 @@ interface OrgData {
   stripe_account_id: string | null;
   stripe_onboarding_complete: boolean;
   visible: boolean;
+  raised: number;
+  donors: number;
+  goal: number;
+}
+
+interface OrgStats {
+  total_donations: number;
+  total_donors: number;
+  recent_donations: { amount: number; donated_at: string }[];
 }
 
 function OrgDashboardInner() {
@@ -49,6 +58,7 @@ function OrgDashboardInner() {
   const [connectError, setConnectError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [orgStats, setOrgStats] = useState<OrgStats | null>(null);
 
   // Edit profile state
   const [editOpen, setEditOpen] = useState(false);
@@ -78,7 +88,7 @@ function OrgDashboardInner() {
       // Do NOT filter by visible here — org reps need to access their org even before it goes public.
       let query = supabase
         .from("organizations")
-        .select("id, name, tagline, description, our_story, website, image_url, cover_url, stripe_account_id, stripe_onboarding_complete, visible");
+        .select("id, name, tagline, description, our_story, website, image_url, cover_url, stripe_account_id, stripe_onboarding_complete, visible, raised, donors, goal");
 
       if (!isAdmin) {
         query = query.or(
@@ -99,6 +109,9 @@ function OrgDashboardInner() {
         stripe_account_id: o.stripe_account_id ?? null,
         stripe_onboarding_complete: o.stripe_onboarding_complete ?? false,
         visible: o.visible ?? false,
+        raised: o.raised ?? 0,
+        donors: o.donors ?? 0,
+        goal: o.goal ?? 0,
       }));
 
       setOrgs(orgList);
@@ -110,6 +123,9 @@ function OrgDashboardInner() {
         ? orgList[0]
         : null;
       setSelectedOrg(target);
+
+      // Load donation stats for selected org
+      if (target) loadOrgStats(supabase, target.id);
       setLoading(false);
     }
 
@@ -122,6 +138,34 @@ function OrgDashboardInner() {
       verifyAccountStatus(selectedOrg.stripe_account_id);
     }
   }, [stripeResult, selectedOrg?.stripe_account_id]); // eslint-disable-line
+
+  // Reload stats when org changes
+  useEffect(() => {
+    if (selectedOrg) {
+      setOrgStats(null);
+      loadOrgStats(createClient() as any, selectedOrg.id);
+    }
+  }, [selectedOrg?.id]); // eslint-disable-line
+
+  async function loadOrgStats(supabase: any, orgId: string) {
+    try {
+      const { data } = await supabase
+        .from("donations")
+        .select("amount, donated_at, user_id")
+        .eq("org_id", orgId)
+        .order("donated_at", { ascending: false })
+        .limit(50);
+      if (data) {
+        const total_donations = data.reduce((s: number, d: any) => s + (d.amount ?? 0), 0);
+        const total_donors = new Set(data.filter((d: any) => d.user_id).map((d: any) => d.user_id)).size;
+        const recent_donations = data.slice(0, 5).map((d: any) => ({
+          amount: (d.amount ?? 0) / 100,
+          donated_at: d.donated_at,
+        }));
+        setOrgStats({ total_donations, total_donors, recent_donations });
+      }
+    } catch { /* silent */ }
+  }
 
   async function verifyAccountStatus(accountId: string) {
     setVerifying(true);
@@ -384,6 +428,60 @@ function OrgDashboardInner() {
               <p className="text-xs text-gray-600 mt-0.5">
                 The Stripe onboarding link expired. Click the button below to get a new link.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Donation Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            {
+              label: "Total Raised",
+              value: `$${((org.raised ?? 0)).toLocaleString()}`,
+              sub: "All time",
+            },
+            {
+              label: "Donations",
+              value: orgStats ? (orgStats.total_donations / 100).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }) : "—",
+              sub: "Total received",
+            },
+            {
+              label: "Donors",
+              value: (org.donors ?? 0).toLocaleString(),
+              sub: "Unique givers",
+            },
+            {
+              label: "Goal",
+              value: org.goal > 0 ? `$${org.goal.toLocaleString()}` : "—",
+              sub: org.goal > 0 && org.raised > 0 ? `${Math.min(100, Math.round((org.raised / org.goal) * 100))}% complete` : "Not set",
+            },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white rounded-2xl border p-4" style={{ borderColor: "#e5e1d8" }}>
+              <div className="font-display text-xl font-bold text-gray-900">{stat.value}</div>
+              <div className="text-xs font-medium text-gray-600 mt-0.5">{stat.label}</div>
+              <div className="text-xs text-gray-400">{stat.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent Donations */}
+        {orgStats && orgStats.recent_donations.length > 0 && (
+          <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
+            <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
+              <DollarSign className="w-4 h-4 text-gray-500" />
+              <h2 className="font-display font-semibold text-gray-900">Recent Donations</h2>
+            </div>
+            <div className="divide-y" style={{ borderColor: "#f0ede6" }}>
+              {orgStats.recent_donations.map((d, i) => (
+                <div key={i} className="px-6 py-3 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">
+                    {new Date(d.donated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: "#1a7a4a" }}>
+                    {d.amount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}

@@ -7,8 +7,6 @@ import {
   Calendar,
   Users,
   ArrowLeft,
-  Share2,
-  Bookmark,
   ExternalLink,
   CheckCircle,
   ShieldCheck,
@@ -25,6 +23,7 @@ import OrgAdminBar from "@/components/OrgAdminBar";
 import EditableField from "@/components/EditableField";
 import OrgImpactFeed from "@/components/OrgImpactFeed";
 import OrgVideoEmbed from "@/components/OrgVideoEmbed";
+import OrgBookmarkShare from "@/components/OrgBookmarkShare";
 import { createClient } from "@/lib/supabase-server";
 import { CATEGORY_LABELS } from "@/lib/categories";
 
@@ -237,21 +236,8 @@ export default async function OrgPage({
           </Link>
         </div>
 
-        <div className="absolute top-4 right-4 flex gap-2">
-          <button
-            className="p-2.5 rounded-lg text-white transition-colors hover:bg-white/20"
-            style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
-            aria-label="Save to watchlist"
-          >
-            <Bookmark className="w-4 h-4" />
-          </button>
-          <button
-            className="p-2.5 rounded-lg text-white transition-colors hover:bg-white/20"
-            style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
-            aria-label="Share"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
+        <div className="absolute top-4 right-4">
+          <OrgBookmarkShare orgId={id} orgName={org.name} />
         </div>
 
         <div className="absolute bottom-4 left-4 md:left-8">
