@@ -37,8 +37,7 @@ import {
   formatDate,
   getProgressPercent,
 } from "@/lib/placeholder-data";
-
-const ADMIN_EMAIL = "sethmitzel@gmail.com";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 interface DonationRecord {
   id: string;
@@ -971,7 +970,7 @@ function ProfilePageInner() {
                   className="px-3 py-2 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 bg-white"
                   style={{ borderColor: "#e5e1d8" }}
                 >
-                  {[2026, 2025, 2024, 2023].map((y) => (
+                  {Array.from({ length: parseInt(currentYear) - 2022 }, (_, i) => parseInt(currentYear) - i).map((y) => (
                     <option key={y} value={y}>{y}</option>
                   ))}
                   <option value="all">All Time</option>

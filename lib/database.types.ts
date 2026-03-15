@@ -9,7 +9,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type OrgCategory = "community" | "missionaries" | "politics";
+export type OrgCategory = "community" | "politics";
 
 export interface Database {
   public: {

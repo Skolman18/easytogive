@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      // Missionaries is a deferred feature — redirect to Discover for now
+      { source: "/missionaries", destination: "/discover", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {

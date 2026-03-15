@@ -5,7 +5,7 @@ const FOOTER_LINKS = {
   Platform: [
     { href: "/discover", label: "Discover Orgs" },
     { href: "/portfolio", label: "My Portfolio" },
-    { href: "/wallet", label: "Giving History" },
+    { href: "/wallet", label: "My Wallet" },
     { href: "/tools/tax-optimizer", label: "AI Tax Optimizer" },
   ],
   Company: [

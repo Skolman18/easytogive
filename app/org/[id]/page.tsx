@@ -76,6 +76,11 @@ export default async function OrgPage({
     .eq("id", id)
     .single();
 
+  // Block direct URL access to hidden orgs — they exist in the DB but aren't published
+  if (supabaseOrg && supabaseOrg.visible === false) {
+    notFound();
+  }
+
   // Normalize Supabase org fields to match placeholder shape
   const org = supabaseOrg
     ? {

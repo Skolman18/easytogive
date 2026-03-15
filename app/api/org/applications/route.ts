@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase-server";
 import { sendApprovalEmail } from "@/lib/email";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
-
-const ADMIN_EMAIL = "sethmitzel@gmail.com";
 
 function getSupabaseAdmin() {
   return createClient(
@@ -119,44 +118,67 @@ export async function PATCH(req: NextRequest) {
       .slice(0, 60);
 
     let orgId = baseSlug;
-    const { data: existing } = await supabase
+
+    // Check if org record already exists (re-approval after partial failure)
+    const { data: existingOrg } = await supabase
       .from("organizations")
       .select("id")
-      .eq("id", orgId)
+      .eq("contact_email", data.email)
       .maybeSingle();
-    if (existing) {
-      orgId = `${baseSlug}-${Math.random().toString(36).slice(2, 7)}`;
+
+    if (!existingOrg) {
+      const { data: existingById } = await supabase
+        .from("organizations")
+        .select("id")
+        .eq("id", orgId)
+        .maybeSingle();
+      if (existingById) {
+        orgId = `${baseSlug}-${Math.random().toString(36).slice(2, 7)}`;
+      }
+
+      // Create the organization record so the rep can access their dashboard
+      const { error: orgInsertError } = await supabase.from("organizations").insert({
+        id: orgId,
+        name: data.org_name,
+        tagline: "",
+        description: data.description ?? "",
+        category: data.category,
+        subcategory: data.subcategory ?? null,
+        contact_email: data.email,
+        ein: data.ein || null,
+        website: data.website || null,
+        visible: false,        // hidden until the rep completes their profile
+        verified: false,
+        featured: false,
+        raised: 0,
+        goal: 0,
+        donors: 0,
+      });
+
+      if (orgInsertError) {
+        console.error("Failed to create org record on approval:", orgInsertError.message);
+        // Revert the status change so admin can retry
+        await supabase
+          .from("org_applications")
+          .update({ status: "pending", reviewed_at: null })
+          .eq("id", id);
+        return NextResponse.json(
+          { error: `Failed to create organization record: ${orgInsertError.message}` },
+          { status: 500 }
+        );
+      }
+    } else {
+      orgId = existingOrg.id;
     }
 
-    // Create the organization record so the rep can access their dashboard
-    const { error: orgInsertError } = await supabase.from("organizations").insert({
-      id: orgId,
-      name: data.org_name,
-      tagline: "",
-      description: data.description ?? "",
-      category: data.category,
-      subcategory: data.subcategory ?? null,
-      contact_email: data.email,
-      ein: data.ein || null,
-      website: data.website || null,
-      visible: false,        // hidden until the rep completes their profile
-      verified: false,
-      featured: false,
-      raised: 0,
-      goal: 0,
-      donors: 0,
-    });
-
-    if (orgInsertError) {
-      console.error("Failed to create org record on approval:", orgInsertError.message);
-    }
-
+    // Send approval email (non-critical — continue even if it fails)
     await sendApprovalEmail({
       to: data.email,
       orgName: data.org_name,
       contactName: data.contact_name || undefined,
     });
 
+    // Send Supabase invite so org rep can create their account
     const baseUrl = process.env.NEXT_PUBLIC_URL ?? "https://easytogive.online";
     const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(data.email, {
       redirectTo: `${baseUrl}/auth/callback?next=/org/dashboard`,
@@ -164,6 +186,15 @@ export async function PATCH(req: NextRequest) {
     });
     if (inviteErr) {
       console.error("Failed to send org rep invite:", inviteErr.message);
+      // Org record was created successfully; return a partial-success response
+      // so admin knows to manually resend the invite
+      return NextResponse.json(
+        {
+          application: data,
+          warning: `Organization created but invite email failed: ${inviteErr.message}. Use Supabase Dashboard → Authentication → Users to resend the invite.`,
+        },
+        { status: 207 }
+      );
     }
   }
 

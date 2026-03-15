@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (!(profile as any)?.onboarding_complete) {
+    if (!profile?.onboarding_complete) {
       return NextResponse.redirect(new URL("/onboarding", requestUrl.origin));
     }
   }

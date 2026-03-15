@@ -4,8 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { VideoOff, GripHorizontal } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { useEditMode } from "@/components/EditModeContext";
-
-const ADMIN_EMAIL = "sethmitzel@gmail.com";
+import { ADMIN_EMAIL } from "@/lib/admin";
 const MIN_SIZE = 30;
 const MAX_SIZE = 100;
 

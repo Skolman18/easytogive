@@ -4,7 +4,7 @@ import { checkRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
-const VALID_CATEGORIES = ["community", "missionaries"];
+const VALID_CATEGORIES = ["community"];
 
 function getSupabaseAdmin() {
   return createClient(

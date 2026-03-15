@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Building2, Loader2, AlertCircle, CheckCircle, Clock,
-  Users, Globe, Check,
+  Users, Check,
 } from "lucide-react";
 import { SUBCATEGORY_OPTIONS, CATEGORY_LABELS } from "@/lib/categories";
 import type { TopCategory } from "@/lib/categories";
@@ -25,22 +25,12 @@ const TOP_CATEGORIES: {
     sublabel: "Nonprofits, churches, food banks, schools, and more",
     Icon: Users,
   },
-  {
-    value: "missionaries",
-    label: "Missionaries",
-    sublabel: "Missionary workers and sending organizations",
-    Icon: Globe,
-  },
 ];
 
 // ─── EIN visibility logic ─────────────────────────────────────────────────────
 
 function getEinConfig(category: string, subcategory: string) {
   if (category === "politics") return { show: false, required: false, helper: "" };
-  if (category === "missionaries") return {
-    show: true, required: false,
-    helper: "EIN is optional for missionary organizations.",
-  };
   if (category === "community" && subcategory === "church") return {
     show: true, required: false,
     helper: "Churches are not required to have an EIN.",
@@ -137,7 +127,7 @@ function OrgSignupInner() {
       ? SUBCATEGORY_OPTIONS[form.category as TopCategory] ?? []
       : [];
 
-  // Auto-select when only one subcategory (missionaries → missionary)
+  // Auto-select when only one subcategory option is available
   const autoSubcategory =
     subOptions.length === 1 ? subOptions[0] : form.subcategory;
 
@@ -221,15 +211,16 @@ function OrgSignupInner() {
             <span className="font-semibold text-gray-800">{form.orgName}</span>.
           </p>
           <div
-            className="flex items-center justify-center gap-2 text-sm font-medium p-3 rounded-xl mb-8"
+            className="flex items-center justify-center gap-2 text-sm font-medium p-3 rounded-xl mb-4"
             style={{ backgroundColor: "#eff6ff", color: "#1d4ed8" }}
           >
             <Clock className="w-4 h-4" />
             We&apos;ll review your application and get back to you within 2 business days.
           </div>
-          <p className="text-sm text-gray-400">
-            A confirmation email has been sent to{" "}
-            <span className="text-gray-600">{form.email}</span>.
+          <p className="text-sm text-gray-500">
+            Once approved, we&apos;ll send an invite to{" "}
+            <span className="font-medium text-gray-700">{form.email}</span>{" "}
+            so you can set up your account and complete your profile.
           </p>
         </div>
       </div>
@@ -334,10 +325,10 @@ function OrgSignupInner() {
               {/* Website */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Website
+                  Website <span className="text-gray-400 font-normal">(optional)</span>
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   value={form.website}
                   onChange={(e) => setForm({ ...form, website: e.target.value })}
                   className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
@@ -392,15 +383,7 @@ function OrgSignupInner() {
               </div>
 
               {/* ── Subcategory — step 2 ─────────────────────────────────────── */}
-              {form.category === "missionaries" && (
-                <p className="text-sm text-gray-500 italic">
-                  You will be listed in the{" "}
-                  <span className="font-medium" style={{ color: "#1a7a4a" }}>Missionaries</span>{" "}
-                  section.
-                </p>
-              )}
-
-              {form.category && form.category !== "missionaries" && subOptions.length > 1 && form.category !== "" && (
+              {form.category && subOptions.length > 1 && (
                 <div
                   className="space-y-1"
                   style={{

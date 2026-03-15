@@ -56,11 +56,14 @@ export async function POST(req: NextRequest) {
     }
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    const { allowed } = checkRateLimit(ip, "create-payment-intent", 30, 60 * 60 * 1000);
+    const { allowed, retryAfterMs } = checkRateLimit(ip, "create-payment-intent", 30, 60 * 60 * 1000);
     if (!allowed) {
       return NextResponse.json(
         { error: "Too many requests. Please try again later." },
-        { status: 429 }
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) },
+        }
       );
     }
 
@@ -135,13 +138,28 @@ export async function POST(req: NextRequest) {
 
     // ── Direct charge fallback (no Connect account yet, or portfolio donation) ──
     // Serialize allocations compactly for the webhook: "orgId|cents,orgId|cents,..."
-    let allocationsStr: string | undefined;
+    // Split across multiple metadata keys (allocations, allocations2, ...) so large
+    // portfolios don't get silently truncated by Stripe's 500-char per-value limit.
+    const allocationChunks: Record<string, string> = {};
     if (allocations && allocations.length > 1) {
-      const encoded = allocations
-        .map((a) => `${a.orgId.slice(0, 60)}|${a.amountCents}`)
-        .join(",")
-        .slice(0, 490);
-      allocationsStr = encoded;
+      const entries = allocations.map((a) => `${a.orgId.slice(0, 60)}|${a.amountCents}`);
+      let chunk = "";
+      let chunkIdx = 0;
+      for (const entry of entries) {
+        const candidate = chunk ? `${chunk},${entry}` : entry;
+        if (candidate.length > 490) {
+          const key = chunkIdx === 0 ? "allocations" : `allocations${chunkIdx + 1}`;
+          allocationChunks[key] = chunk;
+          chunk = entry;
+          chunkIdx++;
+        } else {
+          chunk = candidate;
+        }
+      }
+      if (chunk) {
+        const key = chunkIdx === 0 ? "allocations" : `allocations${chunkIdx + 1}`;
+        allocationChunks[key] = chunk;
+      }
     }
 
     const safeMetadata = sanitizeMetadata({
@@ -149,7 +167,7 @@ export async function POST(req: NextRequest) {
       ...(orgId ? { orgId: orgId.slice(0, 500) } : {}),
       ...(donorId ? { donorId: donorId.slice(0, 500) } : {}),
       ...(coverFee !== undefined ? { coverFee: String(!!coverFee) } : {}),
-      ...(allocationsStr ? { allocations: allocationsStr } : {}),
+      ...allocationChunks,
       platform: "easytogive",
     });
 

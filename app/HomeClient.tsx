@@ -166,7 +166,6 @@ export default function HomeClient({
   const [userCity, setUserCity] = useState<string | null>(null);
   const [localOrgs, setLocalOrgs] = useState<Organization[]>([]);
   const [recommendedOrgs, setRecommendedOrgs] = useState<Organization[]>([]);
-  const [featuredMissionaries, setFeaturedMissionaries] = useState<any[]>([]);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // Stats count-up
@@ -187,22 +186,6 @@ export default function HomeClient({
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
-
-  // Featured missionaries
-  useEffect(() => {
-    async function loadMissionaries() {
-      const supabase = createClient() as any;
-      const { data } = await supabase
-        .from("missionaries")
-        .select("id, slug, full_name, photo_url, bio, mission_org, country, region")
-        .eq("status", "approved")
-        .eq("visible", true)
-        .eq("featured", true)
-        .limit(3);
-      setFeaturedMissionaries(data || []);
-    }
-    loadMissionaries();
   }, []);
 
   // User data (recommendations + local)
@@ -499,90 +482,6 @@ export default function HomeClient({
           </Link>
         </div>
       </section>
-
-      {/* ── SUPPORT A MISSIONARY ──────────────────────────────────────── */}
-      {featuredMissionaries.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-          <div className="flex items-end justify-between mb-6">
-            <div>
-              <h2 className="font-display text-3xl font-bold text-gray-900">
-                Support Missionaries Directly
-              </h2>
-              <p className="text-gray-500 mt-1 text-sm">
-                Give one-time or monthly to individuals serving around the world.
-              </p>
-            </div>
-            <Link
-              href="/missionaries"
-              className="hidden md:inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
-              style={{ color: "#1a7a4a" }}
-            >
-              Browse all missionaries →
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {featuredMissionaries.map((m) => (
-              <div
-                key={m.id}
-                className="bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-4"
-                style={{ borderColor: "#e5e1d8" }}
-              >
-                {m.photo_url ? (
-                  <img
-                    src={m.photo_url}
-                    alt={m.full_name}
-                    className="w-20 h-20 rounded-full object-cover object-top flex-shrink-0"
-                  />
-                ) : (
-                  <div
-                    className="w-20 h-20 rounded-full flex-shrink-0 flex items-center justify-center text-xl font-bold text-white"
-                    style={{ backgroundColor: "#1a7a4a" }}
-                  >
-                    {m.full_name.charAt(0)}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <span className="font-display font-semibold text-gray-900">{m.full_name}</span>
-                    {m.mission_org && (
-                      <span
-                        className="px-2 py-0.5 rounded-full text-xs font-medium"
-                        style={{ backgroundColor: "#f3f4f6", color: "#6b7280" }}
-                      >
-                        {m.mission_org}
-                      </span>
-                    )}
-                  </div>
-                  {(m.country || m.region) && (
-                    <p className="text-xs text-gray-500 mb-1">
-                      {[m.country, m.region].filter(Boolean).join(", ")}
-                    </p>
-                  )}
-                  {m.bio && (
-                    <p className="text-sm text-gray-500 line-clamp-1">{m.bio}</p>
-                  )}
-                </div>
-                <Link
-                  href={`/missionaries/${m.slug}?type=monthly`}
-                  className="flex-shrink-0 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: "#1a7a4a" }}
-                >
-                  Give Monthly
-                </Link>
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 text-center md:hidden">
-            <Link
-              href="/missionaries"
-              className="text-sm font-semibold hover:underline"
-              style={{ color: "#1a7a4a" }}
-            >
-              Browse all missionaries →
-            </Link>
-          </div>
-        </section>
-      )}
 
       {/* ── LOCAL TO YOU ──────────────────────────────────────────────── */}
       {localOrgs.length > 0 && (

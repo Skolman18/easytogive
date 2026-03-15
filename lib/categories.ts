@@ -3,7 +3,11 @@
 
 // ─── Top-level categories ────────────────────────────────────────────────────
 
-export const TOP_LEVEL_CATEGORIES = ['community', 'missionaries'] as const;
+// MISSIONARIES — deferred feature, coming in a future release
+// To re-enable: add 'missionaries' back to TOP_LEVEL_CATEGORIES,
+// add the missionaries key back to SUBCATEGORY_OPTIONS,
+// and add { value: 'missionaries', label: 'Missionaries' } back to CATEGORIES.
+export const TOP_LEVEL_CATEGORIES = ['community'] as const;
 export type TopCategory = (typeof TOP_LEVEL_CATEGORIES)[number];
 
 /** Backward-compat alias — Category is now any string */
@@ -17,7 +21,6 @@ export const SUBCATEGORY_OPTIONS: Record<TopCategory, readonly string[]> = {
     'disaster_relief', 'animal_welfare', 'community_development',
     'international_aid', 'youth_children',
   ],
-  missionaries: ['missionary'],
 };
 
 // ─── Display labels (single source of truth) ─────────────────────────────────
@@ -57,8 +60,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
 
 /** Top-level chips used on the Discover page and admin dropdowns */
 export const CATEGORIES: { value: string; label: string }[] = [
-  { value: 'community',    label: 'Community' },
-  { value: 'missionaries', label: 'Missionaries' },
+  { value: 'community', label: 'Community' },
 ];
 
 /** Kept for backward compatibility (previously the 6-value enum list) */

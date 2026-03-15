@@ -840,6 +840,7 @@ export default function PortfolioPage() {
 
                 {/* ── Allocation status + Fund Your Portfolio ─────────── */}
                 <div
+                  data-donate-card
                   className="rounded-2xl border p-5"
                   style={{
                     borderColor: isValid ? "#86efac" : totalPercent > 100 ? "#fca5a5" : "#e5e1d8",
@@ -1044,6 +1045,41 @@ export default function PortfolioPage() {
                 </div>
               </div>
             </div>
+
+            {/* ── Recurring Giving CTA (empty state) ─────────────────────── */}
+            {recurringDonations.length === 0 && isValid && (
+              <div className="mt-10 pb-2">
+                <div
+                  className="rounded-2xl border p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+                  style={{ borderColor: "#e5e1d8", backgroundColor: "#faf9f6" }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: "#e8f5ee" }}
+                  >
+                    <RefreshCw className="w-6 h-6" style={{ color: "#1a7a4a" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm">Set up recurring giving</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      Give weekly, bi-weekly, monthly, or yearly — automatically split across your portfolio. Cancel anytime.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsRecurring(true);
+                      // Scroll the donate card into view
+                      document.querySelector("[data-donate-card]")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 flex-shrink-0"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Set Up Now
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── Active Recurring Giving ─────────────────────────────────── */}
             {recurringDonations.length > 0 && (

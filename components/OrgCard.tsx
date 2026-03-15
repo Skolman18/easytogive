@@ -87,11 +87,7 @@ export default function OrgCard({
     CATEGORY_LABELS[org.category] ||
     org.category;
 
-  // Badge style varies by top-level category
-  const isMissionary = org.category === "missionaries";
-  const badgeStyle = isMissionary
-    ? { backgroundColor: "#e8f5ee", color: "#1a7a4a", border: "1px solid #bbf7d0" }
-    : { backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #e5e7eb" };
+  const badgeStyle = { backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #e5e7eb" };
 
   const storyRaw = (org.ourStory ?? "").trim();
   const storyPreview =

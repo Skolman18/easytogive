@@ -2,8 +2,7 @@ import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase-server";
-
-const ADMIN_EMAIL = "sethmitzel@gmail.com";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;

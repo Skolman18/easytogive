@@ -1358,10 +1358,9 @@ function NavLinksTab() {
 
       <div className="rounded-xl border overflow-hidden bg-white" style={{ borderColor: "#e5e7eb" }}>
         {links
-          .filter((l) => l.href !== "/missionaries" && l.href !== "/politics")
+          .filter((l) => l.href !== "/missionaries" && l.href !== "#explore" && l.href !== "/politics")
           .map((link) => {
             const actualIdx = links.findIndex((l) => l.id === link.id);
-            const isExplore = link.href === "#explore";
             return (
               <div key={link.id}>
                 <div
@@ -1394,7 +1393,7 @@ function NavLinksTab() {
                   {/* Label + href */}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-gray-900">{link.label}</div>
-                    <div className="text-xs text-gray-400 font-mono">{isExplore ? "dropdown" : link.href}</div>
+                    <div className="text-xs text-gray-400 font-mono">{link.href}</div>
                   </div>
 
                   {/* Visible toggle */}
@@ -1410,29 +1409,6 @@ function NavLinksTab() {
                   </button>
                 </div>
 
-                {/* Sub-items shown below the Explore row */}
-                {isExplore && (
-                  <>
-                    {[
-                      { label: "Missionaries", href: "/missionaries" },
-                    ].map((child) => (
-                      <div
-                        key={child.href}
-                        className="flex items-center gap-3 py-2.5 border-b"
-                        style={{ borderColor: "#f3f4f6", paddingLeft: 40, paddingRight: 16 }}
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-xs text-gray-700">{child.label}</div>
-                          <div className="text-xs text-gray-400 font-mono">{child.href}</div>
-                        </div>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400 flex-shrink-0">
-                          Sub-item
-                        </span>
-                      </div>
-                    ))}
-                  </>
-                )}
               </div>
             );
           })}
@@ -1746,6 +1722,8 @@ function OrgApplicationsTab({ onCreateOrg }: { onCreateOrg?: (app: OrgApplicatio
   const [expanded, setExpanded] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionWarning, setActionWarning] = useState<string | null>(null);
   // Track which approved applications have their org already made visible
   const [visibleOrgs, setVisibleOrgs] = useState<Record<string, boolean>>({});
 
@@ -1755,6 +1733,27 @@ function OrgApplicationsTab({ onCreateOrg }: { onCreateOrg?: (app: OrgApplicatio
     const data = await res.json();
     const list: OrgApplication[] = data.applications ?? [];
     setApps(list);
+
+    // Check which approved apps already have their org visible
+    const approvedEmails = list
+      .filter((a) => a.status === "approved")
+      .map((a) => a.email);
+    if (approvedEmails.length > 0) {
+      const supabase = createClient() as any;
+      const { data: visibleOrgRows } = await supabase
+        .from("organizations")
+        .select("contact_email, visible")
+        .in("contact_email", approvedEmails);
+      const vMap: Record<string, boolean> = {};
+      for (const row of visibleOrgRows ?? []) {
+        if (row.visible) {
+          const app = list.find((a) => a.email === row.contact_email);
+          if (app) vMap[app.id] = true;
+        }
+      }
+      setVisibleOrgs(vMap);
+    }
+
     // Pre-fill notes textarea with existing admin_notes
     const n: Record<string, string> = {};
     list.forEach((a) => { n[a.id] = a.admin_notes ?? ""; });
@@ -1766,12 +1765,18 @@ function OrgApplicationsTab({ onCreateOrg }: { onCreateOrg?: (app: OrgApplicatio
 
   async function updateStatus(id: string, status: AppStatus) {
     setSaving(id);
+    setActionError(null);
+    setActionWarning(null);
     const res = await fetch("/api/org/applications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status, admin_notes: notes[id] ?? "" }),
     });
-    if (res.ok) {
+    const json = await res.json();
+    if (!res.ok && res.status !== 207) {
+      setActionError(json.error ?? "Failed to update application. Please try again.");
+    } else {
+      if (json.warning) setActionWarning(json.warning);
       setApps((prev) =>
         prev.map((a) => (a.id === id ? { ...a, status, admin_notes: notes[id] ?? "" } : a))
       );
@@ -1854,6 +1859,20 @@ function OrgApplicationsTab({ onCreateOrg }: { onCreateOrg?: (app: OrgApplicatio
           </button>
         ))}
       </div>
+
+      {/* Action error / warning banners */}
+      {actionError && (
+        <div className="flex items-start gap-3 p-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-800">
+          <span className="flex-1">{actionError}</span>
+          <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-600 flex-shrink-0">✕</button>
+        </div>
+      )}
+      {actionWarning && (
+        <div className="flex items-start gap-3 p-3 rounded-lg border border-yellow-200 bg-yellow-50 text-sm text-yellow-800">
+          <span className="flex-1">⚠️ {actionWarning}</span>
+          <button onClick={() => setActionWarning(null)} className="text-yellow-500 hover:text-yellow-700 flex-shrink-0">✕</button>
+        </div>
+      )}
 
       {filtered.length === 0 && (
         <EmptyState message={`No ${filter} applications.`} />

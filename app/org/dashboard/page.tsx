@@ -22,6 +22,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
+import { ADMIN_EMAIL } from "@/lib/admin";
 import { PreviewBanner, AdminNotesPanel } from "@/components/AdminPreviewOverlay";
 import ImpactUpdateForm from "@/components/ImpactUpdateForm";
 
@@ -76,6 +77,7 @@ function OrgDashboardInner() {
   const [orgStats, setOrgStats] = useState<OrgStats | null>(null);
   const [impactUpdates, setImpactUpdates] = useState<ImpactUpdate[]>([]);
   const [impactLoading, setImpactLoading] = useState(false);
+  const [stripeBannerDismissed, setStripeBannerDismissed] = useState(false);
 
   // Edit profile state
   const [editOpen, setEditOpen] = useState(false);
@@ -85,8 +87,6 @@ function OrgDashboardInner() {
   const [editSuccess, setEditSuccess] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
-
-  const ADMIN_EMAIL = "sethmitzel@gmail.com";
 
   useEffect(() => {
     async function load() {
@@ -176,7 +176,9 @@ function OrgDashboardInner() {
         .order("created_at", { ascending: false })
         .limit(20);
       setImpactUpdates(data ?? []);
-    } catch { /* silent */ }
+    } catch (err) {
+      console.error("loadImpactUpdates failed:", err);
+    }
     setImpactLoading(false);
   }
 
@@ -197,7 +199,9 @@ function OrgDashboardInner() {
         }));
         setOrgStats({ total_donations, total_donors, recent_donations });
       }
-    } catch { /* silent */ }
+    } catch (err) {
+      console.error("loadOrgStats failed:", err);
+    }
   }
 
   async function verifyAccountStatus(accountId: string) {
@@ -427,7 +431,7 @@ function OrgDashboardInner() {
         )}
 
         {/* Stripe return banners */}
-        {stripeResult === "success" && (
+        {stripeResult === "success" && !stripeBannerDismissed && (
           <div
             className="rounded-xl p-4 flex items-start gap-3"
             style={{ backgroundColor: "#e8f5ee", border: "1px solid #86efac" }}
@@ -437,16 +441,37 @@ function OrgDashboardInner() {
             ) : (
               <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
             )}
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-semibold text-gray-900">
-                {verifying ? "Verifying your Stripe account…" : "Stripe setup received!"}
+                {verifying
+                  ? "Verifying your Stripe account…"
+                  : isConnected
+                  ? "Bank account connected!"
+                  : "Stripe setup received!"}
               </p>
               <p className="text-xs text-gray-600 mt-0.5">
                 {isConnected
-                  ? "Your bank account is connected. Donations will be transferred automatically."
+                  ? "You're all set — donations will be transferred directly to your bank account."
+                  : verifying
+                  ? "Confirming your account status, this only takes a moment…"
                   : "We're confirming your account status. Refresh in a moment if it doesn't update."}
               </p>
             </div>
+            {!verifying && (
+              <button
+                onClick={() => {
+                  setStripeBannerDismissed(true);
+                  // Clean the query param from the URL without a full reload
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete("stripe");
+                  window.history.replaceState({}, "", url.toString());
+                }}
+                className="p-1 rounded-md text-green-700 hover:bg-green-100 transition-colors flex-shrink-0"
+                aria-label="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         )}
 

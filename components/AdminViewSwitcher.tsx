@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { useEditMode, type ViewMode } from "@/components/EditModeContext";
 import { Building2, User, ShieldCheck } from "lucide-react";
-
-const ADMIN_EMAIL = "sethmitzel@gmail.com";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 const MODES: { id: ViewMode; label: string; Icon: React.ElementType; desc: string }[] = [
   { id: "admin",  label: "Admin",        Icon: ShieldCheck, desc: "Full admin chrome" },

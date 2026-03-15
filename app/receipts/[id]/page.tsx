@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase-server";
+import { ADMIN_EMAIL } from "@/lib/admin";
 import PrintButton from "./PrintButton";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +64,6 @@ export default async function ReceiptPage({
   if (!donation) notFound();
 
   // Verify the logged-in user owns this receipt (admin may view any)
-  const ADMIN_EMAIL = "sethmitzel@gmail.com";
   if (donation.user_id !== user.id && user.email !== ADMIN_EMAIL) {
     notFound();
   }

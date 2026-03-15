@@ -9,8 +9,6 @@ import { createClient } from "@/lib/supabase-browser";
 
 const DEFAULT_NAV_LINKS = [
   { href: "/discover", label: "Discover" },
-  { href: "#explore", label: "Explore" },
-  { href: "/missionaries", label: "Missionaries" },
   { href: "/portfolio", label: "My Portfolio" },
   { href: "/about", label: "About" },
   { href: "/tax-information", label: "Tax Information" },
@@ -106,37 +104,20 @@ export default function Navbar() {
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-0.5">
             {navLinks
-              .filter((l) => l.href !== "/missionaries" && l.href !== "/politics")
-              .map((link) => {
-                if (link.href === "#explore") {
-                  return (
-                    <Link
-                      key="#explore"
-                      href="/missionaries"
-                      className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        pathname === "/missionaries"
-                          ? "text-gray-900 bg-gray-100"
-                          : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                      }`}
-                    >
-                      Missionaries
-                    </Link>
-                  );
-                }
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      pathname === link.href
-                        ? "text-gray-900 bg-gray-100"
-                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
+              .filter((l) => l.href !== "/missionaries" && l.href !== "#explore" && l.href !== "/politics")
+              .map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    pathname === link.href
+                      ? "text-gray-900 bg-gray-100"
+                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
           </div>
 
           {/* Desktop auth + CTA */}
@@ -221,39 +202,21 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t bg-white px-4 py-3 space-y-1" style={{ borderColor: "#f0ede6" }}>
           {navLinks
-            .filter((l) => l.href !== "/missionaries" && l.href !== "/politics")
-            .map((link) => {
-              if (link.href === "#explore") {
-                return (
-                  <Link
-                    key="#explore"
-                    href="/missionaries"
-                    onClick={() => setMobileOpen(false)}
-                    className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      pathname === "/missionaries"
-                        ? "text-gray-900 bg-gray-100"
-                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                  >
-                    Missionaries
-                  </Link>
-                );
-              }
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    pathname === link.href
-                      ? "text-gray-900 bg-gray-100"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
+            .filter((l) => l.href !== "/missionaries" && l.href !== "#explore" && l.href !== "/politics")
+            .map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  pathname === link.href
+                    ? "text-gray-900 bg-gray-100"
+                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
           <div className="pt-2 border-t space-y-1" style={{ borderColor: "#f0ede6" }}>
             {user ? (
               <>

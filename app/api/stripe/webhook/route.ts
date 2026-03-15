@@ -54,16 +54,36 @@ async function incrementOrgStats(
   amountCents: number,
   donorId: string | null
 ): Promise<void> {
+  const addedDollars = Math.floor(amountCents / 100);
   try {
-    const addedDollars = Math.floor(amountCents / 100);
     // Use an atomic Postgres function to avoid read-modify-write race conditions
-    await supabase.rpc("increment_org_raised", {
+    const { error } = await supabase.rpc("increment_org_raised", {
       p_org_id: orgId,
       p_dollars: addedDollars,
       p_donor_id: donorId ?? null,
     });
-  } catch (err) {
-    console.error("Failed to increment org stats:", err);
+    if (error) throw error;
+  } catch (rpcErr) {
+    console.error(`increment_org_raised RPC failed for ${orgId}, falling back to direct update:`, rpcErr);
+    // Fallback: direct update (not atomic, but better than silent failure)
+    try {
+      const { data: current } = await supabase
+        .from("organizations")
+        .select("raised, donors")
+        .eq("id", orgId)
+        .single();
+      if (current) {
+        const newDonors = donorId
+          ? (current.donors ?? 0) + 1
+          : (current.donors ?? 0);
+        await supabase
+          .from("organizations")
+          .update({ raised: (current.raised ?? 0) + addedDollars, donors: newDonors })
+          .eq("id", orgId);
+      }
+    } catch (fallbackErr) {
+      console.error(`Fallback org stats update also failed for ${orgId}:`, fallbackErr);
+    }
   }
 }
 
@@ -118,10 +138,18 @@ export async function POST(req: NextRequest) {
           const now = new Date().toISOString();
 
           // Parse multi-org allocations if present: "orgId|cents,orgId|cents,..."
-          const allocParts = meta.allocations
-            ? meta.allocations.split(",").map((s: string) => {
+          // May be split across allocations, allocations2, allocations3, ... keys.
+          const rawAllocStr = [
+            meta.allocations,
+            meta.allocations2,
+            meta.allocations3,
+            meta.allocations4,
+            meta.allocations5,
+          ].filter(Boolean).join(",");
+          const allocParts = rawAllocStr
+            ? rawAllocStr.split(",").map((s: string) => {
                 const [oId, cStr] = s.split("|");
-                return { orgId: oId, amountCents: parseInt(cStr, 10) || 0 };
+                return { orgId: oId?.trim(), amountCents: parseInt(cStr, 10) || 0 };
               }).filter((a: { orgId: string; amountCents: number }) => a.orgId && a.amountCents > 0)
             : [];
 

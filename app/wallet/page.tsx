@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Repeat, CheckCircle, Clock } from "lucide-react";
+import { Loader2, CheckCircle, Clock, Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 
 function fmt(cents: number): string {
@@ -26,7 +26,7 @@ function relDate(iso: string): string {
   });
 }
 
-type FilterTab = "all" | "missionaries" | "one_time" | "recurring";
+type FilterTab = "all" | "one_time" | "recurring";
 
 export default function WalletPage() {
   return (
@@ -48,7 +48,7 @@ export default function WalletPage() {
 function WalletPageInner() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [missionaryDonations, setMissionaryDonations] = useState<any[]>([]);
+  const [donations, setDonations] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
 
   useEffect(() => {
@@ -65,46 +65,38 @@ function WalletPageInner() {
   async function loadDonations(userId: string) {
     const supabase = createClient() as any;
 
-    // Step 1: get missionary donations
-    const { data: donations } = await supabase
-      .from("missionary_donations")
-      .select("id, amount_cents, type, status, created_at, missionary_id")
+    const { data } = await supabase
+      .from("donations")
+      .select("id, amount, org_id, donated_at, receipt_id")
       .eq("user_id", userId)
-      .order("created_at", { ascending: false })
+      .order("donated_at", { ascending: false })
       .limit(100);
 
-    if (!donations || donations.length === 0) {
-      setLoading(false);
-      return;
+    const rows = data || [];
+    if (rows.length > 0) {
+      const orgIds = [...new Set(rows.map((d: any) => d.org_id))];
+      const { data: orgs } = await supabase
+        .from("organizations")
+        .select("id, name, image_url, category")
+        .in("id", orgIds);
+
+      const orgMap: Record<string, any> = {};
+      for (const org of orgs || []) orgMap[org.id] = org;
+
+      setDonations(rows.map((d: any) => ({ ...d, org: orgMap[d.org_id] || null })));
     }
 
-    // Step 2: get missionary details
-    const missionaryIds = [...new Set(donations.map((d: any) => d.missionary_id))];
-    const { data: missionaries } = await supabase
-      .from("missionaries")
-      .select("id, slug, full_name, photo_url, mission_org")
-      .in("id", missionaryIds);
-
-    const mMap: Record<string, any> = {};
-    for (const m of missionaries || []) mMap[m.id] = m;
-
-    const enriched = donations.map((d: any) => ({
-      ...d,
-      missionary: mMap[d.missionary_id] || null,
-    }));
-    setMissionaryDonations(enriched);
     setLoading(false);
   }
 
-  const filtered = missionaryDonations.filter((d) => {
-    if (activeFilter === "missionaries") return true;
-    if (activeFilter === "one_time") return d.type === "one_time";
-    if (activeFilter === "recurring") return d.type === "monthly";
+  const filtered = donations.filter((d) => {
+    if (activeFilter === "recurring") return !!d.recurring;
+    if (activeFilter === "one_time") return !d.recurring;
     return true;
   });
 
-  const missionaryTotal = missionaryDonations.reduce((s, d) => s + d.amount_cents, 0);
-  const uniqueMissionaries = new Set(missionaryDonations.map((d) => d.missionary_id)).size;
+  const total = donations.reduce((s, d) => s + d.amount, 0);
+  const uniqueOrgs = new Set(donations.map((d) => d.org_id)).size;
 
   if (loading) {
     return (
@@ -119,7 +111,6 @@ function WalletPageInner() {
 
   const FILTER_TABS: { id: FilterTab; label: string }[] = [
     { id: "all", label: "All" },
-    { id: "missionaries", label: "Missionaries" },
     { id: "one_time", label: "One-Time" },
     { id: "recurring", label: "Recurring" },
   ];
@@ -158,28 +149,22 @@ function WalletPageInner() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Summary card */}
-        {missionaryTotal > 0 && (
+        {total > 0 && (
           <div
             className="bg-white rounded-2xl border shadow-sm p-5"
             style={{ borderColor: "#e5e1d8" }}
           >
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              Where Your Money Goes
+              Your Giving Summary
             </h2>
-            <div>
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                Missionaries
-              </h3>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">
-                  {missionaryDonations.length} donation
-                  {missionaryDonations.length !== 1 ? "s" : ""} to {uniqueMissionaries} missionary
-                  {uniqueMissionaries !== 1 ? "/missionaries" : ""}
-                </span>
-                <span className="font-display text-lg font-bold" style={{ color: "#1a7a4a" }}>
-                  {fmt(missionaryTotal)}
-                </span>
-              </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">
+                {donations.length} donation{donations.length !== 1 ? "s" : ""} to {uniqueOrgs} org
+                {uniqueOrgs !== 1 ? "s" : ""}
+              </span>
+              <span className="font-display text-xl font-bold" style={{ color: "#1a7a4a" }}>
+                {fmt(total)}
+              </span>
             </div>
           </div>
         )}
@@ -197,11 +182,11 @@ function WalletPageInner() {
             >
               <p className="text-gray-400 text-sm mb-3">No transactions found.</p>
               <Link
-                href="/missionaries"
+                href="/discover"
                 className="text-sm font-medium hover:underline"
                 style={{ color: "#1a7a4a" }}
               >
-                Support a missionary →
+                Discover organizations →
               </Link>
             </div>
           ) : (
@@ -209,17 +194,11 @@ function WalletPageInner() {
               className="bg-white rounded-2xl border shadow-sm overflow-hidden"
               style={{ borderColor: "#e5e1d8" }}
             >
-              {/* Missionaries section heading if showing all */}
-              {activeFilter === "all" && filtered.some((d) => d.missionary) && (
-                <div
-                  className="px-5 py-2.5 border-b text-xs font-semibold text-gray-400 uppercase tracking-wide"
-                  style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
-                >
-                  Missionaries
-                </div>
-              )}
               {filtered.map((d, i) => {
-                const m = d.missionary;
+                const name = d.org?.name || "Organization";
+                const photoUrl = d.org?.image_url;
+                const dateStr = d.donated_at;
+
                 return (
                   <div
                     key={d.id}
@@ -228,10 +207,10 @@ function WalletPageInner() {
                     }`}
                     style={{ borderColor: "#f5f3ef" }}
                   >
-                    {/* Missionary photo */}
-                    {m?.photo_url ? (
+                    {/* Avatar */}
+                    {photoUrl ? (
                       <img
-                        src={m.photo_url}
+                        src={photoUrl}
                         alt=""
                         className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                       />
@@ -240,39 +219,28 @@ function WalletPageInner() {
                         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold"
                         style={{ backgroundColor: "#1a7a4a" }}
                       >
-                        {m?.full_name?.charAt(0) || "M"}
+                        <Building2 className="w-5 h-5 text-white" />
                       </div>
                     )}
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-gray-900 text-sm">
-                          {m?.full_name || "Missionary"}
-                        </span>
+                        <span className="font-semibold text-gray-900 text-sm">{name}</span>
                         <span
                           className="px-2 py-0.5 rounded-full text-xs font-medium"
                           style={{ backgroundColor: "#f3f4f6", color: "#6b7280" }}
                         >
-                          Missionary Support
+                          {d.org?.category || "Donation"}
                         </span>
-                        {d.type === "monthly" && (
-                          <Repeat className="w-3 h-3 text-gray-400" />
-                        )}
                       </div>
-                      <div className="text-xs text-gray-500 mt-0.5">{relDate(d.created_at)}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{relDate(dateStr)}</div>
                     </div>
 
                     <div className="text-right flex-shrink-0">
-                      <div className="font-semibold text-gray-900 text-sm">
-                        {fmt(d.amount_cents)}
-                      </div>
+                      <div className="font-semibold text-gray-900 text-sm">{fmt(d.amount)}</div>
                       <div className="flex items-center gap-1 mt-0.5 justify-end">
-                        {d.status === "pending" ? (
-                          <Clock className="w-3 h-3 text-gray-400" />
-                        ) : (
-                          <CheckCircle className="w-3 h-3" style={{ color: "#1a7a4a" }} />
-                        )}
-                        <span className="text-xs text-gray-400 capitalize">{d.status}</span>
+                        <CheckCircle className="w-3 h-3" style={{ color: "#1a7a4a" }} />
+                        <span className="text-xs text-gray-400">completed</span>
                       </div>
                     </div>
                   </div>

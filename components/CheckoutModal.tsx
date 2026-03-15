@@ -148,7 +148,10 @@ function SuccessScreen({
   frequency?: string;
   onClose: () => void;
 }) {
-  const orgName = allocations[0]?.orgName ?? "the organization";
+  const isMultiOrg = allocations.length > 1;
+  const orgName = isMultiOrg
+    ? "your giving portfolio"
+    : allocations[0]?.orgName ?? "the organization";
   const orgReceives = isConnect
     ? feeCovered
       ? donationAmountDollars
@@ -190,9 +193,21 @@ function SuccessScreen({
               {formatCurrency(chargeAmountDollars)}
             </span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Beneficiary</span>
-            <span className="font-semibold text-gray-900 truncate ml-4 text-right">{orgName}</span>
+          <div className="flex items-start justify-between text-sm">
+            <span className="text-gray-600 flex-shrink-0">
+              {isMultiOrg ? "Beneficiaries" : "Beneficiary"}
+            </span>
+            <div className="ml-4 text-right">
+              {isMultiOrg ? (
+                allocations.map((a) => (
+                  <div key={a.orgId} className="font-semibold text-gray-900 text-xs leading-5">
+                    {a.orgName}
+                  </div>
+                ))
+              ) : (
+                <span className="font-semibold text-gray-900">{orgName}</span>
+              )}
+            </div>
           </div>
         </div>
         <p className="text-xs text-gray-400 mb-4">
@@ -501,67 +516,79 @@ export default function CheckoutModal({
                 </div>
               </div>
 
-              {/* Fee coverage checkbox — only for Connect orgs on one-time donations */}
+              {/* Fee coverage — two selectable cards */}
               {isConnect && feeAmount > 0 && !isRecurring && (
-                <label
-                  className="flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all select-none"
-                  style={{
-                    borderColor: coverFee ? "#1a7a4a" : "#e5e1d8",
-                    backgroundColor: coverFee ? "#e8f5ee" : "white",
-                  }}
-                >
-                  {/* Custom checkbox */}
-                  <div className="relative flex-shrink-0 mt-0.5">
-                    <input
-                      type="checkbox"
-                      checked={coverFee}
-                      onChange={(e) => setCoverFee(e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div
-                      className="w-5 h-5 rounded flex items-center justify-center border-2 transition-all"
-                      style={{
-                        borderColor: coverFee ? "#1a7a4a" : "#d1d5db",
-                        backgroundColor: coverFee ? "#1a7a4a" : "white",
-                      }}
-                    >
-                      {coverFee && (
-                        <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {/* Card 1 — Donor covers fee (default) */}
+                  <button
+                    type="button"
+                    onClick={() => setCoverFee(true)}
+                    className="relative rounded-xl border p-3.5 text-left transition-all focus:outline-none"
+                    style={{
+                      borderColor: coverFee ? "#1a7a4a" : "#e5e1d8",
+                      backgroundColor: coverFee ? "#e8f5ee" : "white",
+                      borderWidth: coverFee ? 2 : 1,
+                    }}
+                  >
+                    {coverFee && (
+                      <div
+                        className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: "#1a7a4a" }}
+                      >
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 12 12" fill="none">
                           <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                      )}
-                    </div>
-                  </div>
+                      </div>
+                    )}
+                    <p className="text-sm font-semibold text-gray-900 leading-snug pr-5">
+                      I&apos;ll cover the fee
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1 leading-snug">
+                      100% of my donation goes to {orgName || "the organization"}
+                    </p>
+                    <p className="text-xs mt-2 leading-snug" style={{ color: "#6b7280" }}>
+                      You pay:{" "}
+                      <span className="font-medium text-gray-800">{formatCurrency(amountDollars + feeAmount)}</span>
+                      {" · "}{orgName || "Org"} receives:{" "}
+                      <span className="font-medium text-gray-800">{formatCurrency(amountDollars)}</span>
+                    </p>
+                  </button>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 leading-snug">
-                      I&apos;d like to cover the 1% platform fee
+                  {/* Card 2 — Deduct fee from donation */}
+                  <button
+                    type="button"
+                    onClick={() => setCoverFee(false)}
+                    className="relative rounded-xl border p-3.5 text-left transition-all focus:outline-none"
+                    style={{
+                      borderColor: !coverFee ? "#1a7a4a" : "#e5e1d8",
+                      backgroundColor: !coverFee ? "#e8f5ee" : "white",
+                      borderWidth: !coverFee ? 2 : 1,
+                    }}
+                  >
+                    {!coverFee && (
+                      <div
+                        className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: "#1a7a4a" }}
+                      >
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 12 12" fill="none">
+                          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    )}
+                    <p className="text-sm font-semibold text-gray-900 leading-snug pr-5">
+                      Deduct fee from my donation
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                      {coverFee ? (
-                        <>
-                          You pay{" "}
-                          <span className="font-semibold text-gray-700">{formatCurrency(amountDollars + feeAmount)}</span>
-                          {" — "}
-                          <span className="font-semibold" style={{ color: "#1a7a4a" }}>
-                            100% ({formatCurrency(amountDollars)})
-                          </span>{" "}
-                          goes to {orgName || "the organization"}.
-                        </>
-                      ) : (
-                        <>
-                          You pay{" "}
-                          <span className="font-semibold text-gray-700">{formatCurrency(amountDollars)}</span>
-                          {" — "}
-                          <span className="font-semibold text-gray-700">
-                            {formatCurrency(amountDollars - feeAmount)}
-                          </span>{" "}
-                          goes to {orgName || "the organization"} after the 1% fee.
-                        </>
-                      )}
+                    <p className="text-xs text-gray-600 mt-1 leading-snug">
+                      My donation goes to {orgName || "the organization"} minus the 1% fee
                     </p>
-                  </div>
-                </label>
+                    <p className="text-xs mt-2 leading-snug" style={{ color: "#6b7280" }}>
+                      You pay:{" "}
+                      <span className="font-medium text-gray-800">{formatCurrency(amountDollars)}</span>
+                      {" · "}{orgName || "Org"} receives:{" "}
+                      <span className="font-medium text-gray-800">{formatCurrency(amountDollars - feeAmount)}</span>
+                    </p>
+                  </button>
+                </div>
               )}
 
               {fetchError && (

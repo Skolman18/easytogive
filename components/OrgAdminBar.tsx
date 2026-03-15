@@ -5,8 +5,7 @@ import Link from "next/link";
 import { Pencil, X } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { useEditMode } from "@/components/EditModeContext";
-
-const ADMIN_EMAIL = "sethmitzel@gmail.com";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 interface Props {
   orgId: string;

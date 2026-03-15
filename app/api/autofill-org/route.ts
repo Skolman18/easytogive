@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { createClient as createServerClient } from "@/lib/supabase-server";
-
-const ADMIN_EMAIL = "sethmitzel@gmail.com";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 const VALID_CATEGORIES = [
   "nonprofits",

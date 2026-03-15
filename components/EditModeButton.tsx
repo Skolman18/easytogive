@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { Pencil, X } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { useEditMode } from "@/components/EditModeContext";
-
-const ADMIN_EMAIL = "sethmitzel@gmail.com";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 export default function EditModeButton() {
   const [isAdmin, setIsAdmin] = useState(false);
