@@ -35,10 +35,17 @@ export default function GiverSignupPage() {
     }));
   }
 
+  const pwRules = {
+    length: form.password.length >= 8,
+    number: /\d/.test(form.password),
+    special: /[^a-zA-Z0-9]/.test(form.password),
+  };
+  const pwValid = pwRules.length && pwRules.number && pwRules.special;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!pwValid) {
+      setError("Password must be at least 8 characters and include a number and special character.");
       return;
     }
     setLoading(true);
@@ -163,8 +170,7 @@ export default function GiverSignupPage() {
             {/* Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Password{" "}
-                <span className="text-gray-400 font-normal">(min. 6 characters)</span>
+                Password
               </label>
               <input
                 type="password"
@@ -176,6 +182,20 @@ export default function GiverSignupPage() {
                 style={{ borderColor: "#e5e1d8" }}
                 placeholder="••••••••"
               />
+              {form.password.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {[
+                    { ok: pwRules.length, label: "At least 8 characters" },
+                    { ok: pwRules.number, label: "Contains a number" },
+                    { ok: pwRules.special, label: "Contains a special character" },
+                  ].map(({ ok, label }) => (
+                    <div key={label} className="flex items-center gap-1.5 text-xs">
+                      <span style={{ color: ok ? "#1a7a4a" : "#9ca3af" }}>{ok ? "✓" : "○"}</span>
+                      <span style={{ color: ok ? "#1a7a4a" : "#9ca3af" }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Zip code */}

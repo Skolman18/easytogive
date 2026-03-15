@@ -16,10 +16,17 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const pwRules = {
+    length: password.length >= 8,
+    number: /\d/.test(password),
+    special: /[^a-zA-Z0-9]/.test(password),
+  };
+  const pwValid = pwRules.length && pwRules.number && pwRules.special;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!pwValid) {
+      setError("Password must be at least 8 characters and include a number and special character.");
       return;
     }
     if (!termsAccepted) {
@@ -137,8 +144,7 @@ export default function SignUpPage() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-1.5"
               >
-                Password{" "}
-                <span className="text-gray-400 font-normal">(min. 6 characters)</span>
+                Password
               </label>
               <input
                 id="password"
@@ -151,6 +157,20 @@ export default function SignUpPage() {
                 style={{ borderColor: "#e5e1d8" }}
                 placeholder="••••••••"
               />
+              {password.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {[
+                    { ok: pwRules.length, label: "At least 8 characters" },
+                    { ok: pwRules.number, label: "Contains a number" },
+                    { ok: pwRules.special, label: "Contains a special character" },
+                  ].map(({ ok, label }) => (
+                    <div key={label} className="flex items-center gap-1.5 text-xs">
+                      <span style={{ color: ok ? "#1a7a4a" : "#9ca3af" }}>{ok ? "✓" : "○"}</span>
+                      <span style={{ color: ok ? "#1a7a4a" : "#9ca3af" }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Terms checkbox */}
