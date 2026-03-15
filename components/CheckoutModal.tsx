@@ -326,9 +326,7 @@ export default function CheckoutModal({
   const isConnect = !!stripeAccountConnected;
   const orgId = allocations[0]?.orgId;
   const orgName = singleOrgName ?? allocations[0]?.orgName ?? "";
-  const feeAmount = isConnect
-    ? Math.max(0.01, Math.round(amountDollars * 100 * 0.01) / 100)
-    : 0;
+  const feeAmount = Math.max(0.01, Math.round(amountDollars * 100 * 0.01) / 100);
 
   // Reset every time the modal opens
   useEffect(() => {
@@ -424,7 +422,7 @@ export default function CheckoutModal({
 
   if (!isOpen) return null;
 
-  const quotedTotal = isConnect && coverFee ? amountDollars + feeAmount : amountDollars;
+  const quotedTotal = coverFee && !isRecurring ? amountDollars + feeAmount : amountDollars;
 
   const stripeAppearance = {
     theme: "stripe" as const,
@@ -517,7 +515,7 @@ export default function CheckoutModal({
               </div>
 
               {/* Fee coverage — two selectable cards */}
-              {isConnect && feeAmount > 0 && !isRecurring && (
+              {feeAmount > 0 && !isRecurring && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {/* Card 1 — Donor covers fee (default) */}
                   <button

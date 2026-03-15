@@ -137,6 +137,10 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Direct charge fallback (no Connect account yet, or portfolio donation) ──
+    // Still apply the 1% platform fee; EasyToGive retains it when disbursing to the org.
+    const directPlatformFeeCents = Math.max(1, Math.round(amountCents * 0.01));
+    const directChargeAmountCents = coverFee ? amountCents + directPlatformFeeCents : amountCents;
+
     // Serialize allocations compactly for the webhook: "orgId|cents,orgId|cents,..."
     // Split across multiple metadata keys (allocations, allocations2, ...) so large
     // portfolios don't get silently truncated by Stripe's 500-char per-value limit.
@@ -166,13 +170,14 @@ export async function POST(req: NextRequest) {
       ...metadata,
       ...(orgId ? { orgId: orgId.slice(0, 500) } : {}),
       ...(donorId ? { donorId: donorId.slice(0, 500) } : {}),
-      ...(coverFee !== undefined ? { coverFee: String(!!coverFee) } : {}),
+      donationAmount: String(amountCents),
+      coverFee: String(!!coverFee),
       ...allocationChunks,
       platform: "easytogive",
     });
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountCents,
+      amount: directChargeAmountCents,
       currency: "usd",
       description: safeDescription,
       metadata: safeMetadata,
@@ -181,8 +186,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
-      platformFee: 0,
-      chargeAmount: amountCents / 100,
+      platformFee: directPlatformFeeCents / 100,
+      chargeAmount: directChargeAmountCents / 100,
     });
   } catch (err) {
     console.error("Stripe PaymentIntent error:", err);
