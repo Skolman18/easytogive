@@ -231,7 +231,7 @@ export default function HomeClient({
         setLocalOrgs(nearby);
       }
 
-      if (profile.causes?.length > 0) {
+      if (Array.isArray(profile.causes) && profile.causes.length > 0) {
         const matchedCategories = new Set<string>(
           (profile.causes as string[]).map((c) => CAUSE_TO_CATEGORY[c]).filter(Boolean)
         );
