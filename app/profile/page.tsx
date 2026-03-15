@@ -33,9 +33,6 @@ import Toggle from "@/components/Toggle";
 import GivingGoalCard from "@/components/GivingGoalCard";
 import YourImpactSection from "@/components/YourImpactSection";
 import {
-  GIVING_HISTORY,
-  ORGANIZATIONS,
-  WATCHLIST_IDS,
   formatCurrency,
   formatDate,
   getProgressPercent,
@@ -49,11 +46,24 @@ interface DonationRecord {
   org_name: string;
   org_image_url: string | null;
   org_ein: string | null;
+  org_category: string | null;
   amount: number;
   fee_amount: number;
   fee_covered: boolean;
   donated_at: string;
   receipt_id: string | null;
+}
+
+interface WatchlistOrg {
+  id: string;
+  name: string;
+  image_url: string | null;
+  cover_url: string | null;
+  location: string | null;
+  verified: boolean;
+  raised: number;
+  goal: number;
+  category: string | null;
 }
 
 function downloadReceiptPDF(record: DonationRecord, user: { email?: string } | null, donorName: string) {
@@ -236,26 +246,18 @@ function saveDashPrefs(prefs: DashPrefs) {
 }
 
 
-function groupByReceipt(records: typeof GIVING_HISTORY) {
-  const groups: Record<string, typeof GIVING_HISTORY> = {};
+function groupByReceipt(records: DonationRecord[]) {
+  const groups: Record<string, DonationRecord[]> = {};
   for (const r of records) {
-    if (!groups[r.receiptId]) groups[r.receiptId] = [];
-    groups[r.receiptId].push(r);
+    const key = r.receipt_id ?? r.id;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
   }
   return Object.entries(groups).sort(
-    (a, b) => new Date(b[1][0].date).getTime() - new Date(a[1][0].date).getTime()
+    (a, b) => new Date(b[1][0].donated_at).getTime() - new Date(a[1][0].donated_at).getTime()
   );
 }
 
-const TAX_DOCS = [
-  { year: 2025, type: "Annual Giving Summary", size: "124 KB", ready: true },
-  { year: 2025, type: "Charitable Contribution Receipt", size: "87 KB", ready: true },
-  { year: 2024, type: "Annual Giving Summary", size: "118 KB", ready: true },
-  { year: 2024, type: "Charitable Contribution Receipt", size: "91 KB", ready: true },
-  { year: 2026, type: "Annual Giving Summary (YTD)", size: "—", ready: false },
-];
-
-const WATCHLIST_ORGS = ORGANIZATIONS.filter((o) => WATCHLIST_IDS.includes(o.id));
 
 export default function ProfilePage() {
   return (
@@ -309,6 +311,9 @@ function ProfilePageInner() {
   const [donationRecords, setDonationRecords] = useState<DonationRecord[]>([]);
   const [loadingReceipts, setLoadingReceipts] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<DonationRecord | null>(null);
+  const [allDonations, setAllDonations] = useState<DonationRecord[]>([]);
+  const [watchlistOrgs, setWatchlistOrgs] = useState<WatchlistOrg[]>([]);
+  const [loadingWatchlist, setLoadingWatchlist] = useState(false);
 
   const [recurringDonations, setRecurringDonations] = useState<{
     id: string; org_id: string; org_name: string;
@@ -329,7 +334,9 @@ function ProfilePageInner() {
         setUser(user);
         loadProfile(user.id);
         loadDonations(user.id, receiptsYear);
+        loadAllDonations(user.id);
         loadRecurring(user.id);
+        loadWatchlist(user.id);
         setLoadingUser(false);
       }
     });
@@ -340,7 +347,7 @@ function ProfilePageInner() {
     const supabase = createClient() as any;
     let query = supabase
       .from("donations")
-      .select("id, org_id, amount, fee_amount, fee_covered, donated_at, receipt_id, organizations(name, image_url, ein)")
+      .select("id, org_id, amount, fee_amount, fee_covered, donated_at, receipt_id, organizations(name, image_url, ein, category)")
       .eq("user_id", userId)
       .order("donated_at", { ascending: false });
     if (year !== 0) {
@@ -357,6 +364,7 @@ function ProfilePageInner() {
           org_name: d.organizations?.name ?? "Unknown Organization",
           org_image_url: d.organizations?.image_url ?? null,
           org_ein: d.organizations?.ein ?? null,
+          org_category: d.organizations?.category ?? null,
           amount: (d.amount ?? 0) / 100,
           fee_amount: (d.fee_amount ?? 0) / 100,
           fee_covered: d.fee_covered ?? false,
@@ -366,6 +374,59 @@ function ProfilePageInner() {
       );
     }
     setLoadingReceipts(false);
+  }
+
+  async function loadAllDonations(userId: string) {
+    const supabase = createClient() as any;
+    const { data } = await supabase
+      .from("donations")
+      .select("id, org_id, amount, fee_amount, fee_covered, donated_at, receipt_id, organizations(name, image_url, ein, category)")
+      .eq("user_id", userId)
+      .order("donated_at", { ascending: false });
+    if (data) {
+      setAllDonations(
+        data.map((d: any) => ({
+          id: d.id,
+          org_id: d.org_id,
+          org_name: d.organizations?.name ?? "Unknown Organization",
+          org_image_url: d.organizations?.image_url ?? null,
+          org_ein: d.organizations?.ein ?? null,
+          org_category: d.organizations?.category ?? null,
+          amount: (d.amount ?? 0) / 100,
+          fee_amount: (d.fee_amount ?? 0) / 100,
+          fee_covered: d.fee_covered ?? false,
+          donated_at: d.donated_at,
+          receipt_id: d.receipt_id ?? null,
+        }))
+      );
+    }
+  }
+
+  async function loadWatchlist(userId: string) {
+    setLoadingWatchlist(true);
+    const supabase = createClient() as any;
+    const { data } = await supabase
+      .from("watchlist")
+      .select("org_id, organizations(id, name, image_url, cover_url, location, verified, raised, goal, category)")
+      .eq("user_id", userId);
+    if (data) {
+      setWatchlistOrgs(
+        data
+          .filter((row: any) => row.organizations)
+          .map((row: any) => ({
+            id: row.organizations.id,
+            name: row.organizations.name,
+            image_url: row.organizations.image_url ?? null,
+            cover_url: row.organizations.cover_url ?? null,
+            location: row.organizations.location ?? null,
+            verified: row.organizations.verified ?? false,
+            raised: row.organizations.raised ?? 0,
+            goal: row.organizations.goal ?? 0,
+            category: row.organizations.category ?? null,
+          }))
+      );
+    }
+    setLoadingWatchlist(false);
   }
 
   async function loadRecurring(userId: string) {
@@ -462,19 +523,25 @@ function ProfilePageInner() {
     : [...orderedBaseTabs, settingsTab];
   const TABS = isAdmin ? [...visibleTabs, ADMIN_TAB] : visibleTabs;
 
-  const totalGiven = GIVING_HISTORY.reduce((s, g) => s + g.amount, 0);
-  const orgsSupported = new Set(GIVING_HISTORY.map((g) => g.orgId)).size;
-  const receiptGroups = groupByReceipt(GIVING_HISTORY);
-  const thisYearTotal = GIVING_HISTORY.filter((g) => g.date.startsWith("2026")).reduce((s, g) => s + g.amount, 0);
-  const lastYearTotal = GIVING_HISTORY.filter((g) => g.date.startsWith("2025")).reduce((s, g) => s + g.amount, 0);
-  const categoriesCount = new Set(GIVING_HISTORY.map((g) => g.category)).size;
-  const categoryTotals: Record<string, number> = GIVING_HISTORY.reduce((acc, g) => {
-    acc[g.category] = (acc[g.category] || 0) + g.amount;
+  const currentYear = new Date().getFullYear().toString();
+  const lastYear = (new Date().getFullYear() - 1).toString();
+  const totalGiven = allDonations.reduce((s, g) => s + g.amount, 0);
+  const orgsSupported = new Set(allDonations.map((g) => g.org_id)).size;
+  const receiptGroups = groupByReceipt(allDonations);
+  const thisYearTotal = allDonations.filter((g) => g.donated_at.startsWith(currentYear)).reduce((s, g) => s + g.amount, 0);
+  const lastYearTotal = allDonations.filter((g) => g.donated_at.startsWith(lastYear)).reduce((s, g) => s + g.amount, 0);
+  const categoryTotals: Record<string, number> = allDonations.reduce((acc, g) => {
+    const cat = g.org_category ?? "other";
+    acc[cat] = (acc[cat] || 0) + g.amount;
     return acc;
   }, {} as Record<string, number>);
+  const categoriesCount = Object.keys(categoryTotals).length;
   const categoryBreakdown = Object.entries(categoryTotals)
     .sort((a, b) => b[1] - a[1])
-    .map(([cat, amt]) => ({ cat, amt, pct: Math.round((amt / totalGiven) * 100) }));
+    .map(([cat, amt]) => ({ cat, amt, pct: totalGiven > 0 ? Math.round((amt / totalGiven) * 100) : 0 }));
+  // Unique years with donations for tax docs
+  const donationYears = Array.from(new Set(allDonations.map((d) => new Date(d.donated_at).getFullYear())))
+    .sort((a, b) => b - a);
 
   function updateDashPrefs(updates: Partial<DashPrefs>) {
     const next = { ...dashPrefs, ...updates };
@@ -610,7 +677,12 @@ function ProfilePageInner() {
                 Donation History
               </h2>
               <div className="space-y-3">
-                {receiptGroups.map(([receiptId, records]) => {
+                {receiptGroups.length === 0 ? (
+                <div className="text-center py-12">
+                  <Heart className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">No donations yet. Start giving today!</p>
+                </div>
+              ) : receiptGroups.map(([receiptId, records]) => {
                   const total = records.reduce((s, r) => s + r.amount, 0);
                   return (
                     <div
@@ -626,10 +698,10 @@ function ProfilePageInner() {
                         <div className="flex items-center gap-2">
                           <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
                           <span className="text-sm font-semibold text-gray-900">
-                            {formatDate(records[0].date)}
+                            {formatDate(records[0].donated_at)}
                           </span>
                           <span className="text-xs text-gray-400 font-mono">
-                            #{receiptId}
+                            #{receiptId.slice(0, 12)}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -637,6 +709,7 @@ function ProfilePageInner() {
                             {formatCurrency(total)}
                           </span>
                           <button
+                            onClick={() => downloadReceiptPDF(records[0], user, profile.full_name)}
                             className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors hover:bg-gray-50"
                             style={{ borderColor: "#e5e1d8", color: "#6b7280" }}
                           >
@@ -658,10 +731,10 @@ function ProfilePageInner() {
                               className="w-2 h-2 rounded-full flex-shrink-0 bg-gray-400"
                             />
                             <Link
-                              href={`/org/${record.orgId}`}
+                              href={`/org/${record.org_id}`}
                               className="text-sm text-gray-800 hover:text-green-700 transition-colors truncate"
                             >
-                              {record.orgName}
+                              {record.org_name}
                             </Link>
                           </div>
                           <span className="text-sm font-semibold text-gray-900 ml-4 flex-shrink-0 tabular-nums">
@@ -694,7 +767,7 @@ function ProfilePageInner() {
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { label: "Total donated", value: formatCurrency(totalGiven), sub: "All time" },
-                    { label: "This year", value: formatCurrency(thisYearTotal), sub: "2026" },
+                    { label: "This year", value: formatCurrency(thisYearTotal), sub: currentYear },
                     { label: "Organizations", value: orgsSupported.toString(), sub: "Supported" },
                     { label: "Categories", value: categoriesCount.toString(), sub: "Causes" },
                   ].map((item) => (
@@ -764,8 +837,8 @@ function ProfilePageInner() {
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Year Comparison</h3>
                 <div className="space-y-2">
                   {[
-                    { year: "2026", total: thisYearTotal, current: true },
-                    { year: "2025", total: lastYearTotal, current: false },
+                    { year: currentYear, total: thisYearTotal, current: true },
+                    { year: lastYear, total: lastYearTotal, current: false },
                   ].map(({ year, total, current }) => {
                     const max = Math.max(thisYearTotal, lastYearTotal) || 1;
                     return (
@@ -838,33 +911,46 @@ function ProfilePageInner() {
             </div>
             <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
               <div className="px-6 py-4 border-b" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
-                <h2 className="font-display font-semibold text-gray-900">Tax Documents</h2>
+                <h2 className="font-display font-semibold text-gray-900">Annual Giving Summaries</h2>
               </div>
-              {TAX_DOCS.map((doc, i) => (
-                <div
-                  key={`${doc.year}-${doc.type}`}
-                  className={`px-6 py-4 flex items-center justify-between ${i < TAX_DOCS.length - 1 ? "border-b" : ""}`}
-                  style={{ borderColor: "#f0ede6" }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: doc.ready ? "#e8f5ee" : "#f0ede6" }}>
-                      <FileText className="w-4 h-4" style={{ color: doc.ready ? "#1a7a4a" : "#9ca3af" }} />
+              {donationYears.length === 0 ? (
+                <div className="px-6 py-8 text-center text-sm text-gray-500">
+                  No donation records yet. Your annual summaries will appear here after your first donation.
+                </div>
+              ) : donationYears.map((year, i) => {
+                const isCurrentYear = year === parseInt(currentYear);
+                const yearRecords = allDonations.filter((d) => new Date(d.donated_at).getFullYear() === year);
+                const yearTotal = yearRecords.reduce((s, r) => s + r.amount, 0);
+                return (
+                  <div
+                    key={year}
+                    className={`px-6 py-4 flex items-center justify-between ${i < donationYears.length - 1 ? "border-b" : ""}`}
+                    style={{ borderColor: "#f0ede6" }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#e8f5ee" }}>
+                        <FileText className="w-4 h-4" style={{ color: "#1a7a4a" }} />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {year} — Annual Giving Summary{isCurrentYear ? " (YTD)" : ""}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {formatCurrency(yearTotal)} · {yearRecords.length} donation{yearRecords.length !== 1 ? "s" : ""}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{doc.year} — {doc.type}</div>
-                      <div className="text-xs text-gray-500">{doc.ready ? `PDF · ${doc.size}` : "Not yet available"}</div>
-                    </div>
-                  </div>
-                  {doc.ready ? (
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-80" style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}>
+                    <button
+                      onClick={() => downloadYearSummaryPDF(yearRecords, year.toString(), user, profile.full_name)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-80"
+                      style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                    >
                       <Download className="w-3 h-3" />
                       Download
                     </button>
-                  ) : (
-                    <span className="text-xs text-gray-400 px-3 py-1.5">Available Dec 31</span>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -1120,56 +1206,74 @@ function ProfilePageInner() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl font-semibold text-gray-900">
-                Saved Organizations ({WATCHLIST_ORGS.length})
+                Saved Organizations ({watchlistOrgs.length})
               </h2>
               <Link href="/discover" className="text-sm font-medium hover:underline" style={{ color: "#1a7a4a" }}>
                 Discover more →
               </Link>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {WATCHLIST_ORGS.map((org) => {
-                const progress = getProgressPercent(org.raised, org.goal);
-                return (
-                  <div key={org.id} className="bg-white rounded-2xl border overflow-hidden card-hover" style={{ borderColor: "#e5e1d8" }}>
-                    <div className="relative h-36 overflow-hidden bg-gray-100">
-                      <img src={org.imageUrl} alt={org.name} className="w-full h-full object-cover" />
-                      <button className="absolute top-3 right-3 p-1.5 rounded-lg" style={{ backgroundColor: "rgba(0,0,0,0.5)", color: "white" }} aria-label="Remove from watchlist">
-                        <Bookmark className="w-4 h-4 fill-current" />
-                      </button>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <Link href={`/org/${org.id}`} className="font-display font-semibold text-gray-900 hover:text-green-700 transition-colors leading-tight">
-                          {org.name}
-                        </Link>
-                        {org.verified && <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#1a7a4a" }} />}
-                      </div>
-                      <p className="text-xs text-gray-500 mb-3">{org.location}</p>
-                      <div className="w-full rounded-full h-1.5 mb-1.5" style={{ backgroundColor: "#e5e1d8" }}>
-                        <div className="h-1.5 rounded-full" style={{ width: `${progress}%`, backgroundColor: "#1a7a4a" }} />
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                        <span>{formatCurrency(org.raised)} raised</span>
-                        <span>{progress}%</span>
-                      </div>
-                      <Link href={`/org/${org.id}`} className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-sm font-medium transition-colors" style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}>
-                        <Heart className="w-3.5 h-3.5" />
-                        Donate
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {WATCHLIST_ORGS.length === 0 && (
-              <div className="text-center py-20">
-                <Bookmark className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="font-display text-xl font-semibold text-gray-900 mb-2">No saved organizations yet</h3>
-                <p className="text-gray-500 mb-6">Click the bookmark icon on any organization to save it here.</p>
-                <Link href="/discover" className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: "#1a7a4a" }}>
-                  Discover Causes
-                </Link>
+            {loadingWatchlist ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin" style={{ color: "#1a7a4a" }} />
               </div>
+            ) : (
+              <>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {watchlistOrgs.map((org) => {
+                    const progress = getProgressPercent(org.raised, org.goal);
+                    return (
+                      <div key={org.id} className="bg-white rounded-2xl border overflow-hidden card-hover" style={{ borderColor: "#e5e1d8" }}>
+                        <div className="relative h-36 overflow-hidden bg-gray-100">
+                          {org.image_url ? (
+                            <img src={org.image_url} alt={org.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: "#e8f5ee" }}>
+                              <Heart className="w-8 h-8" style={{ color: "#1a7a4a" }} />
+                            </div>
+                          )}
+                          <button className="absolute top-3 right-3 p-1.5 rounded-lg" style={{ backgroundColor: "rgba(0,0,0,0.5)", color: "white" }} aria-label="Remove from watchlist">
+                            <Bookmark className="w-4 h-4 fill-current" />
+                          </button>
+                        </div>
+                        <div className="p-4">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <Link href={`/org/${org.id}`} className="font-display font-semibold text-gray-900 hover:text-green-700 transition-colors leading-tight">
+                              {org.name}
+                            </Link>
+                            {org.verified && <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#1a7a4a" }} />}
+                          </div>
+                          <p className="text-xs text-gray-500 mb-3">{org.location ?? ""}</p>
+                          {org.goal > 0 && (
+                            <>
+                              <div className="w-full rounded-full h-1.5 mb-1.5" style={{ backgroundColor: "#e5e1d8" }}>
+                                <div className="h-1.5 rounded-full" style={{ width: `${progress}%`, backgroundColor: "#1a7a4a" }} />
+                              </div>
+                              <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                <span>{formatCurrency(org.raised)} raised</span>
+                                <span>{progress}%</span>
+                              </div>
+                            </>
+                          )}
+                          <Link href={`/org/${org.id}`} className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-sm font-medium transition-colors" style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}>
+                            <Heart className="w-3.5 h-3.5" />
+                            Donate
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {watchlistOrgs.length === 0 && (
+                  <div className="text-center py-20">
+                    <Bookmark className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="font-display text-xl font-semibold text-gray-900 mb-2">No saved organizations yet</h3>
+                    <p className="text-gray-500 mb-6">Click the bookmark icon on any organization to save it here.</p>
+                    <Link href="/discover" className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: "#1a7a4a" }}>
+                      Discover Causes
+                    </Link>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
