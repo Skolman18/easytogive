@@ -30,6 +30,8 @@ export interface CreatePaymentIntentBody {
   orgId?: string;
   donorId?: string;
   coverFee?: boolean;
+  // Portfolio: per-org allocation breakdown for multi-org donations
+  allocations?: { orgId: string; orgName: string; amountCents: number }[];
 }
 
 function sanitizeMetadata(metadata: Record<string, string> | undefined): Record<string, string> {
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
-    const { amountCents, description, metadata, orgId, donorId, coverFee } = body;
+    const { amountCents, description, metadata, orgId, donorId, coverFee, allocations } = body;
 
     // amountCents = what the DONOR was quoted (donation amount, before fee if not covering)
     if (typeof amountCents !== "number" || amountCents < 50) {
@@ -132,10 +134,22 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Direct charge fallback (no Connect account yet, or portfolio donation) ──
+    // Serialize allocations compactly for the webhook: "orgId|cents,orgId|cents,..."
+    let allocationsStr: string | undefined;
+    if (allocations && allocations.length > 1) {
+      const encoded = allocations
+        .map((a) => `${a.orgId.slice(0, 60)}|${a.amountCents}`)
+        .join(",")
+        .slice(0, 490);
+      allocationsStr = encoded;
+    }
+
     const safeMetadata = sanitizeMetadata({
       ...metadata,
       ...(orgId ? { orgId: orgId.slice(0, 500) } : {}),
       ...(donorId ? { donorId: donorId.slice(0, 500) } : {}),
+      ...(coverFee !== undefined ? { coverFee: String(!!coverFee) } : {}),
+      ...(allocationsStr ? { allocations: allocationsStr } : {}),
       platform: "easytogive",
     });
 

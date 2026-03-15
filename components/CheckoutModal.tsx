@@ -382,6 +382,12 @@ export default function CheckoutModal({
             orgId: singleOrgId,
             donorId: donorId ?? undefined,
             coverFee,
+            // Pass all allocations so the webhook can save one record per org
+            allocations: allocations.map((a) => ({
+              orgId: a.orgId,
+              orgName: a.orgName,
+              amountCents: a.amountCents,
+            })),
             metadata: { platform: "easytogive" },
           }),
         });

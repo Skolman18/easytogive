@@ -117,35 +117,63 @@ export async function POST(req: NextRequest) {
           const receiptId = `ETG-${pi.id.replace("pi_", "").slice(0, 12).toUpperCase()}`;
           const now = new Date().toISOString();
 
-          await supabase.from("donations").insert({
-            user_id: meta.donorId || null,
-            org_id: meta.orgId || null,
-            amount: donationAmountCents,
-            fee_amount: feeAmountCents,
-            fee_covered: feeCovered,
-            stripe_payment_intent_id: pi.id,
-            receipt_id: receiptId,
-            donated_at: now,
-          });
+          // Parse multi-org allocations if present: "orgId|cents,orgId|cents,..."
+          const allocParts = meta.allocations
+            ? meta.allocations.split(",").map((s: string) => {
+                const [oId, cStr] = s.split("|");
+                return { orgId: oId, amountCents: parseInt(cStr, 10) || 0 };
+              }).filter((a: { orgId: string; amountCents: number }) => a.orgId && a.amountCents > 0)
+            : [];
 
-          // Update org raised total
-          if (meta.orgId) {
-            await incrementOrgStats(supabase, meta.orgId, donationAmountCents, meta.donorId || null);
+          if (allocParts.length > 1) {
+            // Portfolio donation — one record per allocation, first gets the receipt ID
+            const rows = allocParts.map((a: { orgId: string; amountCents: number }, i: number) => ({
+              user_id: meta.donorId || null,
+              org_id: a.orgId,
+              amount: a.amountCents,
+              fee_amount: i === 0 ? feeAmountCents : 0,
+              fee_covered: feeCovered,
+              stripe_payment_intent_id: pi.id,
+              receipt_id: i === 0 ? receiptId : `${receiptId}-${i}`,
+              donated_at: now,
+            }));
+            await supabase.from("donations").insert(rows);
+
+            for (const a of allocParts) {
+              await incrementOrgStats(supabase, a.orgId, a.amountCents, meta.donorId || null);
+            }
+          } else {
+            // Single org donation
+            await supabase.from("donations").insert({
+              user_id: meta.donorId || null,
+              org_id: meta.orgId || null,
+              amount: donationAmountCents,
+              fee_amount: feeAmountCents,
+              fee_covered: feeCovered,
+              stripe_payment_intent_id: pi.id,
+              receipt_id: receiptId,
+              donated_at: now,
+            });
+
+            if (meta.orgId) {
+              await incrementOrgStats(supabase, meta.orgId, donationAmountCents, meta.donorId || null);
+            }
           }
 
           // Send receipt email
           if (meta.donorId) {
+            const primaryOrgId = meta.orgId || (allocParts[0]?.orgId ?? null);
             const [donor, orgInfo] = await Promise.all([
               getDonorInfo(supabase, meta.donorId),
-              meta.orgId ? getOrgInfo(supabase, meta.orgId) : Promise.resolve({ name: meta.orgName ?? "EasyToGive", ein: null }),
+              primaryOrgId ? getOrgInfo(supabase, primaryOrgId) : Promise.resolve({ name: meta.orgName ?? "EasyToGive", ein: null }),
             ]);
             if (donor.email) {
               const baseUrl = process.env.NEXT_PUBLIC_URL ?? "https://easytogive.online";
               await sendReceiptEmail({
                 to: donor.email,
                 donorName: donor.name,
-                orgName: orgInfo.name,
-                orgEin: orgInfo.ein,
+                orgName: allocParts.length > 1 ? "EasyToGive Portfolio" : orgInfo.name,
+                orgEin: allocParts.length > 1 ? null : orgInfo.ein,
                 amountCents: donationAmountCents,
                 receiptId,
                 donatedAt: now,
