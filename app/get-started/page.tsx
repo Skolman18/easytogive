@@ -35,7 +35,7 @@ export default function GetStartedPage() {
             style={{ borderColor: "#e5e1d8" }}
           >
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-colors group-hover:scale-110 duration-300"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 ease-out group-hover:scale-110"
               style={{ backgroundColor: "#e8f5ee" }}
             >
               <Heart className="w-7 h-7" style={{ color: "#1a7a4a" }} />
@@ -80,7 +80,7 @@ export default function GetStartedPage() {
             style={{ borderColor: "#e5e1d8" }}
           >
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-colors group-hover:scale-110 duration-300"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 ease-out group-hover:scale-110"
               style={{ backgroundColor: "#eff6ff" }}
             >
               <Building2 className="w-7 h-7 text-blue-600" />

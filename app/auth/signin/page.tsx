@@ -127,6 +127,7 @@ function SignInForm() {
 
             {error && (
               <div
+                role="alert"
                 className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
                 style={{
                   backgroundColor: "#fef2f2",
@@ -134,7 +135,7 @@ function SignInForm() {
                   color: "#dc2626",
                 }}
               >
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                 {error}
               </div>
             )}

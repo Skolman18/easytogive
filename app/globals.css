@@ -91,6 +91,12 @@ html {
   animation-play-state: paused;
 }
 
+/* Subcategory reveal animation (org signup) */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* FAQ accordion smooth height */
 .faq-content {
   overflow: hidden;

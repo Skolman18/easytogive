@@ -508,10 +508,11 @@ function OrgSignupInner() {
               {error && (
                 <div
                   ref={errorRef}
+                  role="alert"
                   className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
                   style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#dc2626" }}
                 >
-                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                   {error}
                 </div>
               )}
@@ -559,12 +560,6 @@ function OrgSignupInner() {
           )}
         </div>
 
-        <style jsx global>{`
-          @keyframes fadeSlideIn {
-            from { opacity: 0; transform: translateY(-6px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
       </div>
       {isPreview && <AdminNotesPanel />}
     </>
