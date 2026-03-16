@@ -1060,7 +1060,7 @@ function ProfilePageInner() {
                           </span>
                           <button
                             onClick={() => setSelectedReceipt(record)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors hover:bg-gray-50"
+                            className="px-3 min-h-[44px] rounded-lg text-xs font-medium border transition-colors hover:bg-gray-50"
                             style={{ borderColor: "#e5e1d8", color: "#374151" }}
                           >
                             View Receipt
@@ -1069,7 +1069,7 @@ function ProfilePageInner() {
                             <Link
                               href={`/receipts/${record.receipt_id}`}
                               target="_blank"
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors hover:bg-gray-50"
+                              className="flex items-center gap-1 px-3 min-h-[44px] rounded-lg text-xs font-medium border transition-colors hover:bg-gray-50"
                               style={{ borderColor: "#e5e1d8", color: "#374151" }}
                             >
                               <ExternalLink className="w-3 h-3" />
@@ -1078,7 +1078,7 @@ function ProfilePageInner() {
                           )}
                           <button
                             onClick={() => downloadReceiptPDF(record, user, profile.full_name)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                            className="flex items-center gap-1 px-3 min-h-[44px] rounded-lg text-xs font-medium transition-colors"
                             style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
                           >
                             <Download className="w-3 h-3" />

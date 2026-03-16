@@ -172,7 +172,7 @@ function SuccessScreen({
         >
           <CheckCircle className="w-10 h-10" style={{ color: "#1a7a4a" }} />
         </div>
-        <h2 className="font-display text-2xl font-bold text-gray-900 mb-1">
+        <h2 className="font-display text-2xl text-gray-900 mb-1">
           Recurring giving activated!
         </h2>
         <p className="text-gray-500 text-sm mb-5">
@@ -512,7 +512,7 @@ export default function CheckoutModal({
           style={{ backgroundColor: "white", borderColor: "#e5e1d8" }}
         >
           <div>
-            <h2 id="checkout-dialog-title" className="font-display font-semibold text-lg text-gray-900 leading-tight">
+            <h2 id="checkout-dialog-title" className="font-display text-lg text-gray-900 leading-tight">
               {title}
             </h2>
             {step !== "success" && (

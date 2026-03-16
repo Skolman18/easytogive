@@ -695,11 +695,14 @@ function ImpactReviewTab() {
 
   async function approve(id: string) {
     setSaving(id);
-    await supabase
-      .from("org_impact_updates")
-      .update({ status: "approved", visible: true, reviewed_at: new Date().toISOString() })
-      .eq("id", id);
-    setUpdates((prev) => prev.map((u) => u.id === id ? { ...u, status: "approved", visible: true } : u));
+    const res = await fetch("/api/org/impact-updates/approve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ updateId: id }),
+    });
+    if (res.ok) {
+      setUpdates((prev) => prev.map((u) => u.id === id ? { ...u, status: "approved", visible: true } : u));
+    }
     setSaving(null);
   }
 

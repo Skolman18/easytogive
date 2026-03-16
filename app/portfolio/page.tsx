@@ -510,7 +510,7 @@ export default function PortfolioPage() {
               </div>
               <button
                 onClick={dismissBanner}
-                className="absolute top-3 right-3 p-1 rounded-md text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+                className="absolute top-2 right-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
                 aria-label="Dismiss"
               >
                 <X className="w-3.5 h-3.5" />
@@ -793,7 +793,7 @@ export default function PortfolioPage() {
                               max={100}
                               value={org.percentage}
                               onChange={(e) => handlePercentInput(org.orgId, e.target.value)}
-                              className="w-16 text-right border rounded-lg px-2 py-1.5 text-sm font-semibold outline-none focus:border-green-600 tabular-nums"
+                              className="w-16 text-right border rounded-lg px-2 py-1.5 text-sm font-semibold outline-none focus:border-green-600 tabular-nums min-h-[44px]"
                               style={{ borderColor: "#e5e1d8", color: "#1a7a4a" }}
                             />
                             <span className="text-sm font-semibold text-gray-500">%</span>
@@ -804,7 +804,7 @@ export default function PortfolioPage() {
                         {/* Remove */}
                         <button
                           onClick={() => handleRemove(org.orgId)}
-                          className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors flex-shrink-0"
+                          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors flex-shrink-0"
                           aria-label="Remove"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -937,7 +937,7 @@ export default function PortfolioPage() {
                         <button
                           key={amt}
                           onClick={() => { setDonationAmount(amt); setUseCustom(false); }}
-                          className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
+                          className="px-4 py-2.5 rounded-full text-sm font-semibold transition-all min-h-[44px]"
                           style={
                             !useCustom && donationAmount === amt
                               ? { backgroundColor: "#1a7a4a", color: "white" }
@@ -1113,7 +1113,7 @@ export default function PortfolioPage() {
                       </div>
                       <button
                         onClick={() => handleCancelRecurring(r.id)}
-                        className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors flex-shrink-0"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors flex-shrink-0"
                         aria-label="Cancel recurring"
                         title="Cancel"
                       >
@@ -1165,7 +1165,7 @@ export default function PortfolioPage() {
               <h3 className="font-display text-lg font-bold text-gray-900">Add a Charity</h3>
               <button
                 onClick={() => setAddPanelOpen(false)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

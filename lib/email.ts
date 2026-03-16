@@ -341,6 +341,98 @@ export async function sendDigestEmail({
   }
 }
 
+export async function sendImpactUpdateEmail({
+  to,
+  donorName,
+  orgName,
+  orgId,
+  statHighlight,
+  summary,
+}: {
+  to: string;
+  donorName?: string | null;
+  orgName: string;
+  orgId: string;
+  statHighlight?: string | null;
+  summary?: string | null;
+}): Promise<void> {
+  const resend = getResend();
+  if (!resend) return;
+
+  const greeting = donorName ? `Hi ${donorName.split(" ")[0]},` : "Hi there,";
+  const walletUrl = "https://easytogive.online/wallet";
+  const orgUrl = `https://easytogive.online/org/${orgId}`;
+
+  const statBlock = statHighlight
+    ? `<div style="margin-bottom:20px;padding:16px 20px;background:#e8f5ee;border-radius:12px;border:1px solid #bbf7d0;">
+        <p style="margin:0;color:#1a7a4a;font-size:22px;font-weight:700;line-height:1.2;">${statHighlight}</p>
+      </div>`
+    : "";
+
+  const summaryBlock = summary
+    ? `<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7;">${summary}</p>`
+    : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#faf9f6;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f6;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:white;border-radius:16px;border:1px solid #e5e1d8;overflow:hidden;">
+        <tr>
+          <td style="background:#1a7a4a;padding:28px 32px;text-align:center;">
+            <p style="margin:0;color:white;font-size:22px;font-weight:700;">EasyToGive</p>
+            <p style="margin:6px 0 0;color:#bbf7d0;font-size:13px;">Impact Update</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 4px;color:#6b7280;font-size:14px;">${greeting}</p>
+            <p style="margin:0 0 16px;color:#111827;font-size:20px;font-weight:700;">Your giving made a difference.</p>
+            <p style="margin:0 0 20px;color:#6b7280;font-size:14px;line-height:1.6;">
+              <strong style="color:#111827;">${orgName}</strong> just shared a new impact update — here's what your donation helped accomplish:
+            </p>
+            ${statBlock}
+            ${summaryBlock}
+            <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:20px;">
+              <tr>
+                <td align="center">
+                  <a href="${orgUrl}"
+                     style="display:inline-block;background:#1a7a4a;color:white;font-size:14px;font-weight:700;padding:14px 32px;border-radius:10px;text-decoration:none;">
+                    See the full update →
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:0;color:#9ca3af;font-size:12px;text-align:center;line-height:1.6;">
+              <a href="${walletUrl}" style="color:#1a7a4a;">View all your impact updates in your wallet</a>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e1d8;text-align:center;">
+            <p style="margin:0;color:#9ca3af;font-size:11px;">EasyToGive · Giving made easy · easytogive.online</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: [to],
+      subject: `${orgName} just shared an impact update`,
+      html,
+    });
+  } catch (err) {
+    console.error("Failed to send impact update email:", err);
+  }
+}
+
 export async function sendApprovalEmail({
   to,
   orgName,

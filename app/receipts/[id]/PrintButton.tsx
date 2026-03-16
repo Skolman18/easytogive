@@ -61,7 +61,7 @@ export default function PrintButton() {
               </button>
             </div>
 
-            <h3 className="font-display text-lg font-bold text-gray-900 mb-1">
+            <h3 className="font-display text-lg text-gray-900 mb-1">
               Saving your receipt as PDF
             </h3>
             <p className="text-sm text-gray-500 mb-5">
