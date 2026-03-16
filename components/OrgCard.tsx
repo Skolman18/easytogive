@@ -65,7 +65,7 @@ function AddToPortfolioButton({ orgId }: { orgId: string }) {
     <button
       onClick={handleClick}
       disabled={loading}
-      className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 min-h-[44px]"
+      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs md:text-sm font-semibold transition-colors disabled:opacity-60 min-h-[44px]"
       style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
     >
       <Plus className="w-4 h-4" />
@@ -108,7 +108,7 @@ export default function OrgCard({
       {/* Main card content — wrapped in Link */}
       <Link href={`/org/${org.id}`} className="flex-1 flex flex-col">
         {/* Image */}
-        <div className="relative h-36 md:h-48 overflow-hidden bg-gray-100 flex-shrink-0">
+        <div className="relative h-32 md:h-36 overflow-hidden bg-gray-100 flex-shrink-0">
           <img
             src={org.imageUrl}
             alt={org.name}
@@ -137,11 +137,11 @@ export default function OrgCard({
         </div>
 
         {/* Content */}
-        <div className="p-3.5 md:p-5 flex flex-col flex-1">
-          <h3 className="font-display font-semibold text-[15px] md:text-lg leading-tight mb-1 text-gray-900 group-hover:text-green-700 transition-colors">
+        <div className="p-3 md:p-4 flex flex-col flex-1">
+          <h3 className="font-display font-semibold text-[13px] md:text-[15px] leading-tight mb-1 text-gray-900 group-hover:text-green-700 transition-colors">
             {org.name}
           </h3>
-          <p className="text-xs md:text-sm text-gray-500 mb-1 flex items-center gap-1">
+          <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
             <MapPin className="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" />
             {org.location}
           </p>
@@ -247,7 +247,7 @@ export default function OrgCard({
       </Link>
 
       {/* Add to Portfolio — outside the Link to avoid nested anchor */}
-      <div className="px-3.5 md:px-5 pb-3.5 md:pb-4">
+      <div className="px-3 md:px-4 pb-3 md:pb-3.5">
         <AddToPortfolioButton orgId={org.id} />
       </div>
     </div>

@@ -292,14 +292,14 @@ export default function HomeClient({
     <div className="bg-white">
 
       {/* ── HERO ──────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-10 md:pt-20 md:pb-24">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 md:pt-12 md:pb-12">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
 
           {/* Left: Text */}
           <div className="max-w-xl">
             {/* Warm trust badge */}
             <div
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-medium mb-5 md:mb-7"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-medium mb-3 md:mb-5"
               style={{ backgroundColor: "#f5ede0", color: "#c47c2a" }}
             >
               <span
@@ -313,7 +313,7 @@ export default function HomeClient({
               settingKey="hero_headline"
               value={siteSettings?.hero_headline ?? "Give with purpose.\nGive with confidence."}
               as="h1"
-              className="font-display text-[32px] md:text-[52px] lg:text-[62px] text-gray-900 leading-[1.08] mb-5 md:mb-7 tracking-tight"
+              className="font-display text-[32px] md:text-[52px] lg:text-[62px] text-gray-900 leading-[1.08] mb-3 md:mb-5 tracking-tight"
             />
 
             <EditableField
@@ -323,13 +323,13 @@ export default function HomeClient({
                 "Discover verified organizations you trust, build your giving portfolio, and manage every donation in one place. Free for donors, forever."
               }
               as="p"
-              className="text-[15px] md:text-lg leading-relaxed mb-7 md:mb-9 max-w-[480px]"
+              className="text-[15px] md:text-lg leading-relaxed mb-5 md:mb-6 max-w-[480px]"
               style={{ color: "#5c5b56" } as any}
               multiline
             />
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-7 md:mb-9">
+            <div className="flex flex-col sm:flex-row gap-3 mb-5 md:mb-6">
               <Link
                 href="/get-started"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] rounded-full font-semibold text-white text-sm transition-opacity hover:opacity-90 active:scale-95"
@@ -381,8 +381,8 @@ export default function HomeClient({
           className="border-y"
           style={{ borderColor: "#e8e5de", backgroundColor: "#faf9f6" }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 md:py-12">
-            <div className="flex flex-wrap justify-center gap-x-12 gap-y-6 md:gap-x-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-7">
+            <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 md:gap-x-20">
               {[
                 { value: `${orgCountAnim.toLocaleString()}+`, label: "Verified Organizations" },
                 stats.userCount > 0
@@ -411,8 +411,8 @@ export default function HomeClient({
 
       {/* ── RECOMMENDED FOR YOU ───────────────────────────────────────── */}
       {recommendedOrgs.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 md:pt-16 pb-2">
-          <div className="flex items-center gap-2.5 mb-5 md:mb-8">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-10 pb-2">
+          <div className="flex items-center gap-2.5 mb-4 md:mb-6">
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: "#e8f5ee" }}
@@ -423,7 +423,7 @@ export default function HomeClient({
               Recommended for You
             </h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-4">
             {recommendedOrgs.map((org) => (
               <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
@@ -432,8 +432,8 @@ export default function HomeClient({
       )}
 
       {/* ── BROWSE ORGANIZATIONS ──────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
-        <div className="flex items-end justify-between mb-5 md:mb-9">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-10">
+        <div className="flex items-end justify-between mb-4 md:mb-6">
           <div>
             <h2 className="font-display text-xl md:text-3xl text-gray-900">
               Browse Organizations
@@ -458,7 +458,7 @@ export default function HomeClient({
             if (searchQuery.trim()) router.push(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
             else router.push("/discover");
           }}
-          className="relative mb-5 max-w-xl"
+          className="relative mb-4 max-w-xl"
         >
           <Search
             className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
@@ -483,7 +483,7 @@ export default function HomeClient({
 
         {/* Category chips */}
         <div
-          className="flex gap-2 overflow-x-auto pb-2 mb-5 md:mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap"
+          className="flex gap-2 overflow-x-auto pb-2 mb-4 md:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap"
           style={{ scrollbarWidth: "none" }}
         >
           {CHIPS.map((chip) => {
@@ -507,8 +507,8 @@ export default function HomeClient({
 
         {/* Org cards */}
         {visibleOrgs.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-5">
-            {visibleOrgs.slice(0, 9).map((org) => (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-4">
+            {visibleOrgs.slice(0, 8).map((org) => (
               <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
           </div>
@@ -518,7 +518,7 @@ export default function HomeClient({
           </div>
         )}
 
-        <div className="mt-8 md:mt-12 text-center">
+        <div className="mt-5 md:mt-8 text-center">
           <Link
             href="/discover"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold border transition-colors hover:bg-gray-50"
@@ -532,8 +532,8 @@ export default function HomeClient({
 
       {/* ── LOCAL TO YOU ──────────────────────────────────────────────── */}
       {localOrgs.length > 0 && (
-        <section className="pb-8 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2.5 mb-5 md:mb-8">
+        <section className="pb-5 md:pb-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2.5 mb-4 md:mb-6">
             <MapPin className="w-5 h-5" style={{ color: "#1a7a4a" }} />
             <h2 className="font-display text-xl md:text-3xl text-gray-900">
               Local to You
@@ -544,7 +544,7 @@ export default function HomeClient({
               </span>
             )}
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-4">
             {localOrgs.map((org) => (
               <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
@@ -555,11 +555,11 @@ export default function HomeClient({
       {/* ── HOW IT WORKS ──────────────────────────────────────────────── */}
       <section
         id="how-it-works"
-        className="py-12 md:py-24"
+        className="py-8 md:py-14"
         style={{ backgroundColor: "#faf9f6" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10 md:mb-18">
+          <div className="text-center mb-6 md:mb-10">
             <h2 className="font-display text-2xl md:text-5xl text-gray-900 mb-3">
               How EasyToGive Works
             </h2>
@@ -569,7 +569,7 @@ export default function HomeClient({
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+          <div className="grid md:grid-cols-3 gap-5 md:gap-8">
             {[
               {
                 step: "01",
@@ -605,7 +605,7 @@ export default function HomeClient({
             ))}
           </div>
 
-          <div className="text-center mt-10 md:mt-16">
+          <div className="text-center mt-6 md:mt-10">
             <Link
               href="/portfolio"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-white text-sm transition-opacity hover:opacity-90"
@@ -619,8 +619,8 @@ export default function HomeClient({
       </section>
 
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-24">
-        <div className="text-center mb-8 md:mb-12">
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="text-center mb-5 md:mb-8">
           <h2 className="font-display text-2xl md:text-5xl text-gray-900 mb-3">
             Frequently Asked Questions
           </h2>
@@ -668,16 +668,16 @@ export default function HomeClient({
       </section>
 
       {/* ── CTA — dark green ──────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 md:pb-24">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 md:pb-12">
         <div
-          className="rounded-2xl md:rounded-3xl px-6 py-12 md:px-12 md:py-20 text-center"
+          className="rounded-2xl md:rounded-3xl px-6 py-8 md:px-12 md:py-12 text-center"
           style={{ backgroundColor: "#1a7a4a" }}
         >
           <h2 className="font-display text-2xl md:text-5xl text-white mb-3 md:mb-4">
             Start making your giving count.
           </h2>
           <p
-            className="mb-8 md:mb-10 max-w-md mx-auto text-sm md:text-base leading-relaxed"
+            className="mb-5 md:mb-7 max-w-md mx-auto text-sm md:text-base leading-relaxed"
             style={{ color: "#86efac" }}
           >
             Start your giving portfolio in 2 minutes. Free forever — no fees for donors.
