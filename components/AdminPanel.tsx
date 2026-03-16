@@ -2050,6 +2050,9 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
   const [autofilling, setAutofilling] = useState(false);
   const [autofillError, setAutofillError] = useState("");
   const [displaySettings, setDisplaySettings] = useState({ ...DEFAULT_DISPLAY_SETTINGS });
+  const [gbApiKey, setGbApiKey] = useState("");
+  const [gbImporting, setGbImporting] = useState(false);
+  const [gbMessage, setGbMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
   useEffect(() => {
     loadOrgs();
@@ -2177,6 +2180,41 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
       setAutofillError(err.message ?? "Something went wrong.");
     } finally {
       setAutofilling(false);
+    }
+  }
+
+  async function handleGbImport() {
+    if (!gbApiKey.trim()) return;
+    setGbImporting(true);
+    setGbMessage(null);
+    try {
+      const res = await fetch("/api/givebutter-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: gbApiKey.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGbMessage({ text: data.error ?? "Import failed.", ok: false });
+        return;
+      }
+      setForm((prev: any) => ({
+        ...prev,
+        name: data.name || prev.name,
+        description: data.description || prev.description,
+        website: data.website || prev.website,
+        image_url: data.image_url || prev.image_url,
+        raised: data.raised ?? prev.raised,
+        goal: data.goal != null ? data.goal / 100 : prev.goal,
+        donors: data.donors ?? prev.donors,
+        givebutter_api_key: gbApiKey.trim(),
+        givebutter_connected: true,
+      }));
+      setGbMessage({ text: "Imported from GiveButter. Review the fields below.", ok: true });
+    } catch {
+      setGbMessage({ text: "Failed to connect to GiveButter.", ok: false });
+    } finally {
+      setGbImporting(false);
     }
   }
 
@@ -2314,6 +2352,46 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
               </button>
             </div>
             {autofillError && <p className="mt-2 text-sm text-red-500">{autofillError}</p>}
+          </div>
+
+          {/* GiveButter Import */}
+          <div className="p-4 rounded-xl border bg-gray-50" style={{ borderColor: "#e5e7eb" }}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Import from GiveButter
+            </p>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 px-3 py-2 rounded-lg border text-sm text-gray-900 outline-none focus:border-green-600 bg-white"
+                style={{ borderColor: "#e5e7eb" }}
+                type="password"
+                placeholder="GiveButter API key"
+                value={gbApiKey}
+                onChange={(e) => { setGbApiKey(e.target.value); setGbMessage(null); }}
+                onKeyDown={(e) => e.key === "Enter" && handleGbImport()}
+                disabled={gbImporting}
+              />
+              <button
+                onClick={handleGbImport}
+                disabled={gbImporting || !gbApiKey.trim()}
+                className="px-4 py-2 rounded-lg font-semibold text-sm text-white flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
+                style={{ backgroundColor: "#1a7a4a" }}
+              >
+                {gbImporting ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Importing…
+                  </>
+                ) : "Import"}
+              </button>
+            </div>
+            {gbMessage && (
+              <p className={`mt-2 text-sm ${gbMessage.ok ? "text-green-700" : "text-red-500"}`}>
+                {gbMessage.text}
+              </p>
+            )}
           </div>
 
           {/* Form fields */}
@@ -2590,7 +2668,12 @@ export default function AdminPanel({ editOrgId }: Props = {}) {
                       </td>
                       <td className="px-4 py-3 text-gray-500">{org.category}</td>
                       <td className="px-4 py-3 text-gray-500 max-w-[140px] truncate hidden md:table-cell">{org.location}</td>
-                      <td className="px-4 py-3 text-center">{org.verified ? "✅" : "—"}</td>
+                      <td className="px-4 py-3 text-center">
+                        {org.verified ? <span className="text-green-700 font-semibold text-xs">Verified</span> : <span className="text-gray-300 text-xs">—</span>}
+                        {org.givebutter_connected && (
+                          <span className="block text-xs font-medium mt-0.5" style={{ color: "#854d0e" }}>GB</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => (createClient() as any).from("organizations").update({ featured: !org.featured }).eq("id", org.id).then(loadOrgs)}

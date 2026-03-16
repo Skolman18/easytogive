@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Building2, Loader2, AlertCircle, CheckCircle, Clock,
-  Users, Check,
+  Users, Check, Download,
 } from "lucide-react";
 import { SUBCATEGORY_OPTIONS, CATEGORY_LABELS } from "@/lib/categories";
 import type { TopCategory } from "@/lib/categories";
@@ -122,6 +122,12 @@ function OrgSignupInner() {
   const [einError, setEinError] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
+  // GiveButter import
+  const [gbApiKey, setGbApiKey] = useState("");
+  const [gbImporting, setGbImporting] = useState(false);
+  const [gbError, setGbError] = useState<string | null>(null);
+  const [gbSuccess, setGbSuccess] = useState(false);
+
   // Scroll error into view whenever it changes
   useEffect(() => {
     if (error && errorRef.current) {
@@ -147,6 +153,36 @@ function OrgSignupInner() {
       category: cat,
       subcategory: subs.length === 1 ? subs[0] : "",
     }));
+  }
+
+  async function handleGbImport() {
+    if (!gbApiKey.trim()) return;
+    setGbImporting(true);
+    setGbError(null);
+    setGbSuccess(false);
+    try {
+      const res = await fetch("/api/givebutter-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: gbApiKey.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGbError(data.error ?? "Import failed. Please check your API key.");
+        return;
+      }
+      setForm((prev) => ({
+        ...prev,
+        orgName: data.name || prev.orgName,
+        website: data.website || prev.website,
+        description: data.description || prev.description,
+      }));
+      setGbSuccess(true);
+    } catch {
+      setGbError("Failed to connect to GiveButter. Please try again.");
+    } finally {
+      setGbImporting(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -311,6 +347,67 @@ function OrgSignupInner() {
               We&apos;ll review your application and get back to you within{" "}
               <strong>2 business days</strong>.
             </span>
+          </div>
+
+          {/* GiveButter import */}
+          <div
+            className="bg-white rounded-2xl border p-6 shadow-sm mb-4"
+            style={{ borderColor: "#e5e1d8" }}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Download className="w-4 h-4" style={{ color: "#1a7a4a" }} />
+              <span className="text-sm font-semibold text-gray-900">Import from GiveButter</span>
+              <span className="text-xs text-gray-400 ml-1">(optional)</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Already on GiveButter? Paste your API key to auto-fill this form.
+              Find it in GiveButter → Settings → API.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={gbApiKey}
+                onChange={(e) => { setGbApiKey(e.target.value); setGbError(null); setGbSuccess(false); }}
+                onKeyDown={(e) => e.key === "Enter" && handleGbImport()}
+                disabled={gbImporting}
+                placeholder="Your GiveButter API key"
+                className="flex-1 px-3 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
+                style={{ borderColor: gbError ? "#fca5a5" : "#e5e1d8" }}
+              />
+              <button
+                type="button"
+                onClick={handleGbImport}
+                disabled={gbImporting || !gbApiKey.trim()}
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap min-h-[44px]"
+                style={{ backgroundColor: "#1a7a4a" }}
+              >
+                {gbImporting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Importing…
+                  </>
+                ) : "Import"}
+              </button>
+            </div>
+            {gbError && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 mt-2 p-2.5 rounded-lg text-xs"
+                style={{ backgroundColor: "#fef2f2", color: "#dc2626" }}
+              >
+                <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                {gbError}
+              </div>
+            )}
+            {gbSuccess && (
+              <div
+                className="flex items-center gap-2 mt-2 p-2.5 rounded-lg text-xs font-medium"
+                style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+              >
+                <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                Imported successfully — review the fields below and fill in anything missing.
+              </div>
+            )}
           </div>
 
           <div

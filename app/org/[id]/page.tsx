@@ -109,6 +109,7 @@ export default async function OrgPage({
         videoType: supabaseOrg.video_type ?? "",
         showVideo: supabaseOrg.show_video ?? false,
         videoSizePercent: supabaseOrg.video_size_percent ?? 100,
+        givebutterConnected: supabaseOrg.givebutter_connected ?? false,
       }
     : ORGANIZATIONS.find((o) => o.id === id);
 
@@ -284,6 +285,14 @@ export default async function OrgPage({
               >
                 <CheckCircle className="w-3.5 h-3.5" />
                 Verified
+              </span>
+            )}
+            {(org as any).givebutterConnected && (
+              <span
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                style={{ backgroundColor: "#fef9c3", color: "#854d0e", border: "1px solid #fde68a" }}
+              >
+                GiveButter Connected
               </span>
             )}
           </div>
