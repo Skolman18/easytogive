@@ -388,10 +388,10 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
               <Search className="w-5 h-5" style={{ color: "#1a7a4a" }} />
             </div>
             <h3 className="font-display text-xl text-gray-900 mb-2">
-              No organizations found
+              No organizations match your search.
             </h3>
             <p className="text-sm mb-6" style={{ color: "#9b9990" }}>
-              Try adjusting your search or browse all categories.
+              Try a different keyword or browse all causes below.
             </p>
             <button
               onClick={clearAll}

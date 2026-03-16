@@ -202,7 +202,7 @@ function WalletPageInner() {
               className="bg-white rounded-xl md:rounded-2xl border shadow-sm p-8 md:p-10 text-center"
               style={{ borderColor: "#e5e1d8" }}
             >
-              <p className="text-gray-500 text-sm mb-3">Your giving story starts here. Find an organization you love.</p>
+              <p className="text-gray-500 text-sm mb-3">Your giving history will live here. Every donation, every receipt, all in one place — automatically.</p>
               <Link
                 href="/discover"
                 className="text-sm font-medium hover:underline"

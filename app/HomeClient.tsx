@@ -29,6 +29,25 @@ const CHIPS = [
   ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
 ];
 
+const PAIN_POINTS = [
+  {
+    problem: "Chasing receipts from six different organizations every January",
+    solution: "Every receipt saved automatically. Download your complete giving summary in one click.",
+  },
+  {
+    problem: "Donating and never knowing if it made a difference",
+    solution: "Organizations post real impact updates directly to your giving wallet. See exactly what your money did.",
+  },
+  {
+    problem: "Giving to one org at a time through clunky individual websites",
+    solution: "Build a giving portfolio. Give to all your causes in one transaction. Takes three clicks.",
+  },
+  {
+    problem: "Not knowing if an organization is legitimate before you give",
+    solution: "Every organization is personally reviewed and approved before they can receive a single donation.",
+  },
+];
+
 const FAQ_ITEMS = [
   {
     q: "What is EasyToGive?",
@@ -299,7 +318,7 @@ export default function HomeClient({
           <div className="max-w-xl">
             <EditableField
               settingKey="hero_headline"
-              value={siteSettings?.hero_headline ?? "Give with purpose.\nGive with confidence."}
+              value={siteSettings?.hero_headline ?? "Finally, one place\nfor all your giving."}
               as="h1"
               className="font-display text-[32px] md:text-[52px] lg:text-[62px] text-gray-900 leading-[1.08] mb-2 md:mb-3 tracking-tight"
             />
@@ -308,7 +327,7 @@ export default function HomeClient({
               settingKey="hero_subtext"
               value={
                 siteSettings?.hero_subtext ??
-                "Discover verified organizations you trust, build your giving portfolio, and manage every donation in one place. Free for donors, forever."
+                "Stop juggling six donation pages and chasing receipts every January. EasyToGive gives every donor a free giving portfolio, automatic tax receipts, and real impact updates — all in one place."
               }
               as="p"
               className="text-[15px] md:text-lg leading-relaxed mb-3 md:mb-4 max-w-[480px]"
@@ -317,7 +336,7 @@ export default function HomeClient({
             />
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-3 md:mb-4">
+            <div className="flex flex-col sm:flex-row gap-3 mb-2 md:mb-3">
               <Link
                 href="/get-started"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] rounded-full font-semibold text-white text-sm transition-opacity hover:opacity-90 active:scale-95"
@@ -335,12 +354,26 @@ export default function HomeClient({
               </Link>
             </div>
 
+            {/* Micro trust signals */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-3 md:mb-4">
+              {[
+                { Icon: ShieldCheck, label: "Payments secured by Stripe" },
+                { Icon: CheckCircle, label: "Every org personally verified" },
+                { Icon: Receipt, label: "Automatic tax receipts" },
+              ].map(({ Icon, label }) => (
+                <div key={label} className="flex items-center gap-1.5">
+                  <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
+                  <span className="text-xs" style={{ color: "#5c5b56" }}>{label}</span>
+                </div>
+              ))}
+            </div>
+
             {/* Social proof */}
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {[
-                "Free for donors",
-                "1% platform fee",
-                "Every org verified",
+                "Free for donors, forever",
+                "Every receipt saved automatically",
+                "Every organization verified",
               ].map((label) => (
                 <div key={label} className="flex items-center gap-1.5">
                   <CheckCircle
@@ -372,11 +405,13 @@ export default function HomeClient({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-7">
             <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 md:gap-x-20">
               {[
-                { value: `${orgCountAnim.toLocaleString()}+`, label: "Verified Organizations" },
+                { value: `${orgCountAnim.toLocaleString()}+`, label: "Verified organizations" },
                 stats.userCount > 0
-                  ? { value: userCountAnim.toLocaleString(), label: "Active Givers" }
+                  ? { value: userCountAnim.toLocaleString(), label: "Active givers" }
                   : null,
-                { value: "100%", label: "Tax-Deductible Giving" },
+                { value: "100%", label: "Tax-deductible giving" },
+                { value: "Auto", label: "Receipt on every donation" },
+                { value: "Free", label: "For donors, always" },
               ]
                 .filter(Boolean)
                 .map((s) => (
@@ -502,7 +537,7 @@ export default function HomeClient({
           </div>
         ) : (
           <div className="py-20 text-center text-sm" style={{ color: "#9b9990" }}>
-            No organizations in this category yet.
+            No organizations in this category yet. <Link href="/discover" className="underline hover:text-gray-600">Browse all causes.</Link>
           </div>
         )}
 
@@ -539,6 +574,48 @@ export default function HomeClient({
           </div>
         </section>
       )}
+
+      {/* ── WHY DONORS CHOOSE EASYTOGIVE ──────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
+        <div className="text-center mb-6 md:mb-10">
+          <h2 className="font-display text-2xl md:text-4xl text-gray-900">
+            Giving should be simple. We made it that way.
+          </h2>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
+          {PAIN_POINTS.map((card, i) => (
+            <div
+              key={i}
+              className="rounded-xl border bg-white p-5"
+              style={{ borderColor: "#e5e1d8" }}
+            >
+              <div
+                className="text-[11px] font-semibold uppercase tracking-widest mb-1.5"
+                style={{ color: "#c47c2a" }}
+              >
+                The old way
+              </div>
+              <p className="text-sm mb-4" style={{ color: "#5c5b56" }}>
+                {card.problem}
+              </p>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex-1 border-t" style={{ borderColor: "#e5e1d8" }} />
+                <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
+                <div className="flex-1 border-t" style={{ borderColor: "#e5e1d8" }} />
+              </div>
+              <div
+                className="text-[11px] font-semibold uppercase tracking-widest mb-1.5"
+                style={{ color: "#1a7a4a" }}
+              >
+                With EasyToGive
+              </div>
+              <p className="text-sm font-medium" style={{ color: "#1a1a18" }}>
+                {card.solution}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ── HOW IT WORKS ──────────────────────────────────────────────── */}
       <section

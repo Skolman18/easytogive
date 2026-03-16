@@ -680,7 +680,7 @@ function ProfilePageInner() {
                 {receiptGroups.length === 0 ? (
                 <div className="text-center py-12">
                   <Heart className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm">No donations yet. Start giving today!</p>
+                  <p className="text-gray-500 text-sm">Your giving story starts here. Discover an organization you love and make your first donation.</p>
                 </div>
               ) : receiptGroups.map(([receiptId, records]) => {
                   const total = records.reduce((s, r) => s + r.amount, 0);

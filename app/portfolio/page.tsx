@@ -527,7 +527,7 @@ export default function PortfolioPage() {
               className="rounded-2xl border bg-white p-8 mb-8"
               style={{ borderColor: "#e5e1d8" }}
             >
-              <h2 className="font-display text-xl font-bold text-gray-900 mb-6">
+              <h2 className="font-display text-xl text-gray-900 mb-6">
                 How Your Giving Portfolio Works
               </h2>
               <div className="space-y-6">
