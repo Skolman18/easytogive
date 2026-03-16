@@ -50,20 +50,33 @@ export default function ImpactUpdateForm({ orgId, onSubmitted }: Props) {
       const supabase = createClient() as any;
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { error: insertError } = await supabase.from("org_impact_updates").insert({
-        org_id: orgId,
-        posted_by: user?.id,
-        stat_label: statLabel.trim(),
-        stat_value: statValue.trim(),
-        stat_period: statPeriod,
-        message: message.trim(),
-        proof_url: proofUrl.trim(),
-        proof_note: proofNote.trim(),
-        status: "pending",
-        visible: false,
-      });
+      const { data: insertedRow, error: insertError } = await supabase
+        .from("org_impact_updates")
+        .insert({
+          org_id: orgId,
+          posted_by: user?.id,
+          stat_label: statLabel.trim(),
+          stat_value: statValue.trim(),
+          stat_period: statPeriod,
+          message: message.trim(),
+          proof_url: proofUrl.trim(),
+          proof_note: proofNote.trim(),
+          status: "pending",
+          visible: false,
+        })
+        .select("id")
+        .single();
 
       if (insertError) throw insertError;
+
+      // Fire-and-forget: generate AI summary in the background
+      if (insertedRow?.id) {
+        fetch("/api/ai/impact-summary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ updateId: insertedRow.id }),
+        }).catch(() => { /* silent */ });
+      }
 
       setSuccess(true);
       setStatValue("");

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, CheckCircle, Building2, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
+import PortfolioHealthCard from "@/components/PortfolioHealthCard";
+import ImpactFeed from "@/components/ImpactFeed";
 
 function fmt(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -48,6 +50,7 @@ export default function WalletPage() {
 function WalletPageInner() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [donations, setDonations] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
 
@@ -58,6 +61,7 @@ function WalletPageInner() {
         router.push("/auth/signin?redirectTo=/wallet");
         return;
       }
+      setUserId(user.id);
       loadDonations(user.id);
     });
   }, [router]);
@@ -174,6 +178,17 @@ function WalletPageInner() {
               </span>
             </div>
           </div>
+        )}
+
+        {/* Portfolio health card */}
+        <PortfolioHealthCard userId={userId} />
+
+        {/* Impact feed */}
+        {donations.length > 0 && (
+          <ImpactFeed
+            userId={userId}
+            donatedOrgIds={[...new Set(donations.map((d) => d.org_id).filter(Boolean))]}
+          />
         )}
 
         {/* Transaction list */}

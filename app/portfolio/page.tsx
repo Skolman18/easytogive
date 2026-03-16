@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/placeholder-data";
 import CheckoutModal, { DonationAllocation } from "@/components/CheckoutModal";
+import OrgSuggestions from "@/components/OrgSuggestions";
 import { createClient } from "@/lib/supabase-browser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1123,6 +1124,25 @@ export default function PortfolioPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── AI Suggestions ──────────────────────────────────────────────── */}
+        {orgs.length >= 2 && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+            <OrgSuggestions
+              userId={userId}
+              currentOrgIds={orgs.map((o) => o.orgId)}
+              onAddOrg={(org) =>
+                handleAddOrg({
+                  id: org.id,
+                  name: org.name,
+                  category: org.category,
+                  location: org.location,
+                  image_url: org.image_url,
+                })
+              }
+            />
           </div>
         )}
       </div>
