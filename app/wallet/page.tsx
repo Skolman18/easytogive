@@ -173,7 +173,7 @@ function WalletPageInner() {
                 {filtered.length} donation{filtered.length !== 1 ? "s" : ""}
                 {uniqueOrgs > 0 && ` to ${uniqueOrgs} org${uniqueOrgs !== 1 ? "s" : ""}`}
               </span>
-              <span className="font-display text-xl font-bold" style={{ color: "#1a7a4a" }}>
+              <span className="font-display text-3xl md:text-4xl font-bold" style={{ color: "#1a7a4a" }}>
                 {fmt(total)}
               </span>
             </div>
@@ -202,13 +202,13 @@ function WalletPageInner() {
               className="bg-white rounded-xl md:rounded-2xl border shadow-sm p-8 md:p-10 text-center"
               style={{ borderColor: "#e5e1d8" }}
             >
-              <p className="text-gray-400 text-sm mb-3">No transactions found.</p>
+              <p className="text-gray-500 text-sm mb-3">Your giving story starts here. Find an organization you love.</p>
               <Link
                 href="/discover"
                 className="text-sm font-medium hover:underline"
                 style={{ color: "#1a7a4a" }}
               >
-                Discover organizations →
+                Browse organizations →
               </Link>
             </div>
           ) : (

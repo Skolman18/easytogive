@@ -87,7 +87,7 @@ export default function OrgCard({
     CATEGORY_LABELS[org.category] ||
     org.category;
 
-  const badgeStyle = { backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #e5e7eb" };
+  const badgeStyle = { backgroundColor: "#f0ede6", color: "#5c5b56", border: "1px solid #e5e1d8" };
 
   const storyRaw = (org.ourStory ?? "").trim();
   const storyPreview =

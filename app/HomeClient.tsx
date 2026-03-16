@@ -29,7 +29,6 @@ const CHIPS = [
   ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
 ];
 
-
 const FAQ_ITEMS = [
   {
     q: "What is EasyToGive?",
@@ -49,7 +48,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "How do I get my organization listed?",
-    a: "Reach out to us via the About page. We verify every organization before they go live.",
+    a: "Apply via the nonprofit signup page. We verify every organization before they go live on the platform.",
   },
   {
     q: "Can I set up recurring donations?",
@@ -79,53 +78,111 @@ function useCountUp(end: number, duration = 1400, active = false): number {
   return value;
 }
 
-function formatRaised(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`;
-  return `$${n}`;
-}
+// ─── Portfolio Preview Card (hero visual) ──────────────────────────────────────
 
-// ─── Preview card (hero right column) ─────────────────────────────────────────
+function PortfolioPreviewCard() {
+  const allocations = [
+    { name: "Hope Food Bank", pct: 60, color: "#1a7a4a" },
+    { name: "City Arts Center", pct: 25, color: "#2d9d61" },
+    { name: "Local Animal Shelter", pct: 15, color: "#4cb87e" },
+  ];
 
-function PreviewCard({ org }: { org: Organization }) {
-  const label = CATEGORY_LABELS[org.category] || org.category;
   return (
-    <div
-      className="bg-white rounded-2xl border overflow-hidden shadow-xl"
-      style={{ borderColor: "#e5e1d8" }}
-    >
-      <div className="relative h-32 overflow-hidden bg-gray-100">
-        <img src={org.imageUrl} alt={org.name} className="w-full h-full object-cover" />
-        <div className="absolute top-2.5 left-2.5">
-          <span
-            className="px-2.5 py-0.5 rounded-full text-xs font-medium"
-            style={{ backgroundColor: "#f3f4f6", color: "#6b7280", border: "1px solid #e5e7eb" }}
-          >
-            {label}
-          </span>
-        </div>
-        {org.verified && (
-          <div className="absolute top-2.5 right-2.5">
-            <span
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: "#1a7a4a" }}
+    <div className="relative max-w-sm ml-auto">
+      {/* Depth shadow card */}
+      <div
+        className="absolute rounded-2xl border"
+        style={{
+          inset: 0,
+          bottom: "-10px",
+          right: "-10px",
+          backgroundColor: "#f0fdf4",
+          borderColor: "#bbf7d0",
+          zIndex: 0,
+        }}
+      />
+      {/* Main card */}
+      <div
+        className="relative rounded-2xl border bg-white p-6 z-10"
+        style={{
+          borderColor: "#e8e5de",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.07), 0 4px 16px rgba(26,122,74,0.06)",
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <div
+              className="text-[10px] font-semibold tracking-widest uppercase mb-0.5"
+              style={{ color: "#9b9990" }}
             >
-              <CheckCircle className="w-3 h-3" />
-              Verified
-            </span>
+              My Giving Portfolio
+            </div>
+            <div className="font-display text-xl text-gray-900">Sarah M.</div>
+            <div className="text-xs mt-0.5" style={{ color: "#9b9990" }}>
+              Member since 2023
+            </div>
           </div>
-        )}
-      </div>
-      <div className="px-4 py-3">
-        <div className="font-display font-semibold text-gray-900 leading-tight mb-0.5">
-          {org.name}
+          <div className="text-right">
+            <div
+              className="text-[10px] font-semibold tracking-widest uppercase mb-0.5"
+              style={{ color: "#9b9990" }}
+            >
+              Monthly
+            </div>
+            <div className="font-display text-xl" style={{ color: "#1a7a4a" }}>
+              $150
+            </div>
+          </div>
         </div>
-        <div className="text-xs text-gray-500 flex items-center gap-1">
-          <MapPin className="w-3 h-3 flex-shrink-0" />
-          {org.location}
+
+        {/* Allocation bars */}
+        <div className="space-y-3 mb-5">
+          {allocations.map((a) => (
+            <div key={a.name}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-sm font-medium" style={{ color: "#5c5b56" }}>
+                  {a.name}
+                </span>
+                <span
+                  className="text-sm font-semibold tabular-nums"
+                  style={{ color: a.color }}
+                >
+                  {a.pct}%
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full" style={{ backgroundColor: "#f0ede6" }}>
+                <div
+                  className="h-1.5 rounded-full"
+                  style={{ width: `${a.pct}%`, backgroundColor: a.color }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="text-xs text-gray-600 mt-1.5 line-clamp-2 leading-relaxed">
-          {org.tagline}
+
+        {/* Divider */}
+        <div className="section-divider mb-4" />
+
+        {/* Total + link */}
+        <div className="flex items-end justify-between">
+          <div>
+            <div
+              className="text-[10px] font-semibold tracking-widest uppercase mb-1"
+              style={{ color: "#9b9990" }}
+            >
+              Total given this year
+            </div>
+            <div className="font-display text-4xl text-gray-900">$1,847</div>
+          </div>
+          <Link
+            href="/portfolio"
+            className="text-xs font-semibold flex items-center gap-1 hover:underline"
+            style={{ color: "#1a7a4a" }}
+          >
+            View portfolio
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
       </div>
     </div>
@@ -172,7 +229,6 @@ export default function HomeClient({
   const statsRef = useRef<HTMLElement>(null);
   const [statsInView, setStatsInView] = useState(false);
   const orgCountAnim = useCountUp(stats.orgCount, 1400, statsInView);
-  const raisedAnim = useCountUp(stats.totalRaised, 1600, statsInView);
   const userCountAnim = useCountUp(stats.userCount, 1200, statsInView);
 
   useEffect(() => {
@@ -232,102 +288,89 @@ export default function HomeClient({
       ? organizations
       : organizations.filter((o) => o.category === activeChip);
 
-  const previewOrgs = organizations.slice(0, 3);
-
   return (
     <div className="bg-white">
 
       {/* ── HERO ──────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-6 md:pt-20 md:pb-16">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-10 md:pt-20 md:pb-24">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
 
           {/* Left: Text */}
           <div className="max-w-xl">
+            {/* Warm trust badge */}
             <div
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-3 md:mb-5 uppercase tracking-wide"
-              style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-medium mb-5 md:mb-7"
+              style={{ backgroundColor: "#f5ede0", color: "#c47c2a" }}
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              The Giving Marketplace
+              <span
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: "#1a7a4a" }}
+              />
+              Trusted giving — verified nonprofits only
             </div>
 
             <EditableField
               settingKey="hero_headline"
-              value={siteSettings?.hero_headline ?? "The Marketplace for Giving."}
+              value={siteSettings?.hero_headline ?? "Give with purpose.\nGive with confidence."}
               as="h1"
-              className="font-display text-[22px] md:text-5xl lg:text-6xl font-bold text-gray-900 leading-[1.1] mb-3 md:mb-5"
+              className="font-display text-[32px] md:text-[52px] lg:text-[62px] text-gray-900 leading-[1.08] mb-5 md:mb-7 tracking-tight"
             />
 
             <EditableField
               settingKey="hero_subtext"
               value={
                 siteSettings?.hero_subtext ??
-                "Discover verified organizations, churches, and missionaries. Build your giving portfolio and donate to multiple causes with one simple transaction."
+                "Discover verified organizations you trust, build your giving portfolio, and manage every donation in one place. Free for donors, forever."
               }
               as="p"
-              className="text-[15px] md:text-lg text-gray-500 leading-relaxed mb-5 md:mb-8 max-w-[480px]"
+              className="text-[15px] md:text-lg leading-relaxed mb-7 md:mb-9 max-w-[480px]"
+              style={{ color: "#5c5b56" } as any}
               multiline
             />
 
-            {/* CTA buttons */}
-            <div className="flex flex-col sm:flex-row gap-2.5 mb-5 md:mb-8">
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-7 md:mb-9">
               <Link
-                href="/discover"
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 md:px-6 md:py-3.5 min-h-[44px] rounded-full font-semibold text-white text-sm transition-all hover:opacity-90 active:scale-95"
+                href="/get-started"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] rounded-full font-semibold text-white text-sm transition-opacity hover:opacity-90 active:scale-95"
                 style={{ backgroundColor: "#1a7a4a" }}
               >
-                Explore Organizations
+                Start giving free
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <a
-                href="#how-it-works"
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 md:px-6 md:py-3.5 min-h-[44px] rounded-full font-semibold text-sm border transition-all hover:bg-gray-50"
+              <Link
+                href="/signup/organization"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] rounded-full font-semibold text-sm border transition-colors hover:bg-gray-50"
                 style={{ color: "#1a7a4a", borderColor: "#1a7a4a" }}
               >
-                How It Works
-              </a>
+                List your organization
+              </Link>
             </div>
 
-            {/* Trust indicators */}
-            <div className="flex flex-wrap gap-3 sm:gap-6">
+            {/* Social proof */}
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
               {[
-                { icon: ShieldCheck, label: "Every org is verified" },
-                { icon: Receipt, label: "One tax receipt" },
-                { icon: RefreshCw, label: "Recurring giving" },
-              ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-center gap-1.5 text-xs md:text-sm text-gray-500">
-                  <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
-                  {label}
+                "Free for donors",
+                "1% platform fee",
+                "Every org verified",
+              ].map((label) => (
+                <div key={label} className="flex items-center gap-1.5">
+                  <CheckCircle
+                    className="w-3.5 h-3.5 flex-shrink-0"
+                    style={{ color: "#1a7a4a" }}
+                  />
+                  <span className="text-sm" style={{ color: "#5c5b56" }}>
+                    {label}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right: Stacked org card previews */}
-          {previewOrgs.length >= 2 && (
-            <div className="hidden lg:block relative h-[400px]">
-              {/* Back card */}
-              {previewOrgs[2] && (
-                <div
-                  className="absolute bottom-0 right-0 w-72 opacity-60"
-                  style={{ transform: "rotate(3deg) translateY(-20px) translateX(12px)" }}
-                >
-                  <PreviewCard org={previewOrgs[2]} />
-                </div>
-              )}
-              {/* Middle card */}
-              <div
-                className="absolute bottom-12 left-6 w-72 opacity-85"
-                style={{ transform: "rotate(-1.5deg)" }}
-              >
-                <PreviewCard org={previewOrgs[1]} />
-              </div>
-              {/* Front card */}
-              <div className="absolute top-0 left-0 w-72 z-10">
-                <PreviewCard org={previewOrgs[0]} />
-              </div>
-            </div>
-          )}
+          {/* Right: Portfolio preview card */}
+          <div className="hidden lg:block">
+            <PortfolioPreviewCard />
+          </div>
         </div>
       </section>
 
@@ -335,11 +378,11 @@ export default function HomeClient({
       {stats.orgCount > 0 && (
         <section
           ref={statsRef}
-          className="border-b"
-          style={{ borderColor: "#f0ede6" }}
+          className="border-y"
+          style={{ borderColor: "#e8e5de", backgroundColor: "#faf9f6" }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-10">
-            <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 md:gap-x-12 md:gap-y-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 md:py-12">
+            <div className="flex flex-wrap justify-center gap-x-12 gap-y-6 md:gap-x-20">
               {[
                 { value: `${orgCountAnim.toLocaleString()}+`, label: "Verified Organizations" },
                 stats.userCount > 0
@@ -350,10 +393,15 @@ export default function HomeClient({
                 .filter(Boolean)
                 .map((s) => (
                   <div key={s!.label} className="text-center">
-                    <div className="font-display text-xl md:text-3xl font-bold text-gray-900 mb-0.5 md:mb-1">
+                    <div className="font-display text-3xl md:text-5xl text-gray-900 mb-1">
                       {s!.value}
                     </div>
-                    <div className="text-xs text-gray-500">{s!.label}</div>
+                    <div
+                      className="text-xs md:text-sm font-medium tracking-wide"
+                      style={{ color: "#9b9990" }}
+                    >
+                      {s!.label}
+                    </div>
                   </div>
                 ))}
             </div>
@@ -363,15 +411,15 @@ export default function HomeClient({
 
       {/* ── RECOMMENDED FOR YOU ───────────────────────────────────────── */}
       {recommendedOrgs.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 md:pt-10 pb-2">
-          <div className="flex items-center gap-2 mb-3 md:mb-6">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 md:pt-16 pb-2">
+          <div className="flex items-center gap-2.5 mb-5 md:mb-8">
             <div
-              className="w-6 h-6 md:w-7 md:h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: "#e8f5ee" }}
             >
-              <Heart className="w-3.5 h-3.5 md:w-4 md:h-4" style={{ color: "#1a7a4a" }} />
+              <Heart className="w-4 h-4" style={{ color: "#1a7a4a" }} />
             </div>
-            <h2 className="font-display text-lg md:text-2xl font-bold text-gray-900">
+            <h2 className="font-display text-xl md:text-3xl text-gray-900">
               Recommended for You
             </h2>
           </div>
@@ -384,13 +432,13 @@ export default function HomeClient({
       )}
 
       {/* ── BROWSE ORGANIZATIONS ──────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
-        <div className="flex items-end justify-between mb-4 md:mb-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
+        <div className="flex items-end justify-between mb-5 md:mb-9">
           <div>
-            <h2 className="font-display text-xl md:text-3xl font-bold text-gray-900">
+            <h2 className="font-display text-xl md:text-3xl text-gray-900">
               Browse Organizations
             </h2>
-            <p className="text-gray-500 mt-0.5 text-xs md:text-sm">
+            <p className="mt-1 text-sm" style={{ color: "#9b9990" }}>
               Every organization is verified for transparency and impact.
             </p>
           </div>
@@ -410,16 +458,19 @@ export default function HomeClient({
             if (searchQuery.trim()) router.push(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
             else router.push("/discover");
           }}
-          className="relative mb-6 max-w-xl"
+          className="relative mb-5 max-w-xl"
         >
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+            style={{ color: "#9b9990" }}
+          />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search organizations, causes, or locations…"
-            className="w-full pl-11 pr-28 py-3 rounded-full border text-sm outline-none focus:border-green-600 transition-colors"
-            style={{ borderColor: "#e5e1d8" }}
+            className="w-full pl-11 pr-28 py-3 rounded-full border text-sm"
+            style={{ borderColor: "#e8e5de" }}
           />
           <button
             type="submit"
@@ -430,9 +481,9 @@ export default function HomeClient({
           </button>
         </form>
 
-        {/* Category chips — horizontal scroll */}
+        {/* Category chips */}
         <div
-          className="flex gap-2 overflow-x-auto pb-2 mb-4 md:mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap"
+          className="flex gap-2 overflow-x-auto pb-2 mb-5 md:mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap"
           style={{ scrollbarWidth: "none" }}
         >
           {CHIPS.map((chip) => {
@@ -441,11 +492,11 @@ export default function HomeClient({
               <button
                 key={chip.value}
                 onClick={() => setActiveChip(chip.value)}
-                className="flex-shrink-0 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap"
+                className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap"
                 style={
                   active
                     ? { backgroundColor: "#1a7a4a", color: "white" }
-                    : { backgroundColor: "#f3f4f6", color: "#374151" }
+                    : { backgroundColor: "#f0ede6", color: "#5c5b56" }
                 }
               >
                 {chip.label}
@@ -458,24 +509,20 @@ export default function HomeClient({
         {visibleOrgs.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-5">
             {visibleOrgs.slice(0, 9).map((org) => (
-              <OrgCard
-                key={org.id}
-                org={org}
-                displaySettings={displaySettingsMap?.[org.id]}
-              />
+              <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
           </div>
         ) : (
-          <div className="py-20 text-center text-gray-400 text-sm">
+          <div className="py-20 text-center text-sm" style={{ color: "#9b9990" }}>
             No organizations in this category yet.
           </div>
         )}
 
-        <div className="mt-6 md:mt-10 text-center">
+        <div className="mt-8 md:mt-12 text-center">
           <Link
             href="/discover"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold border transition-all hover:bg-gray-50"
-            style={{ color: "#374151", borderColor: "#d1d5db" }}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold border transition-colors hover:bg-gray-50"
+            style={{ color: "#5c5b56", borderColor: "#e8e5de" }}
           >
             Browse All Organizations
             <ArrowRight className="w-4 h-4" />
@@ -485,23 +532,21 @@ export default function HomeClient({
 
       {/* ── LOCAL TO YOU ──────────────────────────────────────────────── */}
       {localOrgs.length > 0 && (
-        <section className="pb-6 md:pb-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 mb-3 md:mb-6">
-            <MapPin className="w-4 h-4 md:w-5 md:h-5" style={{ color: "#1a7a4a" }} />
-            <h2 className="font-display text-lg md:text-2xl font-bold text-gray-900">
+        <section className="pb-8 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2.5 mb-5 md:mb-8">
+            <MapPin className="w-5 h-5" style={{ color: "#1a7a4a" }} />
+            <h2 className="font-display text-xl md:text-3xl text-gray-900">
               Local to You
             </h2>
             {userCity && (
-              <span className="text-sm text-gray-500 ml-1">near {userCity}</span>
+              <span className="text-sm ml-1" style={{ color: "#9b9990" }}>
+                near {userCity}
+              </span>
             )}
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-5">
             {localOrgs.map((org) => (
-              <OrgCard
-                key={org.id}
-                org={org}
-                displaySettings={displaySettingsMap?.[org.id]}
-              />
+              <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
           </div>
         </section>
@@ -510,21 +555,21 @@ export default function HomeClient({
       {/* ── HOW IT WORKS ──────────────────────────────────────────────── */}
       <section
         id="how-it-works"
-        className="py-10 md:py-20"
+        className="py-12 md:py-24"
         style={{ backgroundColor: "#faf9f6" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-6 md:mb-14">
-            <h2 className="font-display text-xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-3">
+          <div className="text-center mb-10 md:mb-18">
+            <h2 className="font-display text-2xl md:text-5xl text-gray-900 mb-3">
               How EasyToGive Works
             </h2>
-            <p className="text-gray-500 max-w-md mx-auto text-sm leading-relaxed">
-              Meaningful giving shouldn&apos;t require a spreadsheet.
+            <p className="max-w-md mx-auto text-sm md:text-base leading-relaxed" style={{ color: "#9b9990" }}>
+              Meaningful giving should not require a spreadsheet.
               Three steps, one receipt.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 md:gap-10">
+          <div className="grid md:grid-cols-3 gap-8 md:gap-12">
             {[
               {
                 step: "01",
@@ -542,25 +587,28 @@ export default function HomeClient({
                 desc: "Donate securely. We distribute funds and send one consolidated tax receipt.",
               },
             ].map((item) => (
-              <div key={item.step} className="text-center">
+              <div key={item.step} className="text-center md:text-left">
+                {/* Large decorative step number */}
                 <div
-                  className="w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-5 font-bold text-xs md:text-sm text-white"
-                  style={{ backgroundColor: "#1a7a4a" }}
+                  className="font-display text-7xl md:text-8xl leading-none mb-2 select-none"
+                  style={{ color: "#e8f5ee" }}
                 >
                   {item.step}
                 </div>
-                <h3 className="font-display text-[15px] md:text-lg font-semibold mb-1 md:mb-2 text-gray-900">
+                <h3 className="font-display text-xl md:text-2xl text-gray-900 mb-2">
                   {item.title}
                 </h3>
-                <p className="text-gray-500 text-xs md:text-sm leading-relaxed">{item.desc}</p>
+                <p className="text-sm md:text-base leading-relaxed" style={{ color: "#9b9990" }}>
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
 
-          <div className="text-center mt-8 md:mt-12">
+          <div className="text-center mt-10 md:mt-16">
             <Link
               href="/portfolio"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-white text-sm transition-opacity hover:opacity-90"
               style={{ backgroundColor: "#1a7a4a" }}
             >
               Build My Portfolio
@@ -571,12 +619,12 @@ export default function HomeClient({
       </section>
 
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-20">
-        <div className="text-center mb-6 md:mb-10">
-          <h2 className="font-display text-xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-3">
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-24">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="font-display text-2xl md:text-5xl text-gray-900 mb-3">
             Frequently Asked Questions
           </h2>
-          <p className="text-gray-500 text-sm">
+          <p className="text-sm" style={{ color: "#9b9990" }}>
             Everything you need to know about EasyToGive.
           </p>
         </div>
@@ -587,29 +635,29 @@ export default function HomeClient({
             return (
               <div
                 key={i}
-                className="bg-white rounded-xl md:rounded-2xl border overflow-hidden"
-                style={{ borderColor: "#e5e1d8" }}
+                className="bg-white rounded-xl border overflow-hidden"
+                style={{ borderColor: "#e8e5de" }}
               >
                 <button
                   onClick={() => setOpenFaq(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between px-6 py-4 text-left"
+                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
                 >
-                  <span className="font-semibold text-gray-900 text-sm pr-4">
+                  <span className="font-medium text-gray-900 text-sm pr-4">
                     {item.q}
                   </span>
                   <ChevronDown
-                    className="w-4 h-4 flex-shrink-0 transition-transform duration-200 text-gray-400"
-                    style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                    className="w-4 h-4 flex-shrink-0 transition-transform duration-200"
+                    style={{
+                      color: "#9b9990",
+                      transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
                   />
                 </button>
                 <div
-                  style={{
-                    maxHeight: isOpen ? "200px" : "0",
-                    opacity: isOpen ? 1 : 0,
-                  }}
+                  style={{ maxHeight: isOpen ? "200px" : "0", opacity: isOpen ? 1 : 0 }}
                   className="faq-content"
                 >
-                  <p className="px-6 pb-4 text-sm text-gray-600 leading-relaxed">
+                  <p className="px-6 pb-4 text-sm leading-relaxed" style={{ color: "#5c5b56" }}>
                     {item.a}
                   </p>
                 </div>
@@ -619,30 +667,33 @@ export default function HomeClient({
         </div>
       </section>
 
-      {/* ── CTA ───────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 md:pb-20">
+      {/* ── CTA — dark green ──────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 md:pb-24">
         <div
-          className="rounded-2xl md:rounded-3xl px-5 py-8 md:px-8 md:py-16 text-center"
-          style={{ backgroundColor: "#e8f5ee" }}
+          className="rounded-2xl md:rounded-3xl px-6 py-12 md:px-12 md:py-20 text-center"
+          style={{ backgroundColor: "#1a7a4a" }}
         >
-          <h2 className="font-display text-xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-3">
+          <h2 className="font-display text-2xl md:text-5xl text-white mb-3 md:mb-4">
             Start making your giving count.
           </h2>
-          <p className="text-gray-600 mb-5 md:mb-8 max-w-md mx-auto text-sm leading-relaxed">
+          <p
+            className="mb-8 md:mb-10 max-w-md mx-auto text-sm md:text-base leading-relaxed"
+            style={{ color: "#86efac" }}
+          >
             Start your giving portfolio in 2 minutes. Free forever — no fees for donors.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Link
               href="/get-started"
-              className="px-7 py-3 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90"
-              style={{ backgroundColor: "#1a7a4a" }}
+              className="px-7 py-3.5 rounded-full font-semibold text-sm transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "white", color: "#1a7a4a" }}
             >
-              Build My Portfolio →
+              Build My Portfolio
             </Link>
             <Link
               href="/discover"
-              className="px-7 py-3 rounded-full font-semibold text-sm border bg-white transition-all hover:bg-gray-50"
-              style={{ color: "#374151", borderColor: "#d1d5db" }}
+              className="px-7 py-3.5 rounded-full font-semibold text-sm border transition-colors hover:bg-white/10"
+              style={{ color: "white", borderColor: "rgba(255,255,255,0.35)" }}
             >
               Explore Organizations
             </Link>

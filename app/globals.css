@@ -1,17 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root {
+  /* Brand */
   --background: #faf9f6;
-  --foreground: #1c1c1e;
+  --foreground: #1a1a18;
   --primary: #1a7a4a;
-  --primary-dark: #155f3a;
+  --primary-dark: #155f39;
+  --primary-mid: #2d9d61;
   --primary-light: #e8f5ee;
   --navy: #0d1117;
   --cream: #faf9f6;
   --cream-dark: #f0ede6;
-  --muted: #6b7280;
-  --border: #e5e1d8;
+
+  /* Warm surface stack */
+  --surface: #ffffff;
+  --surface-2: #f5f4f0;
+  --surface-3: #efede8;
+  --warm-50: #fdf8f0;
+  --warm-100: #f5ede0;
+  --warm-amber: #c47c2a;
+
+  /* Text — warm not cold */
+  --text-primary: #1a1a18;
+  --text-secondary: #5c5b56;
+  --text-tertiary: #9b9990;
+
+  /* Borders — warm */
+  --border: #e8e5de;
+  --border-strong: #ccc9c0;
+
+  /* Legacy compat */
+  --muted: #5c5b56;
 }
 
 @theme inline {
@@ -20,6 +40,8 @@
   --color-primary: var(--primary);
   --color-navy: var(--navy);
   --color-cream: var(--cream);
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
 }
 
 * {
@@ -28,21 +50,45 @@
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--text-primary);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Display font (DM Serif Display) ── */
 .font-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'DM Serif Display', Georgia, serif;
 }
 
-/* Smooth scrolling */
+/* ── Mono font (DM Mono) ── */
+.font-mono-dm {
+  font-family: 'DM Mono', 'Courier New', monospace;
+}
+
+/* ── Warm green focus ring on all form controls ── */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(26, 122, 74, 0.12) !important;
+}
+
+/* ── Section divider — gradient fade instead of hard line ── */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border), transparent);
+  border: none;
+  margin: 0;
+}
+
+/* ── Smooth scrolling ── */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
+/* ── Custom scrollbar ── */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -54,32 +100,26 @@ html {
   border-radius: 3px;
 }
 
-/* Progress bar animation */
+/* ── Progress bar animation ── */
 @keyframes progress-fill {
   from { width: 0%; }
-  to { width: var(--progress-width); }
+  to   { width: var(--progress-width); }
 }
-
 .progress-animate {
   animation: progress-fill 1.2s ease-out forwards;
 }
 
-/* Card hover lift */
+/* ── Card hover lift — warm ── */
 .card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.18s ease;
 }
 .card-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(26, 122, 74, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(26, 122, 74, 0.08);
+  background-color: #fdf8f0;
 }
 
-/* Badge pulse */
-@keyframes badge-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-/* Infinite marquee / auto-scroll strip */
+/* ── Infinite marquee ── */
 @keyframes marquee {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -91,13 +131,13 @@ html {
   animation-play-state: paused;
 }
 
-/* Subcategory reveal animation (org signup) */
+/* ── Misc reveal animation ── */
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Bottom sheet slide-up (mobile checkout modal) */
+/* ── Bottom sheet slide-up (mobile checkout) ── */
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
@@ -109,26 +149,26 @@ html {
   .animate-slide-up { animation: none; }
 }
 
-/* FAQ accordion smooth height */
+/* ── FAQ accordion ── */
 .faq-content {
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.25s ease;
 }
 
-/* Focus visible — keyboard navigation indicator */
+/* ── Focus visible (keyboard nav) ── */
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Firefox scrollbar */
+/* ── Firefox scrollbar ── */
 * {
   scrollbar-width: thin;
   scrollbar-color: #c9c3b8 var(--cream);
 }
 
-/* Respect prefers-reduced-motion */
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .progress-animate,
