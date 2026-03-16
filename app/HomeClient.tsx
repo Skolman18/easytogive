@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -302,10 +302,10 @@ export default function HomeClient({
     loadUserData();
   }, [organizations]);
 
-  const visibleOrgs =
-    activeChip === "all"
-      ? organizations
-      : organizations.filter((o) => o.category === activeChip);
+  const visibleOrgs = useMemo(
+    () => activeChip === "all" ? organizations : organizations.filter((o) => o.category === activeChip),
+    [organizations, activeChip]
+  );
 
   return (
     <div className="bg-white">
@@ -697,6 +697,7 @@ export default function HomeClient({
         <div className="space-y-2">
           {FAQ_ITEMS.map((item, i) => {
             const isOpen = openFaq === i;
+            const panelId = `faq-panel-${i}`;
             return (
               <div
                 key={i}
@@ -705,13 +706,16 @@ export default function HomeClient({
               >
                 <button
                   onClick={() => setOpenFaq(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                  aria-expanded={isOpen}
+                  aria-controls={panelId}
+                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors min-h-[44px]"
                 >
                   <span className="font-medium text-gray-900 text-sm pr-4">
                     {item.q}
                   </span>
                   <ChevronDown
                     className="w-4 h-4 flex-shrink-0 transition-transform duration-200"
+                    aria-hidden="true"
                     style={{
                       color: "#9b9990",
                       transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
@@ -719,12 +723,16 @@ export default function HomeClient({
                   />
                 </button>
                 <div
-                  style={{ maxHeight: isOpen ? "200px" : "0", opacity: isOpen ? 1 : 0 }}
+                  id={panelId}
+                  role="region"
                   className="faq-content"
+                  style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
                 >
-                  <p className="px-6 pb-4 text-sm leading-relaxed" style={{ color: "#5c5b56" }}>
-                    {item.a}
-                  </p>
+                  <div className="min-h-0">
+                    <p className="px-6 pb-4 text-sm leading-relaxed" style={{ color: "#5c5b56" }}>
+                      {item.a}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
@@ -743,7 +751,7 @@ export default function HomeClient({
           </h2>
           <p
             className="mb-5 md:mb-7 max-w-md mx-auto text-sm md:text-base leading-relaxed"
-            style={{ color: "#86efac" }}
+            style={{ color: "#bbf7d0" }}
           >
             Start your giving portfolio in 2 minutes. Free forever — no fees for donors.
           </p>

@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Loader2, CheckCircle, Building2, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import PortfolioHealthCard from "@/components/PortfolioHealthCard";
@@ -38,7 +39,7 @@ export default function WalletPage() {
           className="min-h-screen flex items-center justify-center"
           style={{ backgroundColor: "#faf9f6" }}
         >
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} />
+          <Loader2 className="w-8 h-8 animate-spin" role="status" aria-label="Loading" style={{ color: "#1a7a4a" }} />
         </div>
       }
     >
@@ -143,7 +144,7 @@ function WalletPageInner() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveFilter(tab.id)}
-                  className={`px-4 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  className={`px-4 py-3.5 min-h-[44px] text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                     active
                       ? "border-green-600 text-green-700"
                       : "border-transparent text-gray-500 hover:text-gray-700"
@@ -230,10 +231,12 @@ function WalletPageInner() {
                   >
                     {/* Avatar */}
                     {photoUrl ? (
-                      <img
+                      <Image
                         src={photoUrl}
                         alt=""
-                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        width={40}
+                        height={40}
+                        className="rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
                       <div

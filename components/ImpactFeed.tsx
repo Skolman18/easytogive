@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Sparkles, Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 
@@ -174,7 +175,7 @@ export default function ImpactFeed({ userId, donatedOrgIds }: Props) {
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                   {item.org_image ? (
-                    <img src={item.org_image} alt="" className="w-full h-full object-cover" />
+                    <Image src={item.org_image} alt="" fill sizes="32px" className="object-cover" />
                   ) : (
                     <div
                       className="w-full h-full flex items-center justify-center"

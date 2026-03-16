@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import type React from "react";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -42,10 +43,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:text-white focus:no-underline"
+          style={{ backgroundColor: "#1a7a4a" } as React.CSSProperties}
+        >
+          Skip to main content
+        </a>
         <StagingBanner />
         <EditModeProvider>
           <Navbar />
-          <main className="min-h-screen">{children}</main>
+          <main id="main-content" className="min-h-screen">{children}</main>
           <Footer />
           <EditModeButton />
           <LocationPrompt />

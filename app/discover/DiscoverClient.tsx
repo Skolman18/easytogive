@@ -152,11 +152,14 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
 
           {/* Search bar */}
           <div className="relative mt-4 max-w-2xl">
+            <label htmlFor="discover-search" className="sr-only">Search organizations</label>
             <Search
               className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+              aria-hidden="true"
               style={{ color: "#9b9990" }}
             />
             <input
+              id="discover-search"
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -171,10 +174,11 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
             {query && (
               <button
                 onClick={() => setQuery("")}
+                aria-label="Clear search"
                 className="absolute right-4 top-1/2 -translate-y-1/2 hover:text-gray-600 transition-colors"
                 style={{ color: "#9b9990" }}
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -248,10 +252,12 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
 
         {/* ── Mobile: compact filter row ─────────────────────────────────── */}
         <div className="sm:hidden mb-3 flex gap-2">
+          <label htmlFor="mobile-sort" className="sr-only">Sort by</label>
           <select
+            id="mobile-sort"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="flex-1 text-xs border rounded-lg px-3 py-2 text-gray-700 outline-none focus:border-green-600 min-h-[44px]"
+            className="flex-1 text-xs border rounded-lg px-3 py-2 text-gray-700 outline-none min-h-[44px]"
             style={{ borderColor: "#e5e1d8" }}
           >
             {SORT_OPTIONS.map((o) => (
@@ -290,20 +296,23 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
             </span>
 
             <div className="relative">
+              <label htmlFor="location-filter" className="sr-only">Filter by location</label>
               <input
+                id="location-filter"
                 type="text"
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
                 placeholder="Filter by location…"
-                className="pl-3 pr-8 py-1.5 border rounded-lg text-sm outline-none focus:border-green-600 w-44"
+                className="pl-3 pr-8 py-1.5 border rounded-lg text-sm outline-none w-36 lg:w-44"
                 style={{ borderColor: "#e5e1d8" }}
               />
               {locationFilter && (
                 <button
                   onClick={() => setLocationFilter("")}
+                  aria-label="Clear location filter"
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -340,11 +349,12 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm" style={{ color: "#9b9990" }}>Sort by</span>
+            <label htmlFor="desktop-sort" className="text-sm" style={{ color: "#9b9990" }}>Sort by</label>
             <select
+              id="desktop-sort"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="text-sm border rounded-lg px-3 py-1.5 text-gray-700 outline-none focus:border-green-600 cursor-pointer"
+              className="text-sm border rounded-lg px-3 py-1.5 text-gray-700 outline-none cursor-pointer"
               style={{ borderColor: "#e5e1d8", backgroundColor: "white" }}
             >
               {SORT_OPTIONS.map((o) => (

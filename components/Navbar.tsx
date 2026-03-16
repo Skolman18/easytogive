@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Menu, X, Heart, LogOut } from "lucide-react";
@@ -111,7 +112,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3.5 py-3 rounded-lg text-sm font-medium transition-colors ${
                     pathname === link.href
                       ? "text-gray-900 bg-gray-100"
                       : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
@@ -135,7 +136,7 @@ export default function Navbar() {
                     style={{ backgroundColor: "#1a7a4a" }}
                   >
                     {profileAvatar
-                      ? <img src={profileAvatar} alt="" className="w-full h-full object-cover" />
+                      ? <Image src={profileAvatar} alt="" fill sizes="28px" className="object-cover" />
                       : initials}
                   </div>
                   <span className="max-w-[140px] truncate">{displayName}</span>
@@ -228,7 +229,7 @@ export default function Navbar() {
                     style={{ backgroundColor: "#1a7a4a" }}
                   >
                     {profileAvatar
-                      ? <img src={profileAvatar} alt="" className="w-full h-full object-cover" />
+                      ? <Image src={profileAvatar} alt="" fill sizes="28px" className="object-cover" />
                       : initials}
                   </div>
                   <span className="text-sm text-gray-600 truncate">{displayName}</span>

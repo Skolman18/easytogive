@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
   MapPin,
@@ -224,10 +225,13 @@ export default async function OrgPage({
       {/* ── Cover image ── */}
       <div className="relative h-40 md:h-64 lg:h-88 overflow-hidden bg-gray-900">
         {hasCover ? (
-          <img
+          <Image
             src={org.coverUrl}
             alt={org.name}
-            className="w-full h-full object-cover opacity-75"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover opacity-75"
           />
         ) : (
           // Gradient fallback when no cover photo
@@ -263,7 +267,7 @@ export default async function OrgPage({
               className="w-10 h-10 md:w-16 md:h-16 rounded-xl overflow-hidden border-2 border-white flex-shrink-0 bg-white"
               style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}
             >
-              <img src={org.imageUrl} alt={`${org.name} logo`} className="w-full h-full object-cover" />
+              <Image src={org.imageUrl} alt={`${org.name} logo`} fill sizes="64px" className="object-cover" />
             </div>
           )}
           <div className="flex items-center gap-2 pb-1">
@@ -527,10 +531,12 @@ export default async function OrgPage({
                   >
                     <div className="relative h-36 overflow-hidden bg-gray-100">
                       {r.imageUrl ? (
-                        <img
+                        <Image
                           src={r.imageUrl}
                           alt={r.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #0d1117, #1a7a4a)" }} />
@@ -586,12 +592,14 @@ export default async function OrgPage({
                     className="block group rounded-2xl border bg-white overflow-hidden card-hover"
                     style={{ borderColor: "#e5e1d8" }}
                   >
-                    <div className="h-36 overflow-hidden bg-gray-100">
+                    <div className="relative h-36 overflow-hidden bg-gray-100">
                       {r.imageUrl ? (
-                        <img
+                        <Image
                           src={r.imageUrl}
                           alt={r.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #0d1117, #1a7a4a)" }} />

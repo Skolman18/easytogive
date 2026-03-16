@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { MapPin, CheckCircle, Users, Plus, Check, Quote, ChevronDown } from "lucide-react";
 import { Organization, formatCurrency, getProgressPercent } from "@/lib/placeholder-data";
@@ -113,11 +114,12 @@ export default function OrgCard({
           style={{ background: "linear-gradient(135deg, #e8f5ee 0%, #f5f4f0 100%)" }}
         >
           {org.imageUrl ? (
-            <img
+            <Image
               src={org.imageUrl}
               alt={org.name}
-              loading="lazy"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">

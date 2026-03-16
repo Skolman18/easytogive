@@ -106,7 +106,7 @@ function SignInForm() {
                 </label>
                 <Link
                   href="/auth/forgot-password"
-                  className="text-xs font-medium hover:underline"
+                  className="text-xs font-medium hover:underline py-2 inline-block"
                   style={{ color: "#1a7a4a" }}
                 >
                   Forgot password?

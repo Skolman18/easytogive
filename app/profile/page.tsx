@@ -263,7 +263,7 @@ export default function ProfilePage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#faf9f6" }}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} />
+        <Loader2 className="w-8 h-8 animate-spin" role="status" aria-label="Loading" style={{ color: "#1a7a4a" }} />
       </div>
     }>
       <ProfilePageInner />
@@ -574,7 +574,7 @@ function ProfilePageInner() {
   if (loadingUser) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#faf9f6" }}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} />
+        <Loader2 className="w-8 h-8 animate-spin" role="status" aria-label="Loading" style={{ color: "#1a7a4a" }} />
       </div>
     );
   }

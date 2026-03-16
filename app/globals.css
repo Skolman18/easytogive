@@ -149,10 +149,13 @@ html {
   .animate-slide-up { animation: none; }
 }
 
-/* ── FAQ accordion ── */
+/* ── FAQ accordion (grid-template-rows trick: no reflow, no height cap) ── */
 .faq-content {
+  display: grid;
+  transition: grid-template-rows 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.faq-content > div {
   overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.25s ease;
 }
 
 /* ── Focus visible (keyboard nav) ── */

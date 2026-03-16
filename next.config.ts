@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      // Supabase storage
+      { protocol: "https", hostname: "*.supabase.co" },
+      // Any https host (for org logos stored externally)
+      { protocol: "https", hostname: "**" },
+    ],
+  },
   async redirects() {
     return [
       // Missionaries is a deferred feature — redirect to Discover for now

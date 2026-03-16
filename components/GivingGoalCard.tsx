@@ -213,7 +213,7 @@ export default function GivingGoalCard({ userId }: { userId: string }) {
           >
             <Target className="w-5 h-5" style={{ color: "#d1cdc4" }} />
           </div>
-          <h3 className="font-display font-bold text-gray-900 mb-1.5 text-sm">Set a Giving Goal</h3>
+          <h3 className="font-display text-gray-900 mb-1.5 text-sm">Set a Giving Goal</h3>
           <p className="text-xs text-gray-500 leading-relaxed">
             Research shows people who set giving goals give 3× more. Set yours for this year.
           </p>

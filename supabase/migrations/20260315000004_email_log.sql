@@ -18,10 +18,11 @@ CREATE TABLE IF NOT EXISTS email_log (
 ALTER TABLE email_log ENABLE ROW LEVEL SECURITY;
 
 -- Service role bypass — API routes use the service role key
+DROP POLICY IF EXISTS "service_role_email_log" ON email_log;
 CREATE POLICY "service_role_email_log" ON email_log
   USING (true) WITH CHECK (true);
 
 -- Index for the admin inbox view (newest first, by category)
-CREATE INDEX idx_email_log_received_at ON email_log (received_at DESC);
-CREATE INDEX idx_email_log_category    ON email_log (category);
-CREATE INDEX idx_email_log_priority    ON email_log (priority);
+CREATE INDEX IF NOT EXISTS idx_email_log_received_at ON email_log (received_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_log_category    ON email_log (category);
+CREATE INDEX IF NOT EXISTS idx_email_log_priority    ON email_log (priority);
