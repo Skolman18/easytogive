@@ -24,7 +24,14 @@ function SignInForm() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setError(error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid login") || msg.includes("invalid credentials") || msg.includes("wrong password") || msg.includes("email not confirmed")) {
+        setError("Incorrect email or password. Please try again.");
+      } else if (msg.includes("too many")) {
+        setError("Too many attempts. Please wait a few minutes and try again.");
+      } else {
+        setError("Sign-in failed. Please check your email and password.");
+      }
       setLoading(false);
     } else {
       // Only allow same-origin redirects to prevent open-redirect abuse.
@@ -93,12 +100,18 @@ function SignInForm() {
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-xs font-medium hover:underline"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 id="password"
                 type="password"

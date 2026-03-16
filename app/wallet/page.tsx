@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, CheckCircle, Clock, Building2 } from "lucide-react";
+import { Loader2, CheckCircle, Building2, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 
 function fmt(cents: number): string {
@@ -70,11 +70,11 @@ function WalletPageInner() {
       .select("id, amount, org_id, donated_at, receipt_id")
       .eq("user_id", userId)
       .order("donated_at", { ascending: false })
-      .limit(100);
+      .limit(200);
 
     const rows = data || [];
     if (rows.length > 0) {
-      const orgIds = [...new Set(rows.map((d: any) => d.org_id))];
+      const orgIds = [...new Set(rows.map((d: any) => d.org_id).filter(Boolean))];
       const { data: orgs } = await supabase
         .from("organizations")
         .select("id, name, image_url, category")
@@ -83,7 +83,14 @@ function WalletPageInner() {
       const orgMap: Record<string, any> = {};
       for (const org of orgs || []) orgMap[org.id] = org;
 
-      setDonations(rows.map((d: any) => ({ ...d, org: orgMap[d.org_id] || null })));
+      setDonations(rows.map((d: any) => ({
+        ...d,
+        org: orgMap[d.org_id] || null,
+        // Recurring donations have receipt IDs starting with "ETG-REC-"
+        recurring: (d.receipt_id as string | null)?.startsWith("ETG-REC-") ?? false,
+      })));
+    } else {
+      setDonations([]);
     }
 
     setLoading(false);
@@ -95,8 +102,8 @@ function WalletPageInner() {
     return true;
   });
 
-  const total = donations.reduce((s, d) => s + d.amount, 0);
-  const uniqueOrgs = new Set(donations.map((d) => d.org_id)).size;
+  const total = filtered.reduce((s, d) => s + d.amount, 0);
+  const uniqueOrgs = new Set(filtered.map((d) => d.org_id)).size;
 
   if (loading) {
     return (
@@ -149,7 +156,7 @@ function WalletPageInner() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Summary card */}
-        {total > 0 && (
+        {donations.length > 0 && (
           <div
             className="bg-white rounded-2xl border shadow-sm p-5"
             style={{ borderColor: "#e5e1d8" }}
@@ -159,8 +166,8 @@ function WalletPageInner() {
             </h2>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-700">
-                {donations.length} donation{donations.length !== 1 ? "s" : ""} to {uniqueOrgs} org
-                {uniqueOrgs !== 1 ? "s" : ""}
+                {filtered.length} donation{filtered.length !== 1 ? "s" : ""}
+                {uniqueOrgs > 0 && ` to ${uniqueOrgs} org${uniqueOrgs !== 1 ? "s" : ""}`}
               </span>
               <span className="font-display text-xl font-bold" style={{ color: "#1a7a4a" }}>
                 {fmt(total)}
@@ -238,10 +245,21 @@ function WalletPageInner() {
 
                     <div className="text-right flex-shrink-0">
                       <div className="font-semibold text-gray-900 text-sm">{fmt(d.amount)}</div>
-                      <div className="flex items-center gap-1 mt-0.5 justify-end">
-                        <CheckCircle className="w-3 h-3" style={{ color: "#1a7a4a" }} />
-                        <span className="text-xs text-gray-400">completed</span>
-                      </div>
+                      {d.receipt_id ? (
+                        <Link
+                          href={`/receipts/${encodeURIComponent(d.receipt_id)}`}
+                          className="flex items-center gap-1 mt-0.5 justify-end hover:underline"
+                          style={{ color: "#1a7a4a" }}
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span className="text-xs">receipt</span>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-1 mt-0.5 justify-end">
+                          <CheckCircle className="w-3 h-3" style={{ color: "#1a7a4a" }} />
+                          <span className="text-xs text-gray-400">completed</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

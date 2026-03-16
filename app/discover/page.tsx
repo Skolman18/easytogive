@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
+
+export const metadata: Metadata = {
+  title: "Discover Organizations | EasyToGive",
+  description: "Browse and support vetted nonprofits, churches, and local causes. Find organizations that match your values and give with confidence.",
+};
 import { ORGANIZATIONS, CATEGORIES } from "@/lib/placeholder-data";
 import type { Organization, Category } from "@/lib/placeholder-data";
 import type { OrganizationRow } from "@/lib/database.types";

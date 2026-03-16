@@ -67,7 +67,16 @@ export default function GiverSignupPage() {
     });
 
     if (error) {
-      setError(error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already exists")) {
+        setError("An account with this email already exists. Try signing in instead.");
+      } else if (msg.includes("password")) {
+        setError("Password doesn't meet requirements. Please choose a stronger password.");
+      } else if (msg.includes("invalid email")) {
+        setError("Please enter a valid email address.");
+      } else {
+        setError("Something went wrong creating your account. Please try again.");
+      }
       setLoading(false);
     } else {
       setSuccess(true);
@@ -280,7 +289,10 @@ export default function GiverSignupPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-5">
-          By creating an account you agree to our Terms of Service and Privacy Policy.
+          By creating an account you agree to our{" "}
+          <Link href="/terms" className="underline hover:text-gray-600">Terms of Service</Link>
+          {" "}and{" "}
+          <Link href="/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>.
         </p>
       </div>
     </div>
