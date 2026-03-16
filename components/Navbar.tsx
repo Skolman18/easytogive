@@ -63,7 +63,13 @@ export default function Navbar() {
       .eq("visible", true)
       .order("sort_order", { ascending: true })
       .then(({ data }: any) => {
-        if (data && data.length > 0) setNavLinks(data);
+        if (data && data.length > 0) {
+          // Merge: Supabase controls order/visibility, but always include
+          // any DEFAULT_NAV_LINKS not yet in the DB so new links never disappear.
+          const supabaseHrefs = new Set(data.map((l: any) => l.href));
+          const missing = DEFAULT_NAV_LINKS.filter((l) => !supabaseHrefs.has(l.href));
+          setNavLinks([...data, ...missing]);
+        }
       });
   }, []);
 
