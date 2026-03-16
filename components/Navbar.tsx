@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase-browser";
 
 const DEFAULT_NAV_LINKS = [
   { href: "/discover", label: "Discover" },
+  { href: "/features", label: "Features" },
   { href: "/portfolio", label: "My Portfolio" },
   { href: "/about", label: "About" },
   { href: "/tax-information", label: "Tax Information" },
