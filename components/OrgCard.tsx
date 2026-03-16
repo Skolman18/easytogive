@@ -108,13 +108,24 @@ export default function OrgCard({
       {/* Main card content — wrapped in Link */}
       <Link href={`/org/${org.id}`} className="flex-1 flex flex-col">
         {/* Image */}
-        <div className="relative h-32 md:h-36 overflow-hidden bg-gray-100 flex-shrink-0">
-          <img
-            src={org.imageUrl}
-            alt={org.name}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+        <div
+          className="relative h-32 md:h-36 overflow-hidden flex-shrink-0"
+          style={{ background: "linear-gradient(135deg, #e8f5ee 0%, #f5f4f0 100%)" }}
+        >
+          {org.imageUrl ? (
+            <img
+              src={org.imageUrl}
+              alt={org.name}
+              loading="lazy"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="font-display text-4xl select-none" style={{ color: "#1a7a4a" }}>
+                {org.name.charAt(0)}
+              </span>
+            </div>
+          )}
           <div className="absolute top-3 left-3 flex flex-col gap-1">
             <span
               className="px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -126,10 +137,14 @@ export default function OrgCard({
           {org.verified && (
             <div className="absolute top-3 right-3">
               <span
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-                style={{ backgroundColor: "#1a7a4a" }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                style={{
+                  backgroundColor: "white",
+                  color: "#1a7a4a",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
+                }}
               >
-                <CheckCircle className="w-3 h-3" />
+                <CheckCircle className="w-2.5 h-2.5" />
                 Verified
               </span>
             </div>
@@ -138,7 +153,7 @@ export default function OrgCard({
 
         {/* Content */}
         <div className="p-3 md:p-4 flex flex-col flex-1">
-          <h3 className="font-display font-semibold text-[13px] md:text-[15px] leading-tight mb-1 text-gray-900 group-hover:text-green-700 transition-colors">
+          <h3 className="font-display font-normal text-[14px] md:text-[15px] leading-tight mb-1 text-gray-900 group-hover:text-green-700 transition-colors">
             {org.name}
           </h3>
           <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">

@@ -297,18 +297,6 @@ export default function HomeClient({
 
           {/* Left: Text */}
           <div className="max-w-xl">
-            {/* Warm trust badge */}
-            <div
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-medium mb-3 md:mb-5"
-              style={{ backgroundColor: "#f5ede0", color: "#c47c2a" }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: "#1a7a4a" }}
-              />
-              Trusted giving — verified nonprofits only
-            </div>
-
             <EditableField
               settingKey="hero_headline"
               value={siteSettings?.hero_headline ?? "Give with purpose.\nGive with confidence."}
@@ -588,12 +576,12 @@ export default function HomeClient({
               },
             ].map((item) => (
               <div key={item.step} className="text-center md:text-left">
-                {/* Large decorative step number */}
+                {/* Numbered circle badge */}
                 <div
-                  className="font-display text-7xl md:text-8xl leading-none mb-2 select-none"
-                  style={{ color: "#e8f5ee" }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold mb-3 mx-auto md:mx-0"
+                  style={{ backgroundColor: "#1a7a4a" }}
                 >
-                  {item.step}
+                  {parseInt(item.step, 10)}
                 </div>
                 <h3 className="font-display text-xl md:text-2xl text-gray-900 mb-2">
                   {item.title}

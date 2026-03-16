@@ -131,54 +131,57 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
   const chipStyle = (active: boolean) =>
     active
       ? { backgroundColor: "#1a7a4a", color: "white" }
-      : { backgroundColor: "#e5e1d8", color: "#374151" };
+      : { backgroundColor: "#f5f4f0", color: "#5c5b56", border: "1px solid #e8e5de" };
 
   const subChipStyle = (active: boolean) =>
     active
       ? { backgroundColor: "#1a7a4a", color: "white" }
-      : { backgroundColor: "white", color: "#374151", border: "1px solid #d1d5db" };
+      : { backgroundColor: "#f5f4f0", color: "#5c5b56", border: "1px solid #e8e5de" };
 
   return (
     <div style={{ backgroundColor: "#faf9f6" }} className="min-h-screen">
-      {/* Page header */}
-      <div style={{ backgroundColor: "#0d1117" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-3 md:pt-12 md:pb-8">
-          <h1 className="font-display text-[22px] md:text-5xl font-bold text-white mb-1.5 md:mb-3">
+      {/* Page header — warm, seamless from nav */}
+      <div className="border-b" style={{ borderColor: "#e8e5de" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4 md:pt-10 md:pb-5">
+          <h1 className="font-display text-[26px] md:text-5xl text-gray-900 mb-1 md:mb-2">
             Discover Causes
           </h1>
-          <p className="text-gray-400 text-[15px] md:text-lg max-w-xl">
+          <p className="text-sm md:text-base max-w-xl" style={{ color: "#9b9990" }}>
             Browse {organizations.length}+ verified nonprofits, churches, and local causes.
           </p>
-        </div>
 
-        {/* Search bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-3 md:pb-6">
-          <div className="relative">
+          {/* Search bar */}
+          <div className="relative mt-4 max-w-2xl">
             <Search
-              className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5"
-              style={{ color: "#9ca3af" }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+              style={{ color: "#9b9990" }}
             />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, cause, or location…"
-              className="w-full pl-10 md:pl-12 pr-10 md:pr-12 py-2.5 md:py-4 rounded-xl text-gray-900 text-sm md:text-base outline-none border-2 border-transparent focus:border-green-600 transition-colors shadow-lg"
-              style={{ backgroundColor: "white" }}
+              placeholder="Search organizations..."
+              className="w-full pl-11 pr-10 rounded-full text-gray-900 text-sm outline-none transition-colors"
+              style={{
+                height: "48px",
+                backgroundColor: "white",
+                border: "1.5px solid #e8e5de",
+              }}
             />
             {query && (
               <button
                 onClick={() => setQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 hover:text-gray-600 transition-colors"
+                style={{ color: "#9b9990" }}
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
 
         {/* Causes pre-filter banner */}
         {causesBanner && (
@@ -280,9 +283,9 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
         </div>
 
         {/* ── Desktop: filters row (result count, location, verified, sort) ─ */}
-        <div className="hidden sm:flex items-center justify-between gap-4 mb-6">
+        <div className="hidden sm:flex items-center justify-between gap-4 mb-5">
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm" style={{ color: "#9b9990" }}>
               {filtered.length} result{filtered.length !== 1 ? "s" : ""}
             </span>
 
@@ -337,7 +340,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Sort by</span>
+            <span className="text-sm" style={{ color: "#9b9990" }}>Sort by</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -355,7 +358,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
 
         {/* Mobile result count */}
         <div className="sm:hidden flex items-center justify-between mb-4">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm" style={{ color: "#9b9990" }}>
             {filtered.length} result{filtered.length !== 1 ? "s" : ""}
           </span>
           {hasActiveFilters && (
@@ -378,19 +381,24 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
           </div>
         ) : (
           <div className="text-center py-20">
-            <div className="text-5xl mb-4">🔍</div>
-            <h3 className="font-display text-xl font-semibold text-gray-900 mb-2">
-              No results found
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: "#e8f5ee" }}
+            >
+              <Search className="w-5 h-5" style={{ color: "#1a7a4a" }} />
+            </div>
+            <h3 className="font-display text-xl text-gray-900 mb-2">
+              No organizations found
             </h3>
-            <p className="text-gray-500 mb-6">
-              Try adjusting your search or clearing the filters.
+            <p className="text-sm mb-6" style={{ color: "#9b9990" }}>
+              Try adjusting your search or browse all categories.
             </p>
             <button
               onClick={clearAll}
-              className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white"
+              className="px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: "#1a7a4a" }}
             >
-              Clear All Filters
+              Clear filters
             </button>
           </div>
         )}
