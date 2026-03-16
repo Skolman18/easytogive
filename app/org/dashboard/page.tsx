@@ -380,7 +380,7 @@ function OrgDashboardInner() {
 
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="font-display text-2xl font-bold text-gray-900">{org?.name}</h1>
+              <h1 className="font-display text-2xl text-gray-900">{org?.name}</h1>
               {org && (
                 <Link
                   href={`/org/${org.id}`}
@@ -506,7 +506,7 @@ function OrgDashboardInner() {
             <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
               <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
                 <CheckCircle className="w-4 h-4 text-gray-400" />
-                <h2 className="font-display font-semibold text-gray-900">Get started</h2>
+                <h2 className="font-display text-gray-900">Get started</h2>
                 <span className="ml-auto text-xs text-gray-400">
                   {steps.filter(s => s.done).length}/{steps.length} complete
                 </span>
@@ -568,7 +568,7 @@ function OrgDashboardInner() {
             },
           ].map((stat) => (
             <div key={stat.label} className="bg-white rounded-2xl border p-4" style={{ borderColor: "#e5e1d8" }}>
-              <div className="font-display text-xl font-bold text-gray-900">{stat.value}</div>
+              <div className="font-display text-2xl text-gray-900">{stat.value}</div>
               <div className="text-xs font-medium text-gray-600 mt-0.5">{stat.label}</div>
               <div className="text-xs text-gray-400">{stat.sub}</div>
             </div>
@@ -580,7 +580,7 @@ function OrgDashboardInner() {
           <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
             <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
               <DollarSign className="w-4 h-4 text-gray-500" />
-              <h2 className="font-display font-semibold text-gray-900">Recent Donations</h2>
+              <h2 className="font-display text-gray-900">Recent Donations</h2>
             </div>
             <div className="divide-y" style={{ borderColor: "#f0ede6" }}>
               {orgStats.recent_donations.map((d, i) => (
@@ -604,7 +604,7 @@ function OrgDashboardInner() {
             style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
           >
             <TrendingUp className="w-4 h-4 text-gray-500" />
-            <h2 className="font-display font-semibold text-gray-900">Impact Updates</h2>
+            <h2 className="font-display text-gray-900">Impact Updates</h2>
           </div>
           <div className="px-6 py-5 space-y-4">
             <p className="text-sm text-gray-500 leading-relaxed">
@@ -694,7 +694,7 @@ function OrgDashboardInner() {
             style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}
           >
             <DollarSign className="w-4 h-4 text-gray-500" />
-            <h2 className="font-display font-semibold text-gray-900">Bank Account &amp; Payouts</h2>
+            <h2 className="font-display text-gray-900">Bank Account &amp; Payouts</h2>
           </div>
 
           <div className="px-6 py-5">
@@ -863,7 +863,7 @@ function OrgDashboardInner() {
             >
               <div className="flex items-center gap-2">
                 <Pencil className="w-4 h-4 text-gray-500" />
-                <h2 className="font-display font-semibold text-gray-900">Edit Organization Profile</h2>
+                <h2 className="font-display text-gray-900">Edit Organization Profile</h2>
               </div>
               <button onClick={() => setEditOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-4 h-4" />
