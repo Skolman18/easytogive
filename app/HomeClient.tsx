@@ -557,7 +557,7 @@ export default function HomeClient({
             ))}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-8 md:mt-12">
             <Link
               href="/portfolio"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90"
@@ -587,7 +587,7 @@ export default function HomeClient({
             return (
               <div
                 key={i}
-                className="bg-white rounded-2xl border overflow-hidden"
+                className="bg-white rounded-xl md:rounded-2xl border overflow-hidden"
                 style={{ borderColor: "#e5e1d8" }}
               >
                 <button

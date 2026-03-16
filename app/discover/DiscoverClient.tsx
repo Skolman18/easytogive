@@ -248,7 +248,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="flex-1 text-xs border rounded-lg px-3 py-2 text-gray-700 outline-none focus:border-green-600 min-h-[36px]"
+            className="flex-1 text-xs border rounded-lg px-3 py-2 text-gray-700 outline-none focus:border-green-600 min-h-[44px]"
             style={{ borderColor: "#e5e1d8" }}
           >
             {SORT_OPTIONS.map((o) => (
@@ -257,7 +257,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
           </select>
           <button
             onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all whitespace-nowrap min-h-[44px]"
             style={
               showVerifiedOnly
                 ? { borderColor: "#1a7a4a", backgroundColor: "#e8f5ee", color: "#1a7a4a" }
@@ -273,7 +273,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
             Verified
           </button>
           {hasActiveFilters && (
-            <button onClick={clearAll} className="text-xs text-red-500 font-medium px-2 whitespace-nowrap">
+            <button onClick={clearAll} className="text-xs text-red-500 font-medium px-3 whitespace-nowrap min-h-[44px]">
               Clear
             </button>
           )}
@@ -359,7 +359,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
             {filtered.length} result{filtered.length !== 1 ? "s" : ""}
           </span>
           {hasActiveFilters && (
-            <button onClick={clearAll} className="text-sm text-red-500 font-medium">
+            <button onClick={clearAll} className="text-sm text-red-500 font-medium min-h-[44px] px-1">
               Clear all
             </button>
           )}

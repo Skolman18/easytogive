@@ -1050,7 +1050,7 @@ export default function PortfolioPage() {
             {recurringDonations.length === 0 && isValid && (
               <div className="mt-10 pb-2">
                 <div
-                  className="rounded-2xl border p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+                  className="rounded-xl md:rounded-2xl border p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4"
                   style={{ borderColor: "#e5e1d8", backgroundColor: "#faf9f6" }}
                 >
                   <div
@@ -1092,7 +1092,7 @@ export default function PortfolioPage() {
                   {recurringDonations.map((r) => (
                     <div
                       key={r.id}
-                      className="rounded-2xl border bg-white p-4 flex items-center justify-between gap-4"
+                      className="rounded-xl md:rounded-2xl border bg-white p-3.5 md:p-4 flex items-center justify-between gap-4"
                       style={{ borderColor: "#e5e1d8" }}
                     >
                       <div className="flex-1 min-w-0">

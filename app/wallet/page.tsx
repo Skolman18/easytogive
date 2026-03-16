@@ -158,7 +158,7 @@ function WalletPageInner() {
         {/* Summary card */}
         {donations.length > 0 && (
           <div
-            className="bg-white rounded-2xl border shadow-sm p-5"
+            className="bg-white rounded-xl md:rounded-2xl border shadow-sm p-4 md:p-5"
             style={{ borderColor: "#e5e1d8" }}
           >
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
@@ -184,7 +184,7 @@ function WalletPageInner() {
 
           {filtered.length === 0 ? (
             <div
-              className="bg-white rounded-2xl border shadow-sm p-10 text-center"
+              className="bg-white rounded-xl md:rounded-2xl border shadow-sm p-8 md:p-10 text-center"
               style={{ borderColor: "#e5e1d8" }}
             >
               <p className="text-gray-400 text-sm mb-3">No transactions found.</p>
@@ -198,7 +198,7 @@ function WalletPageInner() {
             </div>
           ) : (
             <div
-              className="bg-white rounded-2xl border shadow-sm overflow-hidden"
+              className="bg-white rounded-xl md:rounded-2xl border shadow-sm overflow-hidden"
               style={{ borderColor: "#e5e1d8" }}
             >
               {filtered.map((d, i) => {

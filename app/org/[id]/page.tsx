@@ -476,7 +476,7 @@ export default async function OrgPage({
             {/* Verification — only shown for verified orgs */}
             {org.verified && (
               <div
-                className="rounded-2xl border p-5 flex items-start gap-4"
+                className="rounded-xl md:rounded-2xl border p-4 md:p-5 flex items-start gap-4"
                 style={{ borderColor: "#86efac", backgroundColor: "#f0fdf4" }}
               >
                 <div

@@ -132,7 +132,8 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .progress-animate,
-  .card-hover {
+  .card-hover,
+  .animate-slide-up {
     animation: none !important;
     transition: none !important;
   }

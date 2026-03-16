@@ -65,7 +65,7 @@ function AddToPortfolioButton({ orgId }: { orgId: string }) {
     <button
       onClick={handleClick}
       disabled={loading}
-      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60"
+      className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 min-h-[44px]"
       style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
     >
       <Plus className="w-4 h-4" />
@@ -146,7 +146,7 @@ export default function OrgCard({
             {org.location}
           </p>
           {!compact && (
-            <p className="text-[13px] md:text-sm text-gray-600 mt-1.5 md:mt-2 leading-relaxed line-clamp-2">
+            <p className="text-sm text-gray-600 mt-1.5 md:mt-2 leading-relaxed line-clamp-2">
               {org.tagline}
             </p>
           )}
