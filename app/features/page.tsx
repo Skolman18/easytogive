@@ -68,7 +68,7 @@ const ORG_FEATURES = [
   {
     Icon: Building2,
     title: "GiveButter Integration",
-    desc: "Already on GiveButter? Connect your account and import your organization details, campaign stats, and donor counts directly — no copy-pasting required.",
+    desc: "Already on GiveButter? Connect your account and your profile, campaign stats, and donor data sync automatically — no duplicate data entry.",
   },
   {
     Icon: BarChart2,
@@ -180,6 +180,86 @@ export default function FeaturesPage() {
                 <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── GIVEBUTTER SPOTLIGHT ── */}
+      <section className="py-20 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+
+            {/* Text */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#1a7a4a" }}>
+                GiveButter Integration
+              </p>
+              <h2 className="font-display text-3xl text-gray-900 mb-5 leading-snug">
+                Already on GiveButter? You&apos;re already set up.
+              </h2>
+              <p className="text-gray-600 leading-relaxed mb-4">
+                Thousands of nonprofits and churches already run their fundraising on GiveButter.
+                EasyToGive connects directly to your GiveButter account so you don&apos;t have to
+                start from scratch.
+              </p>
+              <p className="text-gray-600 leading-relaxed mb-6">
+                Paste your GiveButter API key during signup and we&apos;ll pull in your organization
+                name, description, website, campaign totals, and supporter count — instantly. Your
+                profile on EasyToGive is pre-filled and ready to go in under a minute.
+              </p>
+
+              <ul className="space-y-3 mb-8">
+                {[
+                  "Auto-fill org name, description, and website from your GiveButter account",
+                  "Sync your live campaign raised amount, goal, and donor count",
+                  "Profile marked as GiveButter Connected — visible to donors",
+                  "Keep both platforms in sync without manual updates",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href="/signup/organization"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90"
+                style={{ backgroundColor: "#1a7a4a" }}
+              >
+                List your organization
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Visual */}
+            <div
+              className="rounded-2xl border p-8 space-y-4"
+              style={{ backgroundColor: "#f0ede6", borderColor: "#e5e1d8" }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">How it works</p>
+
+              {[
+                { step: "1", label: "Sign up as an organization", detail: "Takes 2 minutes — no credit card required." },
+                { step: "2", label: "Paste your GiveButter API key", detail: "Found in GiveButter → Settings → API." },
+                { step: "3", label: "We import your data", detail: "Name, mission, website, campaign stats — all pulled in automatically." },
+                { step: "4", label: "Review and submit", detail: "Fill in anything missing and submit for review. We&apos;ll have you live within 2 business days." },
+              ].map(({ step, label, detail }) => (
+                <div key={step} className="flex items-start gap-4">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    {step}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
           </div>
         </div>
       </section>
