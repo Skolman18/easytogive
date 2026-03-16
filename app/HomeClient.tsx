@@ -292,7 +292,7 @@ export default function HomeClient({
     <div className="bg-white">
 
       {/* ── HERO ──────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 md:pt-12 md:pb-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-6 md:pt-10 md:pb-10">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
 
           {/* Left: Text */}
@@ -301,7 +301,7 @@ export default function HomeClient({
               settingKey="hero_headline"
               value={siteSettings?.hero_headline ?? "Give with purpose.\nGive with confidence."}
               as="h1"
-              className="font-display text-[32px] md:text-[52px] lg:text-[62px] text-gray-900 leading-[1.08] mb-3 md:mb-5 tracking-tight"
+              className="font-display text-[32px] md:text-[52px] lg:text-[62px] text-gray-900 leading-[1.08] mb-2 md:mb-3 tracking-tight"
             />
 
             <EditableField
@@ -311,13 +311,13 @@ export default function HomeClient({
                 "Discover verified organizations you trust, build your giving portfolio, and manage every donation in one place. Free for donors, forever."
               }
               as="p"
-              className="text-[15px] md:text-lg leading-relaxed mb-5 md:mb-6 max-w-[480px]"
+              className="text-[15px] md:text-lg leading-relaxed mb-3 md:mb-4 max-w-[480px]"
               style={{ color: "#5c5b56" } as any}
               multiline
             />
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-5 md:mb-6">
+            <div className="flex flex-col sm:flex-row gap-3 mb-3 md:mb-4">
               <Link
                 href="/get-started"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] rounded-full font-semibold text-white text-sm transition-opacity hover:opacity-90 active:scale-95"
@@ -411,7 +411,7 @@ export default function HomeClient({
               Recommended for You
             </h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-4">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {recommendedOrgs.map((org) => (
               <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
@@ -495,7 +495,7 @@ export default function HomeClient({
 
         {/* Org cards */}
         {visibleOrgs.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-4">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {visibleOrgs.slice(0, 8).map((org) => (
               <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
@@ -532,7 +532,7 @@ export default function HomeClient({
               </span>
             )}
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-4">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {localOrgs.map((org) => (
               <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
@@ -543,7 +543,7 @@ export default function HomeClient({
       {/* ── HOW IT WORKS ──────────────────────────────────────────────── */}
       <section
         id="how-it-works"
-        className="py-8 md:py-14"
+        className="py-6 md:py-12"
         style={{ backgroundColor: "#faf9f6" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -607,7 +607,7 @@ export default function HomeClient({
       </section>
 
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         <div className="text-center mb-5 md:mb-8">
           <h2 className="font-display text-2xl md:text-5xl text-gray-900 mb-3">
             Frequently Asked Questions

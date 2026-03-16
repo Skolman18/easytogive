@@ -109,7 +109,7 @@ export default function OrgCard({
       <Link href={`/org/${org.id}`} className="flex-1 flex flex-col">
         {/* Image */}
         <div
-          className="relative h-32 md:h-36 overflow-hidden flex-shrink-0"
+          className="relative h-28 md:h-32 overflow-hidden flex-shrink-0"
           style={{ background: "linear-gradient(135deg, #e8f5ee 0%, #f5f4f0 100%)" }}
         >
           {org.imageUrl ? (
