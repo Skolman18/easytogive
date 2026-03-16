@@ -131,8 +131,8 @@ function WalletPageInner() {
       {/* Header */}
       <div className="bg-white border-b" style={{ borderColor: "#e5e1d8" }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
-          <h1 className="font-display text-xl md:text-3xl font-bold text-gray-900 mb-1">My Wallet</h1>
-          <p className="text-sm text-gray-500">Your giving history and transaction records</p>
+          <h1 className="font-display text-xl md:text-3xl text-gray-900 mb-1">My Giving Wallet</h1>
+          <p className="text-sm text-gray-500">See your impact. Track every gift.</p>
         </div>
         {/* Filter tabs */}
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -159,6 +159,16 @@ function WalletPageInner() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 space-y-4 md:space-y-8">
+
+        {/* Impact feed — centerpiece */}
+        <ImpactFeed
+          userId={userId}
+          donatedOrgIds={[...new Set(donations.map((d) => d.org_id).filter(Boolean))]}
+        />
+
+        {/* Portfolio health card */}
+        <PortfolioHealthCard userId={userId} />
+
         {/* Summary card */}
         {donations.length > 0 && (
           <div
@@ -173,22 +183,11 @@ function WalletPageInner() {
                 {filtered.length} donation{filtered.length !== 1 ? "s" : ""}
                 {uniqueOrgs > 0 && ` to ${uniqueOrgs} org${uniqueOrgs !== 1 ? "s" : ""}`}
               </span>
-              <span className="font-display text-3xl md:text-4xl font-bold" style={{ color: "#1a7a4a" }}>
+              <span className="font-display text-3xl md:text-4xl" style={{ color: "#1a7a4a" }}>
                 {fmt(total)}
               </span>
             </div>
           </div>
-        )}
-
-        {/* Portfolio health card */}
-        <PortfolioHealthCard userId={userId} />
-
-        {/* Impact feed */}
-        {donations.length > 0 && (
-          <ImpactFeed
-            userId={userId}
-            donatedOrgIds={[...new Set(donations.map((d) => d.org_id).filter(Boolean))]}
-          />
         )}
 
         {/* Transaction list */}
