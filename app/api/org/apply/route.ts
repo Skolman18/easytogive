@@ -47,8 +47,14 @@ export async function POST(req: NextRequest) {
   if (!org_name?.trim()) {
     return NextResponse.json({ error: "Organization name is required." }, { status: 400 });
   }
+  if (!contact_name?.trim()) {
+    return NextResponse.json({ error: "Contact name is required." }, { status: 400 });
+  }
   if (!email?.trim() || !email.includes("@")) {
     return NextResponse.json({ error: "A valid email address is required." }, { status: 400 });
+  }
+  if (!description?.trim()) {
+    return NextResponse.json({ error: "A brief description of your mission is required." }, { status: 400 });
   }
   if (!category?.trim()) {
     return NextResponse.json({ error: "Category is required." }, { status: 400 });

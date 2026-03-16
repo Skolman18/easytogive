@@ -12,13 +12,13 @@ export default function GetStartedPage() {
               className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ backgroundColor: "#1a7a4a" }}
             >
-              <Heart className="w-4.5 h-4.5 text-white fill-white" />
+              <Heart className="w-5 h-5 text-white fill-white" />
             </div>
-            <span className="font-display text-xl font-semibold text-gray-900">
+            <span className="font-display text-xl text-gray-900">
               EasyToGive
             </span>
           </div>
-          <h1 className="font-display text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="font-display text-4xl md:text-5xl text-gray-900 mb-4">
             How would you like to get started?
           </h1>
           <p className="text-gray-500 text-lg max-w-md mx-auto">
@@ -31,8 +31,7 @@ export default function GetStartedPage() {
           {/* Giver card */}
           <Link
             href="/signup/giver"
-            className="group relative flex flex-col p-8 rounded-3xl border-2 bg-white transition-all hover:border-green-500 hover:shadow-lg"
-            style={{ borderColor: "#e5e1d8" }}
+            className="group relative flex flex-col p-8 rounded-3xl border-2 border-[#e5e1d8] bg-white transition-all hover:border-[#1a7a4a] hover:shadow-lg"
           >
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 ease-out group-hover:scale-110"
@@ -41,7 +40,7 @@ export default function GetStartedPage() {
               <Heart className="w-7 h-7" style={{ color: "#1a7a4a" }} />
             </div>
 
-            <h2 className="font-display text-2xl font-bold text-gray-900 mb-3">
+            <h2 className="font-display text-2xl text-gray-900 mb-3">
               I want to give
             </h2>
             <p className="text-gray-500 text-sm leading-relaxed mb-6 flex-1">
@@ -52,7 +51,7 @@ export default function GetStartedPage() {
 
             <ul className="space-y-2 mb-8">
               {[
-                "Browse 12,400+ verified organizations",
+                "Browse verified organizations nationwide",
                 "Donate to multiple causes at once",
                 "One consolidated tax receipt",
                 "Track your impact over time",
@@ -76,17 +75,16 @@ export default function GetStartedPage() {
           {/* Org card */}
           <Link
             href="/signup/organization"
-            className="group relative flex flex-col p-8 rounded-3xl border-2 bg-white transition-all hover:border-blue-500 hover:shadow-lg"
-            style={{ borderColor: "#e5e1d8" }}
+            className="group relative flex flex-col p-8 rounded-3xl border-2 border-[#e5e1d8] bg-white transition-all hover:border-[#1a7a4a] hover:shadow-lg"
           >
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 ease-out group-hover:scale-110"
-              style={{ backgroundColor: "#eff6ff" }}
+              style={{ backgroundColor: "#e8f5ee" }}
             >
-              <Building2 className="w-7 h-7 text-blue-600" />
+              <Building2 className="w-7 h-7" style={{ color: "#1a7a4a" }} />
             </div>
 
-            <h2 className="font-display text-2xl font-bold text-gray-900 mb-3">
+            <h2 className="font-display text-2xl text-gray-900 mb-3">
               I represent an organization
             </h2>
             <p className="text-gray-500 text-sm leading-relaxed mb-6 flex-1">
@@ -103,13 +101,16 @@ export default function GetStartedPage() {
                 "Access donor insights",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 flex-shrink-0 text-blue-500" />
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#1a7a4a" }} />
                   {item}
                 </li>
               ))}
             </ul>
 
-            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white text-sm transition-all bg-blue-600 group-hover:opacity-90">
+            <div
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white text-sm transition-all group-hover:opacity-90"
+              style={{ backgroundColor: "#1a7a4a" }}
+            >
               Apply as an Organization
               <ArrowRight className="w-4 h-4" />
             </div>

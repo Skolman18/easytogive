@@ -67,7 +67,7 @@ function PreviewSuccessScreen({ form }: { form: Record<string, string> }) {
           >
             <CheckCircle className="w-10 h-10 text-yellow-600" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-gray-900 mb-1 text-center">
+          <h1 className="font-display text-3xl text-gray-900 mb-1 text-center">
             Preview: Application submitted
           </h1>
           <p className="text-center text-sm text-yellow-700 font-medium mb-6 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2">
@@ -172,6 +172,16 @@ function OrgSignupInner() {
       return;
     }
 
+    // Basic URL format check
+    if (form.website.trim()) {
+      try {
+        new URL(form.website.trim().startsWith("http") ? form.website.trim() : `https://${form.website.trim()}`);
+      } catch {
+        setError("Please enter a valid website URL (e.g. https://yourorg.org).");
+        return;
+      }
+    }
+
     // Preview mode: skip real Supabase write
     if (isPreview) {
       setSuccess(true);
@@ -181,27 +191,32 @@ function OrgSignupInner() {
     setLoading(true);
     setError(null);
 
-    const res = await fetch("/api/org/apply", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        org_name: form.orgName,
-        contact_name: form.contactName,
-        email: form.email,
-        website: form.website,
-        ein: form.ein,
-        category: form.category,
-        subcategory: effectiveSubcategory,
-        description: form.description,
-      }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/org/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          org_name: form.orgName,
+          contact_name: form.contactName,
+          email: form.email,
+          website: form.website,
+          ein: form.ein,
+          category: form.category,
+          subcategory: effectiveSubcategory,
+          description: form.description,
+        }),
+      });
+      const data = await res.json();
 
-    if (data.error) {
-      setError(data.error);
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setSuccess(true);
+      }
+    } catch {
+      setError("Something went wrong. Please check your connection and try again.");
+    } finally {
       setLoading(false);
-    } else {
-      setSuccess(true);
     }
   }
 
@@ -219,7 +234,7 @@ function OrgSignupInner() {
           >
             <CheckCircle className="w-10 h-10" style={{ color: "#1a7a4a" }} />
           </div>
-          <h1 className="font-display text-3xl font-bold text-gray-900 mb-3">
+          <h1 className="font-display text-3xl text-gray-900 mb-3">
             Application submitted!
           </h1>
           <p className="text-gray-500 mb-3">
@@ -273,11 +288,11 @@ function OrgSignupInner() {
               >
                 <Building2 className="w-4 h-4 text-white" />
               </div>
-              <span className="font-display text-xl font-semibold text-gray-900">
+              <span className="font-display text-xl text-gray-900">
                 EasyToGive
               </span>
             </Link>
-            <h1 className="font-display text-3xl font-bold text-gray-900 mt-6 mb-1">
+            <h1 className="font-display text-3xl text-gray-900 mt-6 mb-1">
               List your organization
             </h1>
             <p className="text-gray-500 text-sm max-w-sm mx-auto">
@@ -374,7 +389,7 @@ function OrgSignupInner() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {TOP_CATEGORIES.map(({ value, label, sublabel, Icon }) => {
                     const selected = form.category === value;
                     return (
@@ -448,8 +463,8 @@ function OrgSignupInner() {
                 </div>
               )}
 
-              {/* EIN */}
-              {einConfig.show && (
+              {/* EIN — only show after category is selected */}
+              {form.category && einConfig.show && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     EIN{" "}
