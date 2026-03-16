@@ -330,7 +330,7 @@ function OrgDashboardInner() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#faf9f6" }}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} role="status" aria-label="Loading dashboard" />
       </div>
     );
   }
@@ -466,7 +466,7 @@ function OrgDashboardInner() {
                   url.searchParams.delete("stripe");
                   window.history.replaceState({}, "", url.toString());
                 }}
-                className="p-1 rounded-md text-green-700 hover:bg-green-100 transition-colors flex-shrink-0"
+                className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md text-green-700 hover:bg-green-100 transition-colors flex-shrink-0"
                 aria-label="Dismiss"
               >
                 <X className="w-4 h-4" />
@@ -530,7 +530,7 @@ function OrgDashboardInner() {
                     {!step.done && step.action && (
                       <button
                         onClick={step.action}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+                        className="text-xs font-semibold px-3 py-2 min-h-[44px] rounded-lg flex-shrink-0 flex items-center"
                         style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
                       >
                         Start
@@ -621,7 +621,7 @@ function OrgDashboardInner() {
             {/* Existing updates */}
             {impactLoading ? (
               <div className="flex justify-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400" role="status" aria-label="Loading updates" />
               </div>
             ) : impactUpdates.length > 0 ? (
               <div className="space-y-3">
@@ -1020,7 +1020,7 @@ export default function OrgDashboardPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#faf9f6" }}>
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} />
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1a7a4a" }} role="status" aria-label="Loading" />
         </div>
       }
     >

@@ -237,7 +237,7 @@ export default function GiverSignupPage() {
                   return (
                     <label
                       key={interest.value}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer"
+                      className="px-3 py-2 rounded-full text-sm font-medium transition-all cursor-pointer"
                       style={
                         active
                           ? { backgroundColor: "#1a7a4a", color: "white" }

@@ -172,7 +172,7 @@ export default function Navbar() {
             {!user && (
               <Link
                 href="/get-started"
-                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white transition-all hover:opacity-90"
+                className="px-3.5 py-2 min-h-[44px] rounded-full text-xs font-semibold text-white transition-all hover:opacity-90 flex items-center"
                 style={{ backgroundColor: "#1a7a4a" }}
               >
                 Start Giving
@@ -190,7 +190,7 @@ export default function Navbar() {
               </Link>
             )}
             <button
-              className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
             >
