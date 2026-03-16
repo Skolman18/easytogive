@@ -9,6 +9,7 @@ import LocationPrompt from "@/components/LocationPrompt";
 import CookieConsent from "@/components/CookieConsent";
 import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 import StagingBanner from "@/components/StagingBanner";
+import ChatWidget from "@/components/ChatWidget";
 
 // ── Env var audit (warns at startup, never crashes) ──────────────────────────
 const REQUIRED_ENV_VARS = [
@@ -59,6 +60,7 @@ export default function RootLayout({
           <LocationPrompt />
           <CookieConsent />
           <AdminViewSwitcher />
+          <ChatWidget />
         </EditModeProvider>
       </body>
     </html>
