@@ -288,6 +288,59 @@ export async function sendReceiptEmail({
   }
 }
 
+export async function sendDigestEmail({
+  to,
+  digest,
+  urgentCount,
+}: {
+  to: string;
+  digest: string;
+  urgentCount: number;
+}): Promise<void> {
+  const resend = getResend();
+  if (!resend) return;
+
+  const subject =
+    urgentCount > 0
+      ? `🔴 ${urgentCount} urgent email${urgentCount > 1 ? "s" : ""} — EasyToGive inbox digest`
+      : `📬 EasyToGive inbox digest`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#faf9f6;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f6;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:white;border-radius:16px;border:1px solid #e5e1d8;overflow:hidden;">
+        <tr>
+          <td style="background:#0d1117;padding:24px 32px;">
+            <p style="margin:0;color:white;font-size:18px;font-weight:700;">EasyToGive</p>
+            <p style="margin:4px 0 0;color:#6b7280;font-size:13px;">Email Digest</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 32px;">
+            <pre style="margin:0;white-space:pre-wrap;font-family:Inter,Arial,sans-serif;font-size:14px;line-height:1.7;color:#374151;">${digest}</pre>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f9fafb;padding:14px 32px;border-top:1px solid #e5e1d8;text-align:center;">
+            <a href="https://easytogive.online/admin/email" style="color:#1a7a4a;font-size:13px;font-weight:600;text-decoration:none;">Open inbox →</a>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await resend.emails.send({ from: FROM, to: [to], subject, html });
+  } catch (err) {
+    console.error("Failed to send digest email:", err);
+  }
+}
+
 export async function sendApprovalEmail({
   to,
   orgName,
