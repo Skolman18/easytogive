@@ -145,12 +145,16 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
 
         {/* One-time / Recurring toggle */}
         <div
+          role="radiogroup"
+          aria-label="Donation type"
           className="flex rounded-xl p-1 mb-4"
           style={{ backgroundColor: "#f0ede6" }}
         >
           <button
+            role="radio"
+            aria-checked={!isRecurring}
             onClick={() => setIsRecurring(false)}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+            className="flex-1 py-3 min-h-[44px] rounded-lg text-sm font-semibold transition-all"
             style={
               !isRecurring
                 ? { backgroundColor: "white", color: "#111827", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
@@ -160,27 +164,31 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
             One-Time
           </button>
           <button
+            role="radio"
+            aria-checked={isRecurring}
             onClick={() => setIsRecurring(true)}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
+            className="flex-1 py-3 min-h-[44px] rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
             style={
               isRecurring
                 ? { backgroundColor: "white", color: "#111827", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
                 : { color: "#6b7280" }
             }
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
             Recurring
           </button>
         </div>
 
         {/* Frequency selector (when recurring) */}
         {isRecurring && (
-          <div className="grid grid-cols-2 gap-2 mb-4">
+          <div role="radiogroup" aria-label="Donation frequency" className="grid grid-cols-2 gap-2 mb-4">
             {FREQUENCIES.map((f) => (
               <button
                 key={f.value}
+                role="radio"
+                aria-checked={frequency === f.value}
                 onClick={() => setFrequency(f.value)}
-                className="py-2 rounded-lg text-xs font-semibold transition-all"
+                className="py-3 min-h-[44px] rounded-lg text-xs font-semibold transition-all"
                 style={
                   frequency === f.value
                     ? { backgroundColor: "#1a7a4a", color: "white" }
@@ -194,15 +202,17 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
         )}
 
         {/* Amount selector */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div role="radiogroup" aria-label="Donation amount" className="grid grid-cols-2 gap-2 mb-3">
           {QUICK_AMOUNTS.map((amt) => (
             <button
               key={amt}
+              role="radio"
+              aria-checked={!useCustom && selectedAmount === amt}
               onClick={() => {
                 setSelectedAmount(amt);
                 setUseCustom(false);
               }}
-              className="py-2 rounded-lg text-sm font-semibold transition-all"
+              className="py-3 min-h-[44px] rounded-lg text-sm font-semibold transition-all"
               style={
                 !useCustom && selectedAmount === amt
                   ? { backgroundColor: "#1a7a4a", color: "white" }
@@ -218,7 +228,7 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
         <div className="mb-4">
           <button
             onClick={() => setUseCustom(true)}
-            className="w-full py-2 rounded-lg text-sm font-semibold transition-all mb-2"
+            className="w-full py-3 min-h-[44px] rounded-lg text-sm font-semibold transition-all mb-2"
             style={
               useCustom
                 ? { backgroundColor: "#1a7a4a", color: "white" }

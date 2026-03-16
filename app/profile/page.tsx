@@ -28,7 +28,8 @@ import {
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-browser";
-import AdminPanel from "@/components/AdminPanel";
+import dynamic from "next/dynamic";
+const AdminPanel = dynamic(() => import("@/components/AdminPanel"), { ssr: false });
 import Toggle from "@/components/Toggle";
 import GivingGoalCard from "@/components/GivingGoalCard";
 import YourImpactSection from "@/components/YourImpactSection";

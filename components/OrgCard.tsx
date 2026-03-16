@@ -112,6 +112,7 @@ export default function OrgCard({
           <img
             src={org.imageUrl}
             alt={org.name}
+            loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute top-3 left-3 flex flex-col gap-1">
@@ -162,6 +163,7 @@ export default function OrgCard({
                 }}
                 className="w-full text-left cursor-pointer"
                 aria-expanded={storyOpen}
+                aria-controls={`story-${org.id}`}
               >
                 <div className="flex items-center justify-between py-2.5">
                   <div className="flex items-center gap-2">
@@ -187,6 +189,7 @@ export default function OrgCard({
               </button>
 
               <div
+                id={`story-${org.id}`}
                 className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
                 style={{ maxHeight: storyOpen ? 420 : 0 }}
               >

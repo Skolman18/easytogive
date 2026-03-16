@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -22,6 +22,11 @@ for (const key of REQUIRED_ENV_VARS) {
     console.warn(`[EasyToGive] WARNING: Required environment variable ${key} is not set.`);
   }
 }
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "EasyToGive — Charitable Giving, Simplified",

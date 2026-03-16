@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Elements,
   PaymentElement,
@@ -91,10 +91,11 @@ function PaymentForm({
 
       {errorMsg && (
         <div
+          role="alert"
           className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
           style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#dc2626" }}
         >
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
           {errorMsg}
         </div>
       )}
@@ -327,6 +328,7 @@ export default function CheckoutModal({
   const orgId = allocations[0]?.orgId;
   const orgName = singleOrgName ?? allocations[0]?.orgName ?? "";
   const feeAmount = Math.max(0.01, Math.round(amountDollars * 100 * 0.01) / 100);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   // Reset every time the modal opens
   useEffect(() => {
@@ -348,6 +350,39 @@ export default function CheckoutModal({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [isOpen, onClose]);
+
+  // Body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!isOpen || step === "loading") return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    first?.focus();
+
+    function trapFocus(e: KeyboardEvent) {
+      if (e.key !== "Tab") return;
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
+    }
+    dialog.addEventListener("keydown", trapFocus);
+    return () => dialog.removeEventListener("keydown", trapFocus);
+  }, [isOpen, step]);
 
   async function proceedToPayment() {
     const amountCents = Math.round(amountDollars * 100);
@@ -459,6 +494,10 @@ export default function CheckoutModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="checkout-dialog-title"
         className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
         style={{ maxHeight: "90vh", overflowY: "auto" }}
       >
@@ -468,7 +507,7 @@ export default function CheckoutModal({
           style={{ backgroundColor: "white", borderColor: "#e5e1d8" }}
         >
           <div>
-            <h2 className="font-display font-semibold text-lg text-gray-900 leading-tight">
+            <h2 id="checkout-dialog-title" className="font-display font-semibold text-lg text-gray-900 leading-tight">
               {title}
             </h2>
             {step !== "success" && (
@@ -591,10 +630,11 @@ export default function CheckoutModal({
 
               {fetchError && (
                 <div
+                  role="alert"
                   className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
                   style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#dc2626" }}
                 >
-                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                   {fetchError}
                 </div>
               )}

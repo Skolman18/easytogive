@@ -226,39 +226,45 @@ export default function GiverSignupPage() {
             </div>
 
             {/* Interests */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <fieldset>
+              <legend className="block text-sm font-medium text-gray-700 mb-2">
                 Giving interests{" "}
                 <span className="text-gray-400 font-normal">(select all that apply)</span>
-              </label>
+              </legend>
               <div className="flex flex-wrap gap-2">
                 {INTERESTS.map((interest) => {
                   const active = form.interests.includes(interest.value);
                   return (
-                    <button
+                    <label
                       key={interest.value}
-                      type="button"
-                      onClick={() => toggleInterest(interest.value)}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
+                      className="px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer"
                       style={
                         active
                           ? { backgroundColor: "#1a7a4a", color: "white" }
                           : { backgroundColor: "#f3f4f6", color: "#374151" }
                       }
                     >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={active}
+                        onChange={() => toggleInterest(interest.value)}
+                        value={interest.value}
+                      />
                       {interest.label}
-                    </button>
+                    </label>
                   );
                 })}
               </div>
-            </div>
+            </fieldset>
 
             {error && (
               <div
+                role="alert"
                 className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
                 style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#dc2626" }}
               >
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                 {error}
               </div>
             )}

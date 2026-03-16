@@ -96,3 +96,26 @@ html {
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.25s ease;
 }
+
+/* Focus visible — keyboard navigation indicator */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c9c3b8 var(--cream);
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .progress-animate,
+  .card-hover {
+    animation: none !important;
+    transition: none !important;
+  }
+}
