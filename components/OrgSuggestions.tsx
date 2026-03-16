@@ -80,7 +80,7 @@ export default function OrgSuggestions({ userId, currentOrgIds, onAddOrg }: Prop
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, currentPortfolioOrgIds: currentOrgIds }),
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("non-ok"); return r.json(); })
       .then(({ suggestions: s }) => {
         if (s?.length) {
           setSuggestions(s);

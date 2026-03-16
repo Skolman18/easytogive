@@ -38,9 +38,9 @@ function AddToPortfolioButton({ orgId }: { orgId: string }) {
         return;
       }
       await (supabase as any)
-        .from("portfolio_allocations")
+        .from("portfolio_orgs")
         .upsert(
-          { user_id: userData.user.id, org_id: orgId, percentage: 0 },
+          { user_id: userData.user.id, org_id: orgId, allocation: 0 },
           { onConflict: "user_id,org_id" }
         );
       setAdded(true);

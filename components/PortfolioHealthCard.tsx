@@ -57,7 +57,7 @@ export default function PortfolioHealthCard({ userId }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("non-ok"); return r.json(); })
       .then(({ analysis: a }) => {
         if (a) setAnalysis(a);
       })

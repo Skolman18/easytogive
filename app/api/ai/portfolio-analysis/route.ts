@@ -111,7 +111,8 @@ Respond with JSON only:
     });
 
     const text = message.content[0].type === "text" ? message.content[0].text : "{}";
-    const analysis: PortfolioAnalysis = JSON.parse(text);
+    let analysis: PortfolioAnalysis;
+    try { analysis = JSON.parse(text); } catch { return NextResponse.json({ analysis: null }); }
 
     // Cache result on user profile
     await supabase

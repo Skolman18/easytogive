@@ -75,7 +75,8 @@ Respond with JSON only:
     });
 
     const text = message.content[0].type === "text" ? message.content[0].text : "{}";
-    const result = JSON.parse(text);
+    let result: any = {};
+    try { result = JSON.parse(text); } catch { result = {}; }
 
     const summary: string = result.summary ?? "";
     const statHighlight: string = result.statHighlight ?? "";

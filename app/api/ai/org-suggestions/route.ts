@@ -99,7 +99,8 @@ Respond with JSON only:
     });
 
     const text = message.content[0].type === "text" ? message.content[0].text : "{}";
-    const parsed = JSON.parse(text);
+    let parsed: any = {};
+    try { parsed = JSON.parse(text); } catch { parsed = {}; }
     const raw: { orgId: string; orgName: string; reason: string }[] =
       parsed.suggestions ?? [];
 
