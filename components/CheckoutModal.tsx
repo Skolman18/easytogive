@@ -489,7 +489,7 @@ export default function CheckoutModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center md:p-4"
       style={{ backgroundColor: "rgba(13,17,23,0.7)", backdropFilter: "blur(4px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -498,12 +498,17 @@ export default function CheckoutModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="checkout-dialog-title"
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
-        style={{ maxHeight: "90vh", overflowY: "auto" }}
+        className="animate-slide-up relative w-full md:max-w-md bg-white rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden"
+        style={{ maxHeight: "92vh", overflowY: "auto" }}
       >
+        {/* Drag handle — mobile only */}
+        <div className="md:hidden flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full" style={{ backgroundColor: "#d1d5db" }} />
+        </div>
+
         {/* Header */}
         <div
-          className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b"
+          className="sticky top-0 z-10 flex items-center justify-between px-5 md:px-6 py-3.5 md:py-4 border-b"
           style={{ backgroundColor: "white", borderColor: "#e5e1d8" }}
         >
           <div>
@@ -526,7 +531,7 @@ export default function CheckoutModal({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5">
+        <div className="px-5 md:px-6 py-4 md:py-5 pb-8 md:pb-5">
 
           {/* ── Configure ── */}
           {step === "configure" && (

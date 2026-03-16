@@ -612,7 +612,7 @@ function ProfilePageInner() {
 
             {/* Name + email */}
             <div className="min-w-0 flex-1">
-              <h1 className="font-display text-2xl font-bold text-gray-900 leading-tight">
+              <h1 className="font-display text-xl md:text-2xl font-bold text-gray-900 leading-tight">
                 {displayName}
               </h1>
               <p className="text-sm text-gray-500 mt-0.5">{user?.email}</p>
@@ -663,7 +663,7 @@ function ProfilePageInner() {
       </div>
 
       {/* ── Tab Content ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
 
         {/* Giving History — 2-column layout */}
         {activeTab === "history" && (

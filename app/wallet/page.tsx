@@ -126,8 +126,8 @@ function WalletPageInner() {
     <div className="min-h-screen" style={{ backgroundColor: "#faf9f6" }}>
       {/* Header */}
       <div className="bg-white border-b" style={{ borderColor: "#e5e1d8" }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="font-display text-3xl font-bold text-gray-900 mb-1">My Wallet</h1>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+          <h1 className="font-display text-xl md:text-3xl font-bold text-gray-900 mb-1">My Wallet</h1>
           <p className="text-sm text-gray-500">Your giving history and transaction records</p>
         </div>
         {/* Filter tabs */}
@@ -154,7 +154,7 @@ function WalletPageInner() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 space-y-4 md:space-y-8">
         {/* Summary card */}
         {donations.length > 0 && (
           <div
@@ -209,7 +209,7 @@ function WalletPageInner() {
                 return (
                   <div
                     key={d.id}
-                    className={`px-5 py-4 flex items-center gap-4 ${
+                    className={`px-4 py-3 md:px-5 md:py-4 flex items-center gap-3 md:gap-4 ${
                       i < filtered.length - 1 ? "border-b" : ""
                     }`}
                     style={{ borderColor: "#f5f3ef" }}

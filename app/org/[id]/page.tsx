@@ -222,7 +222,7 @@ export default async function OrgPage({
       <OrgAdminBar orgId={id} orgName={org.name} />
 
       {/* ── Cover image ── */}
-      <div className="relative h-64 md:h-88 overflow-hidden bg-gray-900">
+      <div className="relative h-40 md:h-64 lg:h-88 overflow-hidden bg-gray-900">
         {hasCover ? (
           <img
             src={org.coverUrl}
@@ -260,7 +260,7 @@ export default async function OrgPage({
           {/* Logo avatar — only shown when logo differs from cover */}
           {showLogoAvatar && (
             <div
-              className="w-16 h-16 rounded-xl overflow-hidden border-2 border-white flex-shrink-0 bg-white"
+              className="w-10 h-10 md:w-16 md:h-16 rounded-xl overflow-hidden border-2 border-white flex-shrink-0 bg-white"
               style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}
             >
               <img src={org.imageUrl} alt={`${org.name} logo`} className="w-full h-full object-cover" />
@@ -287,7 +287,7 @@ export default async function OrgPage({
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-3 gap-8 py-8">
+        <div className="grid lg:grid-cols-3 gap-4 md:gap-8 py-4 md:py-8">
 
           {/* ── Main content ── */}
           <div className="lg:col-span-2 space-y-6 order-1 lg:order-none">
@@ -300,7 +300,7 @@ export default async function OrgPage({
                   field="name"
                   value={org.name}
                   as="h1"
-                  className="font-display text-3xl md:text-4xl font-bold text-gray-900 leading-tight"
+                  className="font-display text-[22px] md:text-3xl font-bold text-gray-900 leading-tight"
                 />
               </div>
 
@@ -310,7 +310,7 @@ export default async function OrgPage({
                   field="tagline"
                   value={org.tagline}
                   as="p"
-                  className="text-lg text-gray-500 mb-3 leading-snug"
+                  className="text-sm md:text-lg text-gray-500 mb-3 leading-snug"
                 />
               )}
 
@@ -372,7 +372,7 @@ export default async function OrgPage({
             {/* About */}
             {org.description?.trim() && (
               <div
-                className="rounded-2xl border bg-white p-6"
+                className="rounded-xl md:rounded-2xl border bg-white p-4 md:p-6"
                 style={{ borderColor: "#e5e1d8" }}
               >
                 <h2 className="font-display text-lg font-semibold text-gray-900 mb-3">
@@ -392,7 +392,7 @@ export default async function OrgPage({
             {/* Our Story */}
             {(org as any).ourStory?.trim() && (
               <div
-                className="rounded-2xl border bg-white p-6"
+                className="rounded-xl md:rounded-2xl border bg-white p-4 md:p-6"
                 style={{ borderColor: "#e5e1d8" }}
               >
                 <div className="flex items-start gap-3">
@@ -428,7 +428,7 @@ export default async function OrgPage({
             {/* Impact Stats */}
             {displaySettings.show_impact_stats && org.impactStats && org.impactStats.length > 0 && (
               <div
-                className="rounded-2xl border bg-white p-6"
+                className="rounded-xl md:rounded-2xl border bg-white p-4 md:p-6"
                 style={{ borderColor: "#e5e1d8" }}
               >
                 <h2 className="font-display text-lg font-semibold text-gray-900 mb-4">

@@ -238,13 +238,13 @@ export default function HomeClient({
     <div className="bg-white">
 
       {/* ── HERO ──────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10 md:pt-20 md:pb-16">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-6 md:pt-20 md:pb-16">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
 
           {/* Left: Text */}
           <div className="max-w-xl">
             <div
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 uppercase tracking-wide"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-3 md:mb-5 uppercase tracking-wide"
               style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -255,7 +255,7 @@ export default function HomeClient({
               settingKey="hero_headline"
               value={siteSettings?.hero_headline ?? "The Marketplace for Giving."}
               as="h1"
-              className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-[1.1] mb-5"
+              className="font-display text-[22px] md:text-5xl lg:text-6xl font-bold text-gray-900 leading-[1.1] mb-3 md:mb-5"
             />
 
             <EditableField
@@ -265,15 +265,15 @@ export default function HomeClient({
                 "Discover verified organizations, churches, and missionaries. Build your giving portfolio and donate to multiple causes with one simple transaction."
               }
               as="p"
-              className="text-lg text-gray-500 leading-relaxed mb-8 max-w-[480px]"
+              className="text-[15px] md:text-lg text-gray-500 leading-relaxed mb-5 md:mb-8 max-w-[480px]"
               multiline
             />
 
             {/* CTA buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-8">
+            <div className="flex flex-col sm:flex-row gap-2.5 mb-5 md:mb-8">
               <Link
                 href="/discover"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-white text-sm transition-all hover:opacity-90 active:scale-95"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 md:px-6 md:py-3.5 min-h-[44px] rounded-full font-semibold text-white text-sm transition-all hover:opacity-90 active:scale-95"
                 style={{ backgroundColor: "#1a7a4a" }}
               >
                 Explore Organizations
@@ -281,7 +281,7 @@ export default function HomeClient({
               </Link>
               <a
                 href="#how-it-works"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm border transition-all hover:bg-gray-50"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 md:px-6 md:py-3.5 min-h-[44px] rounded-full font-semibold text-sm border transition-all hover:bg-gray-50"
                 style={{ color: "#1a7a4a", borderColor: "#1a7a4a" }}
               >
                 How It Works
@@ -289,14 +289,14 @@ export default function HomeClient({
             </div>
 
             {/* Trust indicators */}
-            <div className="flex flex-wrap gap-4 sm:gap-6">
+            <div className="flex flex-wrap gap-3 sm:gap-6">
               {[
                 { icon: ShieldCheck, label: "Every org is verified" },
                 { icon: Receipt, label: "One tax receipt" },
                 { icon: RefreshCw, label: "Recurring giving" },
               ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-center gap-1.5 text-sm text-gray-500">
-                  <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "#1a7a4a" }} />
+                <div key={label} className="flex items-center gap-1.5 text-xs md:text-sm text-gray-500">
+                  <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
                   {label}
                 </div>
               ))}
@@ -338,8 +338,8 @@ export default function HomeClient({
           className="border-b"
           style={{ borderColor: "#f0ede6" }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-            <div className="flex flex-wrap justify-center gap-x-12 gap-y-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-10">
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 md:gap-x-12 md:gap-y-6">
               {[
                 { value: `${orgCountAnim.toLocaleString()}+`, label: "Verified Organizations" },
                 stats.userCount > 0
@@ -350,7 +350,7 @@ export default function HomeClient({
                 .filter(Boolean)
                 .map((s) => (
                   <div key={s!.label} className="text-center">
-                    <div className="font-display text-2xl md:text-3xl font-bold text-gray-900 mb-1">
+                    <div className="font-display text-xl md:text-3xl font-bold text-gray-900 mb-0.5 md:mb-1">
                       {s!.value}
                     </div>
                     <div className="text-xs text-gray-500">{s!.label}</div>
@@ -363,19 +363,19 @@ export default function HomeClient({
 
       {/* ── RECOMMENDED FOR YOU ───────────────────────────────────────── */}
       {recommendedOrgs.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-2">
-          <div className="flex items-center gap-2 mb-6">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 md:pt-10 pb-2">
+          <div className="flex items-center gap-2 mb-3 md:mb-6">
             <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              className="w-6 h-6 md:w-7 md:h-7 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: "#e8f5ee" }}
             >
-              <Heart className="w-4 h-4" style={{ color: "#1a7a4a" }} />
+              <Heart className="w-3.5 h-3.5 md:w-4 md:h-4" style={{ color: "#1a7a4a" }} />
             </div>
-            <h2 className="font-display text-2xl font-bold text-gray-900">
+            <h2 className="font-display text-lg md:text-2xl font-bold text-gray-900">
               Recommended for You
             </h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-5">
             {recommendedOrgs.map((org) => (
               <OrgCard key={org.id} org={org} displaySettings={displaySettingsMap?.[org.id]} />
             ))}
@@ -384,13 +384,13 @@ export default function HomeClient({
       )}
 
       {/* ── BROWSE ORGANIZATIONS ──────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-end justify-between mb-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
+        <div className="flex items-end justify-between mb-4 md:mb-8">
           <div>
-            <h2 className="font-display text-3xl font-bold text-gray-900">
+            <h2 className="font-display text-xl md:text-3xl font-bold text-gray-900">
               Browse Organizations
             </h2>
-            <p className="text-gray-500 mt-1 text-sm">
+            <p className="text-gray-500 mt-0.5 text-xs md:text-sm">
               Every organization is verified for transparency and impact.
             </p>
           </div>
@@ -432,7 +432,7 @@ export default function HomeClient({
 
         {/* Category chips — horizontal scroll */}
         <div
-          className="flex gap-2 overflow-x-auto pb-2 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap"
+          className="flex gap-2 overflow-x-auto pb-2 mb-4 md:mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap"
           style={{ scrollbarWidth: "none" }}
         >
           {CHIPS.map((chip) => {
@@ -441,7 +441,7 @@ export default function HomeClient({
               <button
                 key={chip.value}
                 onClick={() => setActiveChip(chip.value)}
-                className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap"
+                className="flex-shrink-0 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap"
                 style={
                   active
                     ? { backgroundColor: "#1a7a4a", color: "white" }
@@ -456,7 +456,7 @@ export default function HomeClient({
 
         {/* Org cards */}
         {visibleOrgs.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-5">
             {visibleOrgs.slice(0, 9).map((org) => (
               <OrgCard
                 key={org.id}
@@ -471,7 +471,7 @@ export default function HomeClient({
           </div>
         )}
 
-        <div className="mt-10 text-center">
+        <div className="mt-6 md:mt-10 text-center">
           <Link
             href="/discover"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold border transition-all hover:bg-gray-50"
@@ -485,17 +485,17 @@ export default function HomeClient({
 
       {/* ── LOCAL TO YOU ──────────────────────────────────────────────── */}
       {localOrgs.length > 0 && (
-        <section className="pb-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 mb-6">
-            <MapPin className="w-5 h-5" style={{ color: "#1a7a4a" }} />
-            <h2 className="font-display text-2xl font-bold text-gray-900">
+        <section className="pb-6 md:pb-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2 mb-3 md:mb-6">
+            <MapPin className="w-4 h-4 md:w-5 md:h-5" style={{ color: "#1a7a4a" }} />
+            <h2 className="font-display text-lg md:text-2xl font-bold text-gray-900">
               Local to You
             </h2>
             {userCity && (
               <span className="text-sm text-gray-500 ml-1">near {userCity}</span>
             )}
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-5">
             {localOrgs.map((org) => (
               <OrgCard
                 key={org.id}
@@ -510,12 +510,12 @@ export default function HomeClient({
       {/* ── HOW IT WORKS ──────────────────────────────────────────────── */}
       <section
         id="how-it-works"
-        className="py-20"
+        className="py-10 md:py-20"
         style={{ backgroundColor: "#faf9f6" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="font-display text-4xl font-bold text-gray-900 mb-3">
+          <div className="text-center mb-6 md:mb-14">
+            <h2 className="font-display text-xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-3">
               How EasyToGive Works
             </h2>
             <p className="text-gray-500 max-w-md mx-auto text-sm leading-relaxed">
@@ -524,7 +524,7 @@ export default function HomeClient({
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-10">
+          <div className="grid md:grid-cols-3 gap-6 md:gap-10">
             {[
               {
                 step: "01",
@@ -544,15 +544,15 @@ export default function HomeClient({
             ].map((item) => (
               <div key={item.step} className="text-center">
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-5 font-bold text-sm text-white"
+                  className="w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-5 font-bold text-xs md:text-sm text-white"
                   style={{ backgroundColor: "#1a7a4a" }}
                 >
                   {item.step}
                 </div>
-                <h3 className="font-display text-lg font-semibold mb-2 text-gray-900">
+                <h3 className="font-display text-[15px] md:text-lg font-semibold mb-1 md:mb-2 text-gray-900">
                   {item.title}
                 </h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+                <p className="text-gray-500 text-xs md:text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -571,9 +571,9 @@ export default function HomeClient({
       </section>
 
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center mb-10">
-          <h2 className="font-display text-4xl font-bold text-gray-900 mb-3">
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-20">
+        <div className="text-center mb-6 md:mb-10">
+          <h2 className="font-display text-xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-3">
             Frequently Asked Questions
           </h2>
           <p className="text-gray-500 text-sm">
@@ -620,15 +620,15 @@ export default function HomeClient({
       </section>
 
       {/* ── CTA ───────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 md:pb-20">
         <div
-          className="rounded-3xl px-8 py-16 text-center"
+          className="rounded-2xl md:rounded-3xl px-5 py-8 md:px-8 md:py-16 text-center"
           style={{ backgroundColor: "#e8f5ee" }}
         >
-          <h2 className="font-display text-4xl font-bold text-gray-900 mb-3">
+          <h2 className="font-display text-xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-3">
             Start making your giving count.
           </h2>
-          <p className="text-gray-600 mb-8 max-w-md mx-auto text-sm leading-relaxed">
+          <p className="text-gray-600 mb-5 md:mb-8 max-w-md mx-auto text-sm leading-relaxed">
             Start your giving portfolio in 2 minutes. Free forever — no fees for donors.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">

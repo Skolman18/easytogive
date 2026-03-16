@@ -87,7 +87,7 @@ export default function OrgDonateSidebar({ org, displaySettings }: Props) {
   return (
     <>
       <div
-        className="bg-white rounded-2xl border p-6 sticky top-20"
+        className="bg-white rounded-xl md:rounded-2xl border p-4 md:p-6 sticky top-20"
         style={{ borderColor: "#e5e1d8" }}
       >
         {/* Progress */}

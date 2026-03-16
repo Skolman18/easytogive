@@ -660,13 +660,13 @@ export default function PortfolioPage() {
           </div>
         ) : (
           /* ── Portfolio layout ──────────────────────────────────────────── */
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid lg:grid-cols-5 gap-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+            <div className="grid lg:grid-cols-5 gap-4 md:gap-8">
 
               {/* ── Left: Donut chart (40%) ─────────────────────────────── */}
               <div className="lg:col-span-2">
                 <div
-                  className="rounded-2xl border p-6 sticky top-20"
+                  className="rounded-xl md:rounded-2xl border p-4 md:p-6 sticky top-20"
                   style={{ borderColor: "#e5e1d8" }}
                 >
                   <h2 className="font-semibold text-gray-900 mb-5 text-sm uppercase tracking-wide">
@@ -747,13 +747,13 @@ export default function PortfolioPage() {
                   return (
                     <div
                       key={org.orgId}
-                      className="rounded-2xl border bg-white p-5"
+                      className="rounded-xl md:rounded-2xl border bg-white p-3.5 md:p-5"
                       style={{ borderColor: "#e5e1d8" }}
                     >
                       {/* Top row */}
                       <div className="flex items-center gap-4 mb-4">
                         {/* Thumbnail */}
-                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                        <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                           {org.imageUrl ? (
                             <img
                               src={org.imageUrl}
@@ -841,7 +841,7 @@ export default function PortfolioPage() {
                 {/* ── Allocation status + Fund Your Portfolio ─────────── */}
                 <div
                   data-donate-card
-                  className="rounded-2xl border p-5"
+                  className="rounded-xl md:rounded-2xl border p-4 md:p-5"
                   style={{
                     borderColor: isValid ? "#86efac" : totalPercent > 100 ? "#fca5a5" : "#e5e1d8",
                     backgroundColor: isValid ? "#f0fdf4" : totalPercent > 100 ? "#fef2f2" : "white",
@@ -906,7 +906,7 @@ export default function PortfolioPage() {
 
                   {/* Frequency (recurring only) */}
                   {isRecurring && (
-                    <div className="grid grid-cols-4 gap-2 mb-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
                       {FREQUENCIES.map((f) => (
                         <button
                           key={f.value}

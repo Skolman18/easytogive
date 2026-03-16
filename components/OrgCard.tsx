@@ -102,13 +102,13 @@ export default function OrgCard({
 
   return (
     <div
-      className="group rounded-2xl overflow-hidden border bg-white h-full flex flex-col card-hover"
+      className="group rounded-xl md:rounded-2xl overflow-hidden border bg-white h-full flex flex-col card-hover"
       style={{ borderColor: "#e5e1d8" }}
     >
       {/* Main card content — wrapped in Link */}
       <Link href={`/org/${org.id}`} className="flex-1 flex flex-col">
         {/* Image */}
-        <div className="relative h-48 overflow-hidden bg-gray-100 flex-shrink-0">
+        <div className="relative h-36 md:h-48 overflow-hidden bg-gray-100 flex-shrink-0">
           <img
             src={org.imageUrl}
             alt={org.name}
@@ -137,16 +137,16 @@ export default function OrgCard({
         </div>
 
         {/* Content */}
-        <div className="p-5 flex flex-col flex-1">
-          <h3 className="font-display font-semibold text-lg leading-tight mb-1 text-gray-900 group-hover:text-green-700 transition-colors">
+        <div className="p-3.5 md:p-5 flex flex-col flex-1">
+          <h3 className="font-display font-semibold text-[15px] md:text-lg leading-tight mb-1 text-gray-900 group-hover:text-green-700 transition-colors">
             {org.name}
           </h3>
-          <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+          <p className="text-xs md:text-sm text-gray-500 mb-1 flex items-center gap-1">
+            <MapPin className="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" />
             {org.location}
           </p>
           {!compact && (
-            <p className="text-sm text-gray-600 mt-2 leading-relaxed line-clamp-2">
+            <p className="text-[13px] md:text-sm text-gray-600 mt-1.5 md:mt-2 leading-relaxed line-clamp-2">
               {org.tagline}
             </p>
           )}
@@ -247,7 +247,7 @@ export default function OrgCard({
       </Link>
 
       {/* Add to Portfolio — outside the Link to avoid nested anchor */}
-      <div className="px-5 pb-4">
+      <div className="px-3.5 md:px-5 pb-3.5 md:pb-4">
         <AddToPortfolioButton orgId={org.id} />
       </div>
     </div>
