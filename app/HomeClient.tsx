@@ -311,7 +311,7 @@ export default function HomeClient({
     <div className="bg-white">
 
       {/* ── HERO ──────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-6 md:pt-10 md:pb-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 md:pt-6 md:pb-4">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
 
           {/* Left: Text */}
@@ -368,24 +368,6 @@ export default function HomeClient({
               ))}
             </div>
 
-            {/* Social proof */}
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
-              {[
-                "Free for donors, forever",
-                "Every receipt saved automatically",
-                "Every organization verified",
-              ].map((label) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <CheckCircle
-                    className="w-3.5 h-3.5 flex-shrink-0"
-                    style={{ color: "#1a7a4a" }}
-                  />
-                  <span className="text-sm" style={{ color: "#5c5b56" }}>
-                    {label}
-                  </span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Right: Portfolio preview card */}
@@ -402,8 +384,8 @@ export default function HomeClient({
           className="border-y"
           style={{ borderColor: "#e8e5de", backgroundColor: "#faf9f6" }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-7">
-            <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 md:gap-x-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-3">
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 md:gap-x-14">
               {[
                 { value: `${orgCountAnim.toLocaleString()}+`, label: "Verified organizations" },
                 stats.userCount > 0
@@ -415,12 +397,12 @@ export default function HomeClient({
               ]
                 .filter(Boolean)
                 .map((s) => (
-                  <div key={s!.label} className="text-center">
-                    <div className="font-display text-3xl md:text-5xl text-gray-900 mb-1">
+                  <div key={s!.label} className="flex items-center gap-2">
+                    <div className="font-display text-lg md:text-xl text-gray-900">
                       {s!.value}
                     </div>
                     <div
-                      className="text-xs md:text-sm font-medium tracking-wide"
+                      className="text-xs font-medium"
                       style={{ color: "#9b9990" }}
                     >
                       {s!.label}
@@ -434,7 +416,7 @@ export default function HomeClient({
 
       {/* ── RECOMMENDED FOR YOU ───────────────────────────────────────── */}
       {recommendedOrgs.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-10 pb-2">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 md:pt-5 pb-2">
           <div className="flex items-center gap-2.5 mb-4 md:mb-6">
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -455,7 +437,7 @@ export default function HomeClient({
       )}
 
       {/* ── BROWSE ORGANIZATIONS ──────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-5">
         <div className="flex items-end justify-between mb-4 md:mb-6">
           <div>
             <h2 className="font-display text-xl md:text-3xl text-gray-900">
