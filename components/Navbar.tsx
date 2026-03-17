@@ -236,7 +236,7 @@ export default function Navbar() {
                     style={{ backgroundColor: "#1a7a4a" }}
                   >
                     {profileAvatar
-                      ? <Image src={profileAvatar} alt="" fill sizes="28px" className="object-cover" />
+                      ? <Image src={profileAvatar} alt="" width={28} height={28} className="object-cover w-full h-full" />
                       : initials}
                   </div>
                   <span className="max-w-[140px] truncate">{displayName}</span>
@@ -370,7 +370,7 @@ export default function Navbar() {
                     style={{ backgroundColor: "#1a7a4a" }}
                   >
                     {profileAvatar
-                      ? <Image src={profileAvatar} alt="" fill sizes="28px" className="object-cover" />
+                      ? <Image src={profileAvatar} alt="" width={28} height={28} className="object-cover w-full h-full" />
                       : initials}
                   </div>
                   <span className="text-sm text-gray-600 truncate">{displayName}</span>
