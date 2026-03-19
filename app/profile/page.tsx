@@ -29,7 +29,7 @@ import {
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-browser";
 import dynamic from "next/dynamic";
-const AdminPanel = dynamic(() => import("@/components/AdminPanel"), { ssr: false });
+const AdminDashboard = dynamic(() => import("@/components/admin/AdminDashboard"), { ssr: false });
 import Toggle from "@/components/Toggle";
 import GivingGoalCard from "@/components/GivingGoalCard";
 import YourImpactSection from "@/components/YourImpactSection";
@@ -1279,7 +1279,7 @@ function ProfilePageInner() {
         )}
 
         {/* Admin */}
-        {activeTab === "admin" && isAdmin && <AdminPanel editOrgId={editOrgParam ?? undefined} />}
+        {activeTab === "admin" && isAdmin && <AdminDashboard />}
 
         {/* Settings */}
         {activeTab === "settings" && (
