@@ -12,3 +12,4 @@ export function getSupabaseAdmin() {
   }
   return createClient(url, key, { auth: { persistSession: false } });
 }
+
