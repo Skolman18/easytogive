@@ -29,6 +29,7 @@ export interface Database {
           verified: boolean;
           featured: boolean;
           visible: boolean;
+          suspended: boolean;
           image_url: string;
           cover_url: string;
           our_story: string | null;
@@ -61,6 +62,9 @@ export interface Database {
           avatar_url: string;
           bio: string;
           location: string;
+          suspended: boolean;
+          banned: boolean;
+          ban_reason: string;
           created_at: string;
           updated_at: string;
         };
@@ -78,6 +82,13 @@ export interface Database {
           amount: number;
           receipt_id: string;
           donated_at: string;
+          status: string;
+          refund_amount: number;
+          refund_reason: string;
+          stripe_payment_intent_id: string;
+          fee_amount: number;
+          fee_covered: boolean;
+          org_name: string;
         };
         Insert: Omit<Database["public"]["Tables"]["donations"]["Row"], "id" | "donated_at">;
         Update: Partial<Database["public"]["Tables"]["donations"]["Insert"]>;
@@ -124,6 +135,18 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["watchlist"]["Row"], "id" | "created_at">;
         Update: never;
       };
+      admin_logs: {
+        Row: {
+          id: string;
+          action: string;
+          entity_type: string | null;
+          entity_id: string | null;
+          details: Json;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["admin_logs"]["Row"], "id" | "created_at">;
+        Update: Partial<Database["public"]["Tables"]["admin_logs"]["Insert"]>;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -141,3 +164,4 @@ export type DonationRow = Database["public"]["Tables"]["donations"]["Row"];
 export type PortfolioAllocationRow =
   Database["public"]["Tables"]["portfolio_allocations"]["Row"];
 export type WatchlistRow = Database["public"]["Tables"]["watchlist"]["Row"];
+export type AdminLogRow = Database["public"]["Tables"]["admin_logs"]["Row"];
