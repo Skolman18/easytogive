@@ -34,11 +34,22 @@ export async function GET(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from("users")
-      .select("onboarding_complete")
+      .select("onboarding_complete, suspended, banned")
       .eq("id", user.id)
       .maybeSingle();
 
-    if (!(profile as any)?.onboarding_complete) {
+    const p = profile as any;
+
+    if (p?.banned) {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL("/banned", requestUrl.origin));
+    }
+    if (p?.suspended) {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL("/suspended", requestUrl.origin));
+    }
+
+    if (!p?.onboarding_complete) {
       return NextResponse.redirect(new URL("/onboarding", requestUrl.origin));
     }
   }
