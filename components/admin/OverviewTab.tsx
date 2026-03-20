@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Users, Building2, DollarSign, TrendingUp, RefreshCw, Activity } from "lucide-react";
 
 interface Stats {
   totalUsers: number;
@@ -41,91 +40,101 @@ export default function OverviewTab() {
 
   useEffect(() => { load(); }, []);
 
-  const fmt = (cents: number) => `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+  const fmt = (cents: number) =>
+    "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-  const statCards = stats ? [
-    { label: "Total Users", value: stats.totalUsers.toLocaleString(), icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Organizations", value: stats.totalOrgs.toLocaleString(), icon: Building2, color: "text-purple-600", bg: "bg-purple-50" },
-    { label: "Total Donations", value: stats.totalDonations.toLocaleString(), icon: Activity, color: "text-[#1a7a4a]", bg: "bg-[#e8f5ee]" },
-    { label: "Total Volume", value: fmt(stats.totalVolumeCents), icon: DollarSign, color: "text-[#1a7a4a]", bg: "bg-[#e8f5ee]" },
-    { label: "Pending Refunds", value: stats.pendingRefunds.toLocaleString(), icon: RefreshCw, color: "text-amber-600", bg: "bg-amber-50" },
-  ] : [];
+  if (loading) {
+    return <div className="text-sm text-gray-400 py-8">Loading...</div>;
+  }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-[#111827]" style={{ fontFamily: "var(--font-display, Georgia, serif)" }}>Overview</h2>
-        <button onClick={load} className="flex items-center gap-2 text-sm text-[#6b7280] hover:text-[#111827]">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+    <div className="space-y-10">
 
-      {loading ? (
-        <div className="text-sm text-[#6b7280]">Loading...</div>
-      ) : (
-        <>
-          {/* Stat cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            {statCards.map((s) => (
-              <div key={s.label} className="bg-white border border-[#e5e1d8] rounded-xl p-4">
-                <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center mb-3`}>
-                  <s.icon className={`w-4 h-4 ${s.color}`} />
-                </div>
-                <div className="text-2xl font-bold text-[#111827] font-mono">{s.value}</div>
-                <div className="text-xs text-[#6b7280] mt-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
+      {/* Stats — editorial row, no cards, no icons */}
+      <div>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display text-xl font-semibold text-gray-900">Overview</h2>
+          <button
+            onClick={load}
+            className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
 
-          {/* Quick stats */}
-          {stats && (
-            <div className="grid grid-cols-3 gap-4 mb-8">
+        {stats && (
+          <>
+            <div
+              className="grid grid-cols-3 md:grid-cols-5"
+              style={{ borderTop: "1px solid #e5e1d8", borderBottom: "1px solid #e5e1d8" }}
+            >
               {[
-                { label: "Donations today", value: stats.donationsToday },
-                { label: "This week", value: stats.donationsWeek },
-                { label: "This month", value: stats.donationsMonth },
-              ].map((s) => (
-                <div key={s.label} className="bg-[#faf9f6] border border-[#e5e1d8] rounded-xl p-4 text-center">
-                  <div className="text-3xl font-bold text-[#1a7a4a] font-mono">{s.value}</div>
-                  <div className="text-xs text-[#6b7280] mt-1">{s.label}</div>
+                { label: "Users",          value: stats.totalUsers.toLocaleString() },
+                { label: "Organizations",  value: stats.totalOrgs.toLocaleString() },
+                { label: "Donations",      value: stats.totalDonations.toLocaleString() },
+                { label: "Total volume",   value: fmt(stats.totalVolumeCents) },
+                { label: "Pending refunds",value: stats.pendingRefunds.toLocaleString() },
+              ].map((s, i) => (
+                <div
+                  key={s.label}
+                  className="py-5 pr-6"
+                  style={{ paddingLeft: i === 0 ? 0 : "1.5rem", borderLeft: i > 0 ? "1px solid #e5e1d8" : "none" }}
+                >
+                  <div className="font-display text-2xl font-semibold text-gray-900">{s.value}</div>
+                  <div className="text-xs text-gray-400 mt-1">{s.label}</div>
                 </div>
               ))}
             </div>
-          )}
 
-          {/* Recent activity */}
-          <div>
-            <h3 className="text-base font-semibold text-[#111827] mb-3">Recent Activity</h3>
-            <div className="border border-[#e5e1d8] rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-[#faf9f6] border-b border-[#e5e1d8]">
-                    <th className="text-left px-4 py-3 text-xs font-medium text-[#6b7280] uppercase tracking-wide">User</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-[#6b7280] uppercase tracking-wide">Organization</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-[#6b7280] uppercase tracking-wide">Amount</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-[#6b7280] uppercase tracking-wide">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activity.length === 0 && (
-                    <tr><td colSpan={4} className="px-4 py-8 text-center text-[#6b7280] text-sm">No recent activity</td></tr>
-                  )}
-                  {activity.map((a) => (
-                    <tr key={a.id} className="border-b border-[#e5e1d8] last:border-0 hover:bg-[#faf9f6]">
-                      <td className="px-4 py-3 text-[#111827]">{a.userEmail}</td>
-                      <td className="px-4 py-3 text-[#6b7280]">{a.org_name || "—"}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[#1a7a4a]">{fmt(a.amount)}</td>
-                      <td className="px-4 py-3 text-right text-[#9b9990] text-xs">
-                        {new Date(a.donated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex gap-6 mt-4 text-sm text-gray-500">
+              <span><span className="font-semibold text-gray-800">{stats.donationsToday}</span> today</span>
+              <span><span className="font-semibold text-gray-800">{stats.donationsWeek}</span> this week</span>
+              <span><span className="font-semibold text-gray-800">{stats.donationsMonth}</span> this month</span>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
+
+      {/* Recent activity */}
+      <div>
+        <h3 className="font-display text-base font-semibold text-gray-900 mb-4">Recent Donations</h3>
+        <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ backgroundColor: "#faf9f6", borderBottom: "1px solid #e5e1d8" }}>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Donor</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Organization</th>
+                <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Amount</th>
+                <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activity.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-10 text-center text-gray-400">No donations yet</td>
+                </tr>
+              )}
+              {activity.map((a, i) => (
+                <tr
+                  key={a.id}
+                  className="hover:bg-gray-50 transition-colors"
+                  style={{ borderTop: i > 0 ? "1px solid #e5e1d8" : undefined }}
+                >
+                  <td className="px-5 py-3.5 text-gray-700">{a.userEmail}</td>
+                  <td className="px-5 py-3.5 text-gray-400">{a.org_name || "—"}</td>
+                  <td className="px-5 py-3.5 text-right font-semibold" style={{ color: "#1a7a4a" }}>
+                    {fmt(a.amount)}
+                  </td>
+                  <td className="px-5 py-3.5 text-right text-gray-400 text-xs">
+                    {new Date(a.donated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 }
