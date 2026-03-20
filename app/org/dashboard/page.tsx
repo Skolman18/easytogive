@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Clock,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { ADMIN_EMAIL } from "@/lib/admin";
@@ -87,6 +88,8 @@ function OrgDashboardInner() {
   const [editSuccess, setEditSuccess] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
+  const [autofillError, setAutofillError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -301,6 +304,38 @@ function OrgDashboardInner() {
     setEditError(null);
     setEditSuccess(false);
     setEditOpen(true);
+  }
+
+  async function handleAutofill() {
+    const url = editForm.website.trim();
+    if (!url) {
+      setAutofillError("Add your website URL above first.");
+      return;
+    }
+    setAutofilling(true);
+    setAutofillError(null);
+    try {
+      const res = await fetch("/api/org/autofill-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAutofillError(data.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+      setEditForm((f) => ({
+        ...f,
+        tagline: data.tagline || f.tagline,
+        description: data.description || f.description,
+        our_story: data.our_story || f.our_story,
+      }));
+    } catch {
+      setAutofillError("Could not reach the server. Please try again.");
+    } finally {
+      setAutofilling(false);
+    }
   }
 
   async function saveEdit() {
@@ -886,6 +921,34 @@ function OrgDashboardInner() {
                   />
                 </div>
               ))}
+
+              {/* AI autofill */}
+              <div
+                className="flex items-start justify-between gap-4 rounded-xl p-4 border"
+                style={{ backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" }}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 mb-0.5">Fill from your website</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    AI will read your website and write a tagline, description, and story for you. You can edit anything after.
+                  </p>
+                  {autofillError && (
+                    <p className="text-xs mt-2 font-medium" style={{ color: "#dc2626" }}>{autofillError}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAutofill}
+                  disabled={autofilling}
+                  className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-60 transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: "#1a7a4a" }}
+                >
+                  {autofilling
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />Reading site…</>
+                    : <><Sparkles className="w-4 h-4" />AI Fill</>
+                  }
+                </button>
+              </div>
 
               {/* Logo upload */}
               <div>

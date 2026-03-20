@@ -48,9 +48,9 @@ async function getOrganizations(): Promise<Organization[]> {
 }
 
 const DEFAULT_HERO = {
-  headline: "The Marketplace for Giving.",
+  headline: "Give the Way\nYou Invest",
   subtext:
-    "Discover thousands of verified organizations, build your giving portfolio, and donate to multiple causes with one simple transaction.",
+    "Build a portfolio of causes you care about. Set your allocations once — then donate to all of them in a single transaction, with one receipt.",
 };
 
 async function getRealStats(): Promise<{ orgCount: number; totalRaised: number; userCount: number }> {

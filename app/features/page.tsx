@@ -58,7 +58,7 @@ const ORG_FEATURES = [
   {
     Icon: ShieldCheck,
     title: "Verified Badge",
-    desc: "Every organization is reviewed before going live. Our verified badge signals to donors that your organization is legitimate — increasing trust and conversion.",
+    desc: "Every organization is reviewed before going live. Our verified badge signals to donors that your organization is legitimate — so they give without hesitation.",
   },
   {
     Icon: Sparkles,

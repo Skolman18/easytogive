@@ -7,13 +7,13 @@ export default function ForNonprofitsPage() {
       icon: Users,
       title: "Expand your donor base",
       description:
-        "Get in front of 94,000+ active givers who are specifically looking to support verified nonprofits. EasyToGive donors are motivated, recurring, and mission-aligned.",
+        "Get in front of 94,000+ active givers who are specifically looking for new causes to support. Many of them give monthly — and they're looking for organizations like yours.",
     },
     {
       icon: BadgeCheck,
       title: "Build credibility with a verified badge",
       description:
-        "Our verification process signals to donors that your organization is legitimate, tax-exempt, and accountable — increasing trust and conversion.",
+        "Our verification process signals to donors that your organization is legitimate, tax-exempt, and accountable — so they give with confidence.",
     },
     {
       icon: Banknote,
@@ -23,9 +23,9 @@ export default function ForNonprofitsPage() {
     },
     {
       icon: BarChart2,
-      title: "Access donor analytics",
+      title: "See where donors find you",
       description:
-        "Understand where your donors are coming from, which campaigns are driving growth, and how your giving portfolio share changes over time.",
+        "Track which categories and searches are sending donors your way, and see how your monthly giving volume changes over time.",
     },
   ];
 

@@ -247,7 +247,6 @@ export default function HomeClient({
   // Stats count-up
   const statsRef = useRef<HTMLElement>(null);
   const [statsInView, setStatsInView] = useState(false);
-  const orgCountAnim = useCountUp(stats.orgCount, 1400, statsInView);
   const userCountAnim = useCountUp(stats.userCount, 1200, statsInView);
 
   useEffect(() => {
@@ -311,51 +310,44 @@ export default function HomeClient({
     <div className="bg-white">
 
       {/* ── HERO ──────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 md:pt-6 md:pb-4">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8 md:pt-16 md:pb-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
 
           {/* Left: Text */}
           <div className="max-w-xl">
             <EditableField
               settingKey="hero_headline"
-              value={siteSettings?.hero_headline ?? "Finally, one place\nfor all your giving."}
+              value={siteSettings?.hero_headline ?? "Give the Way\nYou Invest"}
               as="h1"
-              className="font-display text-[32px] md:text-[52px] lg:text-[62px] text-gray-900 leading-[1.08] mb-2 md:mb-3 tracking-tight"
+              className="font-display text-[36px] md:text-[56px] lg:text-[68px] text-gray-900 leading-[1.05] mb-4 tracking-tight"
             />
 
             <EditableField
               settingKey="hero_subtext"
               value={
                 siteSettings?.hero_subtext ??
-                "Stop juggling six donation pages and chasing receipts every January. EasyToGive gives every donor a free giving portfolio, automatic tax receipts, and real impact updates — all in one place."
+                "Build a portfolio of causes you care about. Set your allocations once — then donate to all of them in a single transaction, with one receipt."
               }
               as="p"
-              className="text-[15px] md:text-lg leading-relaxed mb-3 md:mb-4 max-w-[480px]"
+              className="text-[16px] md:text-xl leading-relaxed mb-7 max-w-[480px]"
               style={{ color: "#5c5b56" } as any}
               multiline
             />
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-2 md:mb-3">
+            {/* Primary CTA */}
+            <div className="mb-6">
               <Link
                 href="/get-started"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] rounded-full font-semibold text-white text-sm transition-opacity hover:opacity-90 active:scale-95"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 min-h-[52px] rounded-full font-semibold text-white text-base transition-opacity hover:opacity-90 active:scale-95 shadow-sm"
                 style={{ backgroundColor: "#1a7a4a" }}
               >
-                Start giving free
+                Start Your Portfolio — It&apos;s Free
                 <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/signup/organization"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] rounded-full font-semibold text-sm border transition-colors hover:bg-gray-50"
-                style={{ color: "#1a7a4a", borderColor: "#1a7a4a" }}
-              >
-                List your organization
               </Link>
             </div>
 
-            {/* Micro trust signals */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-3 md:mb-4">
+            {/* Trust signals */}
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
               {[
                 { Icon: ShieldCheck, label: "Payments secured by Stripe" },
                 { Icon: CheckCircle, label: "Every org personally verified" },
@@ -367,7 +359,6 @@ export default function HomeClient({
                 </div>
               ))}
             </div>
-
           </div>
 
           {/* Right: Portfolio preview card */}
@@ -387,7 +378,6 @@ export default function HomeClient({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-3">
             <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 md:gap-x-14">
               {[
-                { value: `${orgCountAnim.toLocaleString()}+`, label: "Verified organizations" },
                 stats.userCount > 0
                   ? { value: userCountAnim.toLocaleString(), label: "Active givers" }
                   : null,
@@ -414,9 +404,275 @@ export default function HomeClient({
         </section>
       )}
 
+      {/* ── THREE-STEP JOURNEY ────────────────────────────────────────── */}
+      <section id="how-it-works" className="py-16 md:py-24" style={{ backgroundColor: "#faf9f6" }}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14 md:mb-20">
+            <h2 className="font-display text-3xl md:text-5xl text-gray-900 mb-4">
+              Three steps to a giving portfolio
+            </h2>
+            <p className="text-base md:text-lg max-w-sm mx-auto" style={{ color: "#5c5b56" }}>
+              Meaningful giving shouldn&apos;t require a spreadsheet.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-10 md:gap-6 relative">
+            {/* Connecting line — desktop only */}
+            <div
+              className="hidden md:block absolute top-8 left-[calc(16.67%+1.5rem)] right-[calc(16.67%+1.5rem)] h-px"
+              style={{ backgroundColor: "#d1cec8" }}
+            />
+
+            {[
+              {
+                number: "1",
+                label: "DISCOVER",
+                title: "Browse verified organizations",
+                desc: "Search thousands of vetted nonprofits, churches, and causes by category, location, or mission.",
+              },
+              {
+                number: "2",
+                label: "BUILD",
+                title: "Create your giving portfolio",
+                desc: "Add causes and set the percentage each receives. Adjust anytime — your portfolio, your rules.",
+              },
+              {
+                number: "3",
+                label: "GIVE",
+                title: "Donate once, help everywhere",
+                desc: "One payment. We distribute to every organization automatically and send one consolidated receipt.",
+              },
+            ].map((step) => (
+              <div key={step.number} className="relative flex flex-col items-center text-center">
+                <div
+                  className="relative z-10 w-16 h-16 rounded-full flex items-center justify-center mb-5 shadow-sm border-4 border-white"
+                  style={{ backgroundColor: "#1a7a4a" }}
+                >
+                  <span className="font-display text-2xl text-white font-bold">{step.number}</span>
+                </div>
+                <div
+                  className="text-[10px] font-bold tracking-[0.18em] uppercase mb-2"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  {step.label}
+                </div>
+                <h3 className="font-display text-lg text-gray-900 mb-2 leading-snug">
+                  {step.title}
+                </h3>
+                <p className="text-sm leading-relaxed max-w-[200px]" style={{ color: "#9b9990" }}>
+                  {step.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12 md:mt-16">
+            <Link
+              href="/get-started"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-white text-sm transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "#1a7a4a" }}
+            >
+              Build My Portfolio
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PORTFOLIO SHOWCASE ────────────────────────────────────────── */}
+      <section className="py-16 md:py-24 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+
+            {/* Left: copy */}
+            <div>
+              <p
+                className="text-[10px] font-bold tracking-[0.18em] uppercase mb-4"
+                style={{ color: "#1a7a4a" }}
+              >
+                Your Giving Portfolio
+              </p>
+              <h2 className="font-display text-3xl md:text-4xl text-gray-900 mb-5 leading-snug">
+                Manage your giving like you manage your investments.
+              </h2>
+              <p className="text-base leading-relaxed mb-8" style={{ color: "#5c5b56" }}>
+                Most people give to the same one or two organizations their whole lives — not because they don&apos;t care about more causes, but because giving to many is a hassle. EasyToGive makes it effortless.
+              </p>
+              <ul className="space-y-4 mb-8">
+                {[
+                  "Set custom allocations — 50% to food security, 30% to education, 20% to your church",
+                  "Donate once and we split it automatically across every cause",
+                  "One consolidated tax receipt, no chasing down individual letters",
+                  "See real impact updates from every organization you support",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm" style={{ color: "#1a1a18" }}>
+                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/get-started"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-opacity hover:opacity-90"
+                style={{ backgroundColor: "#1a7a4a", color: "white" }}
+              >
+                Start Your Portfolio — It&apos;s Free
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Right: Portfolio visual with donut chart */}
+            <div className="flex justify-center">
+              <div
+                className="w-full max-w-sm rounded-2xl border p-6"
+                style={{
+                  borderColor: "#e5e1d8",
+                  backgroundColor: "#faf9f6",
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.06), 0 4px 16px rgba(26,122,74,0.05)",
+                }}
+              >
+                {/* Card header */}
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: "#9b9990" }}>
+                      My Giving Portfolio
+                    </p>
+                    <p className="font-display text-lg text-gray-900">Annual Giving</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: "#9b9990" }}>
+                      Monthly
+                    </p>
+                    <p className="font-display text-lg" style={{ color: "#1a7a4a" }}>$200</p>
+                  </div>
+                </div>
+
+                {/* Donut chart + legend */}
+                <div className="flex items-center gap-5 mb-5">
+                  {/* SVG donut — r=38, circumference=238.76 */}
+                  <div className="flex-shrink-0">
+                    <svg width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
+                      <g transform="rotate(-90 50 50)">
+                        {/* 50% — Hope Food Bank */}
+                        <circle cx="50" cy="50" r="38" fill="none" strokeWidth="18" stroke="#1a7a4a"
+                          strokeDasharray="119.38 238.76" strokeDashoffset="0" />
+                        {/* 30% — Literacy First */}
+                        <circle cx="50" cy="50" r="38" fill="none" strokeWidth="18" stroke="#2d9d61"
+                          strokeDasharray="71.63 238.76" strokeDashoffset="-119.38" />
+                        {/* 20% — Animal Rescue */}
+                        <circle cx="50" cy="50" r="38" fill="none" strokeWidth="18" stroke="#86efac"
+                          strokeDasharray="47.75 238.76" strokeDashoffset="-191.01" />
+                      </g>
+                      <text x="50" y="47" textAnchor="middle"
+                        style={{ fontSize: "11px", fill: "#5c5b56", fontFamily: "DM Serif Display, serif" }}>
+                        3
+                      </text>
+                      <text x="50" y="60" textAnchor="middle"
+                        style={{ fontSize: "8px", fill: "#9b9990" }}>
+                        causes
+                      </text>
+                    </svg>
+                  </div>
+                  {/* Allocation legend */}
+                  <div className="flex-1 space-y-3 min-w-0">
+                    {[
+                      { name: "Hope Food Bank", pct: 50, color: "#1a7a4a" },
+                      { name: "Literacy First", pct: 30, color: "#2d9d61" },
+                      { name: "City Animal Rescue", pct: 20, color: "#86efac" },
+                    ].map((a) => (
+                      <div key={a.name}>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.color }} />
+                            <span className="text-xs truncate" style={{ color: "#5c5b56" }}>{a.name}</span>
+                          </div>
+                          <span className="text-xs font-semibold tabular-nums ml-2" style={{ color: a.color }}>{a.pct}%</span>
+                        </div>
+                        <div className="h-1 rounded-full" style={{ backgroundColor: "#e8e5de" }}>
+                          <div className="h-1 rounded-full" style={{ width: `${a.pct}%`, backgroundColor: a.color }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Totals row */}
+                <div className="border-t pt-4" style={{ borderColor: "#e5e1d8" }}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#9b9990" }}>
+                        Given this year
+                      </p>
+                      <p className="font-display text-2xl text-gray-900">$1,200</p>
+                    </div>
+                    <div
+                      className="text-right px-3 py-2 rounded-xl"
+                      style={{ backgroundColor: "#e8f5ee" }}
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: "#1a7a4a" }}>
+                        Tax Receipt
+                      </p>
+                      <p className="text-xs font-bold" style={{ color: "#1a7a4a" }}>
+                        1 receipt
+                      </p>
+                      <p className="text-[10px]" style={{ color: "#5c5b56" }}>covers all 3 orgs</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHY DONORS CHOOSE EASYTOGIVE ──────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12" style={{ backgroundColor: "#faf9f6" }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-6 md:mb-10">
+            <h2 className="font-display text-2xl md:text-4xl text-gray-900">
+              Giving should be simple. We made it that way.
+            </h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
+            {PAIN_POINTS.map((card, i) => (
+              <div
+                key={i}
+                className="rounded-xl border bg-white p-5"
+                style={{ borderColor: "#e5e1d8" }}
+              >
+                <div
+                  className="text-[11px] font-semibold uppercase tracking-widest mb-1.5"
+                  style={{ color: "#c47c2a" }}
+                >
+                  The old way
+                </div>
+                <p className="text-sm mb-4" style={{ color: "#5c5b56" }}>
+                  {card.problem}
+                </p>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex-1 border-t" style={{ borderColor: "#e5e1d8" }} />
+                  <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
+                  <div className="flex-1 border-t" style={{ borderColor: "#e5e1d8" }} />
+                </div>
+                <div
+                  className="text-[11px] font-semibold uppercase tracking-widest mb-1.5"
+                  style={{ color: "#1a7a4a" }}
+                >
+                  With EasyToGive
+                </div>
+                <p className="text-sm font-medium" style={{ color: "#1a1a18" }}>
+                  {card.solution}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── RECOMMENDED FOR YOU ───────────────────────────────────────── */}
       {recommendedOrgs.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 md:pt-5 pb-2">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12 pb-2">
           <div className="flex items-center gap-2.5 mb-4 md:mb-6">
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -436,15 +692,15 @@ export default function HomeClient({
         </section>
       )}
 
-      {/* ── BROWSE ORGANIZATIONS ──────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-5">
+      {/* ── FIND CAUSES FOR YOUR PORTFOLIO ────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-14">
         <div className="flex items-end justify-between mb-4 md:mb-6">
           <div>
             <h2 className="font-display text-xl md:text-3xl text-gray-900">
-              Browse Organizations
+              Find causes for your portfolio
             </h2>
             <p className="mt-1 text-sm" style={{ color: "#9b9990" }}>
-              Every organization is verified for transparency and impact.
+              Every organization is personally reviewed before going live.
             </p>
           </div>
           <Link
@@ -557,114 +813,6 @@ export default function HomeClient({
         </section>
       )}
 
-      {/* ── WHY DONORS CHOOSE EASYTOGIVE ──────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
-        <div className="text-center mb-6 md:mb-10">
-          <h2 className="font-display text-2xl md:text-4xl text-gray-900">
-            Giving should be simple. We made it that way.
-          </h2>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
-          {PAIN_POINTS.map((card, i) => (
-            <div
-              key={i}
-              className="rounded-xl border bg-white p-5"
-              style={{ borderColor: "#e5e1d8" }}
-            >
-              <div
-                className="text-[11px] font-semibold uppercase tracking-widest mb-1.5"
-                style={{ color: "#c47c2a" }}
-              >
-                The old way
-              </div>
-              <p className="text-sm mb-4" style={{ color: "#5c5b56" }}>
-                {card.problem}
-              </p>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex-1 border-t" style={{ borderColor: "#e5e1d8" }} />
-                <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#1a7a4a" }} />
-                <div className="flex-1 border-t" style={{ borderColor: "#e5e1d8" }} />
-              </div>
-              <div
-                className="text-[11px] font-semibold uppercase tracking-widest mb-1.5"
-                style={{ color: "#1a7a4a" }}
-              >
-                With EasyToGive
-              </div>
-              <p className="text-sm font-medium" style={{ color: "#1a1a18" }}>
-                {card.solution}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ──────────────────────────────────────────────── */}
-      <section
-        id="how-it-works"
-        className="py-6 md:py-12"
-        style={{ backgroundColor: "#faf9f6" }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-6 md:mb-10">
-            <h2 className="font-display text-2xl md:text-5xl text-gray-900 mb-3">
-              How EasyToGive Works
-            </h2>
-            <p className="max-w-md mx-auto text-sm md:text-base leading-relaxed" style={{ color: "#9b9990" }}>
-              Meaningful giving should not require a spreadsheet.
-              Three steps, one receipt.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-5 md:gap-8">
-            {[
-              {
-                step: "01",
-                title: "Discover causes",
-                desc: "Browse verified nonprofits, churches, and local causes by category, location, or search.",
-              },
-              {
-                step: "02",
-                title: "Build your portfolio",
-                desc: "Choose organizations and set the percentage of your donation each receives.",
-              },
-              {
-                step: "03",
-                title: "Give with confidence",
-                desc: "Donate securely. We distribute funds and send one consolidated tax receipt.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="text-center md:text-left">
-                {/* Numbered circle badge */}
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold mb-3 mx-auto md:mx-0"
-                  style={{ backgroundColor: "#1a7a4a" }}
-                >
-                  {parseInt(item.step, 10)}
-                </div>
-                <h3 className="font-display text-xl md:text-2xl text-gray-900 mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-sm md:text-base leading-relaxed" style={{ color: "#9b9990" }}>
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-6 md:mt-10">
-            <Link
-              href="/portfolio"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-white text-sm transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#1a7a4a" }}
-            >
-              Build My Portfolio
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         <div className="text-center mb-5 md:mb-8">
@@ -735,7 +883,7 @@ export default function HomeClient({
             className="mb-5 md:mb-7 max-w-md mx-auto text-sm md:text-base leading-relaxed"
             style={{ color: "#bbf7d0" }}
           >
-            Start your giving portfolio in 2 minutes. Free forever — no fees for donors.
+            Build your giving portfolio in 2 minutes. Free forever — no fees for donors.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Link
