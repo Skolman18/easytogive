@@ -22,6 +22,7 @@ import { formatCurrency } from "@/lib/placeholder-data";
 import CheckoutModal, { DonationAllocation } from "@/components/CheckoutModal";
 import OrgSuggestions from "@/components/OrgSuggestions";
 import { createClient } from "@/lib/supabase-browser";
+import OrgImpactTimeline from "@/components/OrgImpactTimeline";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -887,6 +888,7 @@ export default function PortfolioPage() {
                               {org.tagline}
                             </p>
                           )}
+                          <OrgImpactTimeline orgId={org.orgId} orgName={org.orgName} />
                         </div>
                       )}
                     </div>
