@@ -67,8 +67,8 @@ export default function GivingGoalCard({ userId }: { userId: string }) {
         .from("donations")
         .select("amount")
         .eq("user_id", userId)
-        .gte("created_at", goalData.start_date)
-        .lte("created_at", goalData.end_date + "T23:59:59Z");
+        .gte("donated_at", goalData.start_date)
+        .lte("donated_at", goalData.end_date + "T23:59:59Z");
       const total = (donationData || []).reduce(
         (sum: number, d: any) => sum + (d.amount || 0),
         0
