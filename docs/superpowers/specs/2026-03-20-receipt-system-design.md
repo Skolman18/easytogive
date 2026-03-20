@@ -26,34 +26,70 @@ The existing system already sends HTML receipt emails and has a browser-printabl
 
 ### New table: `receipts`
 
+Migration file: `supabase/migrations/20260320000001_receipts_table.sql`
+
 ```sql
 CREATE TABLE receipts (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  donor_id          uuid REFERENCES auth.users(id),
+  donor_id          uuid REFERENCES auth.users(id), -- nullable for guest donors
   payment_intent_id text NOT NULL,
-  donation_ids      uuid[],
-  org_id            text REFERENCES organizations(id), -- null for portfolio_summary
+  donation_ids      uuid[],          -- donation row IDs covered by this receipt
+  org_id            text REFERENCES organizations(id), -- null for portfolio_summary; is a text slug e.g. 'grace-community-church'
   type              text NOT NULL CHECK (type IN ('individual', 'portfolio_summary')),
   amount            integer NOT NULL, -- cents
   receipt_number    text UNIQUE NOT NULL, -- RCP-{timestamp}-{6-char random}
-  pdf_url           text,             -- null until generated
+  pdf_url           text,             -- null until generated; Supabase Storage path
   pdf_status        text NOT NULL DEFAULT 'pending'
                         CHECK (pdf_status IN ('pending', 'generated', 'failed')),
   created_at        timestamptz DEFAULT now()
 );
 
--- Indexes
 CREATE INDEX receipts_donor_id_idx ON receipts(donor_id);
 CREATE INDEX receipts_payment_intent_id_idx ON receipts(payment_intent_id);
 
--- RLS
 ALTER TABLE receipts ENABLE ROW LEVEL SECURITY;
+
+-- Donors can read their own receipts (null donor_id = guest, never matches)
 CREATE POLICY "Donors read own receipts"
   ON receipts FOR SELECT
   USING (auth.uid() = donor_id);
-CREATE POLICY "Service role full access"
-  ON receipts FOR ALL
-  USING (auth.role() = 'service_role');
+
+-- No service_role policy needed: Supabase service role bypasses RLS entirely.
+-- Webhook writes use the service role client and are not subject to RLS.
+```
+
+### New Storage bucket
+
+Migration file: `supabase/migrations/20260320000002_receipts_storage.sql`
+
+```sql
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'receipts',
+  'receipts',
+  false,       -- private: access via signed URLs only
+  5242880,     -- 5 MB
+  ARRAY['application/pdf']
+);
+
+-- Only service role (webhook) may upload; no public read
+CREATE POLICY "Service role upload receipts"
+  ON storage.objects FOR INSERT
+  TO service_role
+  WITH CHECK (bucket_id = 'receipts');
+
+CREATE POLICY "Service role update receipts"
+  ON storage.objects FOR UPDATE
+  TO service_role
+  USING (bucket_id = 'receipts');
+
+CREATE POLICY "Authenticated users download own receipts"
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'receipts'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
 ```
 
 ### Receipt rows per payment type
@@ -61,8 +97,10 @@ CREATE POLICY "Service role full access"
 | Payment type | Rows created |
 |---|---|
 | Single-org donation | 1 `individual` row |
-| Portfolio donation (N orgs) | 1 `portfolio_summary` + N `individual` rows |
-| Recurring (per invoice) | Same as single-org or portfolio above |
+| Portfolio donation (N orgs, each > $0) | 1 `portfolio_summary` + N `individual` rows |
+| Recurring (per invoice) | Same as single-org or portfolio |
+
+Zero-amount allocations are excluded (the webhook already filters them via `.filter(a => a.amountCents > 0)`), so a 3-org portfolio where one org has 0% receives 2 individual receipts, not 3. This is intentional.
 
 ### Receipt number format
 
@@ -70,13 +108,37 @@ CREATE POLICY "Service role full access"
 
 Example: `RCP-1742476800000-A3F9KX`
 
+### Guest donors
+
+`donor_id` is nullable. Guest donors (no Supabase user) have `donor_id = null`. The RLS policy `auth.uid() = donor_id` will never match null — guest donors cannot retrieve receipts via the API. The PDF email attachment is their only delivery mechanism, which makes the graceful fallback even more critical for this case.
+
+When `donor_id` is null, the webhook should **skip the Supabase Storage upload** (the file would land at a literal `null/{receipt_id}.pdf` path and be unreachable). The PDF buffer is still generated and attached to the email; only the storage step is skipped. `pdf_url` remains null and `pdf_status` is set to `'generated'` to reflect that the PDF was successfully produced and delivered (even though no file is stored).
+
 ---
 
 ## PDF Generation
 
 ### Library
 
-`pdfkit` — pure JavaScript, no binary dependencies, works on Vercel serverless and any VPS. Generates a PDF as an in-memory `Buffer`.
+`pdfkit` — pure JavaScript, no binary dependencies, works on Vercel serverless and any VPS. Install: `npm install pdfkit @types/pdfkit`.
+
+### pdfkit streaming note
+
+pdfkit is a Node.js Readable stream, not a promise-based API. The function signature returns `Promise<Buffer>` by manually accumulating stream events:
+
+```ts
+function generateReceiptPdf(input: ReceiptPdfInput): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+    // ... build document ...
+    doc.end();
+  });
+}
+```
 
 ### File: `lib/generateReceiptPdf.ts`
 
@@ -90,14 +152,14 @@ interface ReceiptPdfInput {
   orgs: Array<{
     name: string;
     ein: string | null;
-    address: string | null;
-    amount: number; // cents
+    address: string | null; // NOTE: organizations table has no address column — will always be null until one is added
+  amount: number; // cents
   }>;
   totalAmount: number; // cents
 }
-
-function generateReceiptPdf(input: ReceiptPdfInput): Promise<Buffer>
 ```
+
+The `address` field is included for forward compatibility but will always be `null` with the current schema. The PDF layout must handle `null` gracefully (omit the address line).
 
 ### PDF layout (letter size, 8.5×11)
 
@@ -110,17 +172,31 @@ function generateReceiptPdf(input: ReceiptPdfInput): Promise<Buffer>
 5. **Tax statement** — "This donation is tax-deductible to the extent provided by law. [Org Name] is a verified 501(c)(3) nonprofit organization." Lists all orgs for portfolio type.
 6. **Footer** — "Thank you for your generosity. Visit easytogive.online for impact updates."
 
-Design: clean, monochrome, #1a7a4a accents on header and dividers.
+Design: clean, monochrome with #1a7a4a accents on header and dividers.
 
 ---
 
 ## Supabase Storage
 
-**Bucket:** `receipts` (private, not public)
+**Bucket:** `receipts` (private)
 
 **Path structure:** `{donor_id}/{receipt_id}.pdf`
 
-**Access:** Short-lived signed URLs (1-hour expiry) generated on demand. Donors never receive a permanent public link.
+**Access:** Short-lived signed URLs (1-hour expiry). The download API route generates and redirects to the signed URL:
+
+```ts
+const { data, error } = await supabaseServiceRole
+  .storage
+  .from('receipts')
+  .createSignedUrl(`${receipt.donor_id}/${receipt.id}.pdf`, 3600);
+
+if (error || !data?.signedUrl) {
+  return NextResponse.json({ error: 'Could not generate download link' }, { status: 500 });
+}
+return NextResponse.redirect(data.signedUrl);
+```
+
+No existing code in the codebase uses `createSignedUrl` — the above is the reference pattern.
 
 ---
 
@@ -128,78 +204,89 @@ Design: clean, monochrome, #1a7a4a accents on header and dividers.
 
 Location: `app/api/stripe/webhook/route.ts`
 
-After the existing donation recording logic, add the following to both `payment_intent.succeeded` and `invoice.payment_succeeded` handlers:
+**Idempotency note:** Receipt generation must be placed inside the `if (!existing)` guard (after the donation is recorded for the first time). On a duplicate webhook delivery, `existing` is truthy, the outer block is skipped, and no receipt rows are created — this is correct. Recovery from a first-delivery PDF failure is handled by the donor-facing retry endpoint, not by a repeat webhook.
+
+After the existing donation recording logic, inside `if (!existing)`:
 
 ```
-1. Insert receipt row(s) into receipts table with pdf_status: 'pending'
-   - portfolio donation: 1 portfolio_summary + N individual rows
+1. Insert receipt row(s) with pdf_status: 'pending'
+   - portfolio: 1 portfolio_summary + N individual rows (one per org with amount > 0)
    - single-org: 1 individual row
 
 2. try {
-     a. Call generateReceiptPdf() → Buffer
-     b. Upload Buffer to Supabase Storage at {donor_id}/{receipt_id}.pdf
-     c. Update receipt row: set pdf_url, pdf_status = 'generated'
-     d. Call sendReceiptEmail() with pdfBuffer attached
+     a. generateReceiptPdf() → Buffer  (pdfkit stream accumulation)
+     b. supabaseServiceRole.storage.from('receipts').upload(path, buffer)
+     c. Update receipt row(s): pdf_url = path, pdf_status = 'generated'
+     d. sendReceiptEmail(..., pdfBuffer: buffer)
    } catch (err) {
-     console.error('receipt generation failed', err)
-     // pdf_status remains 'failed'
-     // fall back to existing HTML-only email (no change to current behavior)
+     console.error('[receipt] generation failed', err)
+     // pdf_status remains 'failed' — donor can retry from portfolio
+     // fall back to existing HTML-only email (sendReceiptEmail without buffer)
    }
 ```
-
-The webhook response is not delayed — PDF generation is fast (sub-second for pdfkit) and the total additional time is well within Stripe's 30-second limit.
 
 ---
 
 ## API Routes
 
 ### `GET /api/receipts`
-Returns the authenticated donor's receipts from the `receipts` table, ordered by `created_at DESC`. Auth-gated via Supabase session.
 
-Response:
+Returns authenticated donor's receipts, ordered by `created_at DESC`. JOINs to `organizations` for `org_name` (since `receipts` stores only `org_id`):
+
+```ts
+// Supabase query
+supabase
+  .from('receipts')
+  .select('*, organizations(name)')
+  .eq('donor_id', userId)
+  .order('created_at', { ascending: false })
+```
+
+Response shape:
 ```json
 [{
   "id": "uuid",
   "type": "individual | portfolio_summary",
   "receipt_number": "RCP-...",
   "amount": 5000,
-  "org_id": "grace-community-church",
-  "org_name": "Grace Community Church",
+  "org_id": "grace-community-church",   // text slug, use for /org/[org_id] links
+  "org_name": "Grace Community Church",  // from JOIN
   "pdf_status": "generated | pending | failed",
   "created_at": "2026-03-20T..."
 }]
 ```
 
 ### `GET /api/receipts/[id]/download`
-Auth-gated to receipt owner. Generates a 1-hour signed URL from Supabase Storage and redirects the browser to it, triggering a PDF download. Returns 404 if `pdf_status !== 'generated'`.
+
+Auth-gated to receipt owner (`donor_id = auth.uid()`). Generates a 1-hour signed URL via `createSignedUrl` (see pattern above) and redirects. Returns 404 if receipt not found or not owned by requester. Returns 400 if `pdf_status !== 'generated'`.
 
 ### `POST /api/receipts/[id]/retry`
-Auth-gated to receipt owner. Re-runs PDF generation and upload for receipts with `pdf_status: 'failed'`. Rate-limited: 3 retries per receipt per hour.
+
+Auth-gated to receipt owner. Re-runs PDF generation and upload for `pdf_status: 'failed'` receipts. Rate-limited: 3 retries per receipt per hour (using existing `checkRateLimit` utility in `lib/rateLimit.ts`). Returns 409 if `pdf_status === 'generated'` (no retry needed).
 
 ---
 
 ## Email Changes
 
-`lib/email.ts` — update `sendReceiptEmail()`:
+`lib/email.ts` — update `sendReceiptEmail()` signature:
 
 ```ts
-// Add optional parameter
 async function sendReceiptEmail(
-  ...,
+  // ... existing params ...
   pdfBuffer?: Buffer
 )
 ```
 
-When `pdfBuffer` is provided, attach it to the Resend email:
+When `pdfBuffer` is provided, attach to Resend:
 ```ts
 attachments: pdfBuffer ? [{
   filename: 'receipt.pdf',
   content: pdfBuffer,
+  content_type: 'application/pdf',  // required for correct email client rendering
 }] : undefined
 ```
 
-Subject: `Your donation receipt from [Org Name]` (unchanged)
-Body: Add one sentence — "Your receipt is attached as a PDF."
+Body: add one sentence — "Your receipt is attached as a PDF."
 
 ---
 
@@ -210,12 +297,12 @@ Location: `app/profile/page.tsx` (receipts tab — already exists)
 ### Changes
 
 1. **Data source** — switch from querying `donations` to `GET /api/receipts`
-2. **Download button** — replaces print-dialog button; hits `/api/receipts/[id]/download` which redirects to signed URL → browser saves `.pdf`
+2. **Download button** — replaces print-dialog button; hits `GET /api/receipts/[id]/download`; browser follows the signed-URL redirect and saves `.pdf`
 3. **Status indicators:**
    - `pending` — grey "Generating…" badge; component polls once after 10 seconds
    - `failed` — amber "Retry" button; calls `POST /api/receipts/[id]/retry`; re-fetches on success
    - `generated` — green "Download PDF" button
-4. **Portfolio grouping** — portfolio donations show a "Combined Receipt" card followed by individual per-org receipt cards, grouped by `payment_intent_id`
+4. **Portfolio grouping** — portfolio donations show a "Combined Receipt" card followed by individual per-org cards, grouped by `payment_intent_id`
 
 ---
 
@@ -223,12 +310,12 @@ Location: `app/profile/page.tsx` (receipts tab — already exists)
 
 | Failure point | Behavior |
 |---|---|
-| PDF generation throws | Log error, set `pdf_status: failed`, fall back to HTML email |
-| Supabase Storage upload fails | Log error, set `pdf_status: failed`, fall back to HTML email |
-| Email send with attachment fails | Log error (email already went out as HTML fallback or retry) |
-| Donor requests retry | `POST /api/receipts/[id]/retry`, rate-limited 3/hr per receipt |
-
-Donations are never blocked. The existing HTML receipt email is the safety net.
+| PDF generation throws | Log error, `pdf_status = 'failed'`, fall back to HTML email |
+| Supabase Storage upload fails | Log error, `pdf_status = 'failed'`, fall back to HTML email |
+| Email send with attachment fails | Log error; HTML email is fallback if attachment caused failure |
+| Guest donor (no account) | PDF only via email attachment; no portfolio access |
+| Duplicate webhook delivery | Receipt rows already exist; outer block skipped; no duplicate PDFs |
+| Donor retry | `POST /api/receipts/[id]/retry`, rate-limited 3/hr per receipt |
 
 ---
 
@@ -237,4 +324,4 @@ Donations are never blocked. The existing HTML receipt email is the safety net.
 - Admin bulk PDF export
 - Year-end tax summary PDFs (separate feature)
 - Changing the existing `/receipts/[id]` print page (still works as before)
-- PDF watermarking or password protection
+- Adding a structured `address` column to `organizations` (org_id slug used instead)
