@@ -150,11 +150,12 @@ export default function PortfolioPage() {
       setUserEmail(userData.user.email ?? null);
 
       // Step 1: load portfolio rows
-      const { data: portfolioRows } = await (supabase as any)
+      const { data: portfolioRows, error: portfolioErr } = await (supabase as any)
         .from("portfolio_orgs")
         .select("org_id, allocation")
         .eq("user_id", userData.user.id)
         .order("created_at", { ascending: true });
+      if (portfolioErr) console.error("[portfolio_orgs] load error:", portfolioErr);
 
       if (portfolioRows && portfolioRows.length > 0) {
         // Step 2: fetch org details in a separate query (avoids fragile PostgREST join)
@@ -334,10 +335,11 @@ export default function PortfolioPage() {
     const supabase = createClient() as any;
 
     // Upsert new row then save all updated allocations
-    await supabase.from("portfolio_orgs").upsert(
+    const { error: upsertErr } = await (supabase as any).from("portfolio_orgs").upsert(
       { user_id: userId, org_id: result.id, allocation: 0 },
       { onConflict: "user_id,org_id" }
     );
+    if (upsertErr) console.error("[portfolio_orgs] upsert error:", upsertErr);
     // Save the redistributed allocations (read from current state after update)
     setOrgs((current) => {
       // fire-and-forget save
