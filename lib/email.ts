@@ -446,6 +446,7 @@ export async function sendApprovalEmail({
   if (!resend) return;
 
   const greeting = contactName ? `Hi ${contactName.split(" ")[0]},` : "Hi there,";
+  const signupUrl = `https://easytogive.online/auth/signup`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -457,38 +458,42 @@ export async function sendApprovalEmail({
         <tr>
           <td style="background:#1a7a4a;padding:28px 32px;text-align:center;">
             <p style="margin:0;color:white;font-size:22px;font-weight:700;">EasyToGive</p>
-            <p style="margin:6px 0 0;color:#bbf7d0;font-size:13px;">Organization Application</p>
+            <p style="margin:6px 0 0;color:#bbf7d0;font-size:13px;">Organization Portal</p>
           </td>
         </tr>
         <tr>
           <td style="padding:32px;">
-            <p style="margin:0 0 16px;color:#111827;font-size:20px;font-weight:700;">Your application was approved!</p>
             <p style="margin:0 0 12px;color:#6b7280;font-size:14px;line-height:1.7;">${greeting}</p>
+            <p style="margin:0 0 16px;color:#111827;font-size:20px;font-weight:700;">Welcome to EasyToGive</p>
             <p style="margin:0 0 20px;color:#6b7280;font-size:14px;line-height:1.7;">
-              Great news — <strong style="color:#111827;">${orgName}</strong> has been approved and is now live on EasyToGive.
-              Donors can find your organization and give today.
+              <strong style="color:#111827;">${orgName}</strong> has been listed on EasyToGive and donors can start giving today.
+              To manage your listing and connect your bank account, you need to create an account.
             </p>
-            <div style="background:#e8f5ee;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
-              <p style="margin:0 0 8px;color:#1a7a4a;font-size:13px;font-weight:700;">Next steps:</p>
-              <p style="margin:0 0 6px;color:#374151;font-size:13px;">• Connect your bank account to receive donations directly</p>
-              <p style="margin:0 0 6px;color:#374151;font-size:13px;">• Review your public profile and add photos or a mission statement</p>
-              <p style="margin:0;color:#374151;font-size:13px;">• Share your EasyToGive page with supporters</p>
+            <div style="background:#faf9f6;border:1px solid #e5e1d8;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
+              <p style="margin:0 0 8px;color:#374151;font-size:13px;font-weight:700;">Important: use this email address to sign up</p>
+              <p style="margin:0;color:#1a7a4a;font-size:14px;font-weight:700;font-family:monospace;">${to}</p>
             </div>
-            <table cellpadding="0" cellspacing="0" width="100%">
+            <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:20px;">
               <tr>
                 <td align="center">
-                  <a href="https://easytogive.online/org/dashboard"
+                  <a href="${signupUrl}"
                      style="display:inline-block;background:#1a7a4a;color:white;font-size:14px;font-weight:700;padding:14px 32px;border-radius:10px;text-decoration:none;">
-                    Go to your dashboard →
+                    Create your account →
                   </a>
                 </td>
               </tr>
             </table>
+            <div style="background:#e8f5ee;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-bottom:0;">
+              <p style="margin:0 0 8px;color:#1a7a4a;font-size:13px;font-weight:700;">After signing in:</p>
+              <p style="margin:0 0 6px;color:#374151;font-size:13px;">• Connect your bank account to receive donations</p>
+              <p style="margin:0 0 6px;color:#374151;font-size:13px;">• Complete your profile with photos and a mission statement</p>
+              <p style="margin:0;color:#374151;font-size:13px;">• Share your EasyToGive page with supporters</p>
+            </div>
           </td>
         </tr>
         <tr>
           <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e1d8;text-align:center;">
-            <p style="margin:0;color:#9ca3af;font-size:11px;">EasyToGive · Giving made easy</p>
+            <p style="margin:0;color:#9ca3af;font-size:11px;">EasyToGive · easytogive.online · Questions? Reply to this email.</p>
           </td>
         </tr>
       </table>
@@ -501,7 +506,7 @@ export async function sendApprovalEmail({
     await resend.emails.send({
       from: FROM,
       to: [to],
-      subject: `Your organization ${orgName} has been approved on EasyToGive!`,
+      subject: `Welcome to EasyToGive — ${orgName} is now listed`,
       html,
     });
   } catch (err) {
