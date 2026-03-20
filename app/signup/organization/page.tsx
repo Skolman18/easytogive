@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Building2, Loader2, AlertCircle, CheckCircle, Clock,
-  Users, Check, Download,
+  Users, Check, Download, Sparkles,
 } from "lucide-react";
 import { SUBCATEGORY_OPTIONS, CATEGORY_LABELS } from "@/lib/categories";
 import type { TopCategory } from "@/lib/categories";
@@ -128,6 +128,10 @@ function OrgSignupInner() {
   const [gbError, setGbError] = useState<string | null>(null);
   const [gbSuccess, setGbSuccess] = useState(false);
 
+  // AI autofill
+  const [autofilling, setAutofilling] = useState(false);
+  const [autofillError, setAutofillError] = useState<string | null>(null);
+
   // Scroll error into view whenever it changes
   useEffect(() => {
     if (error && errorRef.current) {
@@ -182,6 +186,35 @@ function OrgSignupInner() {
       setGbError("Failed to connect to GiveButter. Please try again.");
     } finally {
       setGbImporting(false);
+    }
+  }
+
+  async function handleAutofill() {
+    const url = form.website.trim();
+    if (!url) return;
+    setAutofilling(true);
+    setAutofillError(null);
+    try {
+      const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+      const res = await fetch("/api/org/autofill-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: fullUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAutofillError(data.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+      setForm((prev) => ({
+        ...prev,
+        orgName: data.name && !prev.orgName ? data.name : prev.orgName,
+        description: data.description || prev.description,
+      }));
+    } catch {
+      setAutofillError("Could not reach the server. Please try again.");
+    } finally {
+      setAutofilling(false);
     }
   }
 
@@ -598,13 +631,32 @@ function OrgSignupInner() {
                   <label className="block text-sm font-medium text-gray-700">
                     Brief description of your mission
                   </label>
-                  <span
-                    className="text-xs"
-                    style={{ color: form.description.length > 380 ? "#dc2626" : "#9ca3af" }}
-                  >
-                    {form.description.length}/400
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {form.website.trim() && (
+                      <button
+                        type="button"
+                        onClick={handleAutofill}
+                        disabled={autofilling}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+                        style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                      >
+                        {autofilling
+                          ? <><Loader2 className="w-3 h-3 animate-spin" />Filling…</>
+                          : <><Sparkles className="w-3 h-3" />AI Fill</>
+                        }
+                      </button>
+                    )}
+                    <span
+                      className="text-xs"
+                      style={{ color: form.description.length > 380 ? "#dc2626" : "#9ca3af" }}
+                    >
+                      {form.description.length}/400
+                    </span>
+                  </div>
                 </div>
+                {autofillError && (
+                  <p className="text-xs mb-1.5 font-medium" style={{ color: "#dc2626" }}>{autofillError}</p>
+                )}
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, 400) })}
