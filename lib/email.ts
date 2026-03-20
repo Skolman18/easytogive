@@ -506,7 +506,7 @@ export async function sendApprovalEmail({
     await resend.emails.send({
       from: FROM,
       to: [to],
-      subject: `Welcome to EasyToGive — ${orgName} is now listed`,
+      subject: `Welcome to EasyToGive — ${orgName} is ready`,
       html,
     });
   } catch (err) {
