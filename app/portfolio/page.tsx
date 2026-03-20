@@ -32,6 +32,7 @@ interface PortfolioOrg {
   imageUrl?: string;
   category?: string;
   location?: string;
+  tagline?: string;
 }
 
 interface OrgSearchResult {
@@ -40,6 +41,7 @@ interface OrgSearchResult {
   category: string;
   location: string;
   image_url: string | null;
+  tagline?: string;
 }
 
 interface RecurringDonation {
@@ -78,17 +80,34 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 // ─── Tooltip ──────────────────────────────────────────────────────────────────
 
+function getNextDate(frequency: Frequency, donationAmount: number): string {
+  const today = new Date();
+  const next = new Date(today);
+  if (frequency === "weekly") next.setDate(today.getDate() + 7);
+  else if (frequency === "biweekly") next.setDate(today.getDate() + 14);
+  else if (frequency === "monthly") next.setMonth(today.getMonth() + 1);
+  else if (frequency === "yearly") next.setFullYear(today.getFullYear() + 1);
+  return next.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
 function CustomTooltip({
   active,
   payload,
+  donationAmount,
 }: {
   active?: boolean;
-  payload?: { name: string; value: number }[];
+  payload?: { name: string; value: number; payload?: { color: string } }[];
+  donationAmount?: number;
 }) {
   if (active && payload?.length) {
+    const pct = payload[0].value;
+    const dollars = donationAmount ? (donationAmount * pct / 100) : null;
     return (
-      <div className="px-3 py-2 rounded-lg shadow-lg text-xs font-semibold bg-gray-900 text-white">
-        {payload[0].name}: {payload[0].value}%
+      <div className="px-3 py-2 rounded-lg shadow-lg text-xs bg-gray-900 text-white">
+        <p className="font-semibold">{payload[0].name}</p>
+        <p className="text-gray-300 mt-0.5">
+          {pct}%{dollars !== null ? ` · $${dollars.toFixed(2)}` : ""}
+        </p>
       </div>
     );
   }
@@ -110,8 +129,12 @@ export default function PortfolioPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // Recurring
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(true);
   const [frequency, setFrequency] = useState<Frequency>("monthly");
+
+  // Review modal + collapsible cards
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [collapsedOrgs, setCollapsedOrgs] = useState<Set<string>>(new Set());
   const [recurringDonations, setRecurringDonations] = useState<RecurringDonation[]>([]);
 
   // Add Charity panel
@@ -162,7 +185,7 @@ export default function PortfolioPage() {
         const orgIds = portfolioRows.map((r: any) => r.org_id);
         const { data: orgDetails } = await (supabase as any)
           .from("organizations")
-          .select("id, name, image_url, category, location")
+          .select("id, name, image_url, category, location, tagline")
           .in("id", orgIds);
         const orgMap = new Map((orgDetails ?? []).map((o: any) => [o.id, o]));
 
@@ -175,6 +198,7 @@ export default function PortfolioPage() {
             imageUrl: org?.image_url ?? undefined,
             category: org?.category ?? undefined,
             location: org?.location ?? undefined,
+            tagline: org?.tagline ?? undefined,
           };
         });
         setOrgs(loaded);
@@ -230,7 +254,7 @@ export default function PortfolioPage() {
       const addedIds = orgs.map((o) => o.orgId);
       const { data } = await supabase
         .from("organizations")
-        .select("id, name, category, location, image_url")
+        .select("id, name, category, location, image_url, tagline")
         .neq("visible", false)
         .ilike("name", `%${searchQuery}%`)
         .limit(8);
@@ -319,6 +343,7 @@ export default function PortfolioPage() {
       imageUrl: result.image_url ?? undefined,
       category: result.category,
       location: result.location,
+      tagline: result.tagline,
     };
 
     // Add then immediately distribute evenly so the org shows in the pie
@@ -386,13 +411,18 @@ export default function PortfolioPage() {
   const isValid = totalPercent === 100;
   const effectiveAmount = useCustom ? parseFloat(customAmount) || 0 : donationAmount;
 
-  const chartData = orgs
-    .filter((o) => o.percentage > 0)
-    .map((o, i) => ({
-      name: o.orgName,
-      value: o.percentage,
-      color: GREEN_SHADES[i % GREEN_SHADES.length],
-    }));
+  const chartData = [
+    ...orgs
+      .filter((o) => o.percentage > 0)
+      .map((o, i) => ({
+        name: o.orgName,
+        value: o.percentage,
+        color: GREEN_SHADES[i % GREEN_SHADES.length],
+      })),
+    ...(remaining > 0 && orgs.length > 0
+      ? [{ name: "Unallocated", value: remaining, color: "#e5e1d8" }]
+      : []),
+  ];
 
   const checkoutAllocations: DonationAllocation[] = orgs
     .filter((o) => o.percentage > 0)
@@ -678,35 +708,41 @@ export default function PortfolioPage() {
 
                   {chartData.length > 0 ? (
                     <>
-                      <div className="relative h-56">
+                      <div className="relative h-72">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
                               data={chartData}
                               cx="50%"
                               cy="50%"
-                              innerRadius={64}
-                              outerRadius={100}
+                              innerRadius={80}
+                              outerRadius={120}
                               paddingAngle={2}
                               dataKey="value"
                               nameKey="name"
                               strokeWidth={0}
+                              isAnimationActive
+                              animationBegin={0}
+                              animationDuration={500}
+                              animationEasing="ease-out"
                             >
                               {chartData.map((entry, i) => (
                                 <Cell key={i} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip content={<CustomTooltip />} />
+                            <Tooltip content={<CustomTooltip donationAmount={effectiveAmount} />} />
                           </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                           <span
-                            className="font-display text-3xl font-bold"
-                            style={{ color: isValid ? "#1a7a4a" : "#374151" }}
+                            className="font-display text-3xl font-bold tabular-nums"
+                            style={{ color: isValid ? "#1a7a4a" : totalPercent > 100 ? "#dc2626" : "#374151" }}
                           >
                             {totalPercent}%
                           </span>
-                          <span className="text-xs text-gray-400 mt-0.5">allocated</span>
+                          <span className="text-xs text-gray-400 mt-0.5">
+                            {isValid ? "allocated" : remaining > 0 ? `${remaining}% left` : `${totalPercent - 100}% over`}
+                          </span>
                         </div>
                       </div>
 
@@ -746,15 +782,16 @@ export default function PortfolioPage() {
                   const color = GREEN_SHADES[i % GREEN_SHADES.length];
                   const dollarAmount = (effectiveAmount * org.percentage) / 100;
                   const categoryLabel = CATEGORY_LABELS[org.category ?? ""] || org.category;
+                  const isCollapsed = collapsedOrgs.has(org.orgId);
 
                   return (
                     <div
                       key={org.orgId}
-                      className="rounded-xl md:rounded-2xl border bg-white p-3.5 md:p-5"
+                      className="rounded-xl md:rounded-2xl border bg-white overflow-hidden"
                       style={{ borderColor: "#e5e1d8" }}
                     >
                       {/* Top row */}
-                      <div className="flex items-center gap-4 mb-4">
+                      <div className="flex items-center gap-4 p-3.5 md:p-5" style={{ marginBottom: isCollapsed ? 0 : undefined }}>
                         {/* Thumbnail */}
                         <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                           {org.imageUrl ? (
@@ -786,6 +823,22 @@ export default function PortfolioPage() {
                           )}
                         </div>
 
+                        {/* Collapse toggle (mobile-friendly) */}
+                        <button
+                          onClick={() => setCollapsedOrgs((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(org.orgId)) next.delete(org.orgId);
+                            else next.add(org.orgId);
+                            return next;
+                          })}
+                          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors flex-shrink-0 md:hidden"
+                          aria-label={isCollapsed ? "Expand" : "Collapse"}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d={isCollapsed ? "M4 6l4 4 4-4" : "M4 10l4-4 4 4"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+
                         {/* Percent input */}
                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
                           <div className="flex items-center gap-1">
@@ -813,20 +866,29 @@ export default function PortfolioPage() {
                         </button>
                       </div>
 
-                      {/* Slider */}
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={5}
-                        value={org.percentage}
-                        onChange={(e) => handleSlider(org.orgId, parseInt(e.target.value))}
-                        className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-                        style={{
-                          background: `linear-gradient(to right, ${color} 0%, ${color} ${org.percentage}%, #e5e1d8 ${org.percentage}%, #e5e1d8 100%)`,
-                          accentColor: color,
-                        }}
-                      />
+                      {/* Collapsible: slider + tagline */}
+                      {!isCollapsed && (
+                        <div className="px-3.5 pb-3.5 md:px-5 md:pb-5 -mt-1">
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={5}
+                            value={org.percentage}
+                            onChange={(e) => handleSlider(org.orgId, parseInt(e.target.value))}
+                            className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                            style={{
+                              background: `linear-gradient(to right, ${color} 0%, ${color} ${org.percentage}%, #e5e1d8 ${org.percentage}%, #e5e1d8 100%)`,
+                              accentColor: color,
+                            }}
+                          />
+                          {org.tagline && (
+                            <p className="text-xs text-gray-400 mt-2 leading-relaxed italic">
+                              {org.tagline}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -907,23 +969,39 @@ export default function PortfolioPage() {
                     </button>
                   </div>
 
+                  {/* Recurring badge */}
+                  {isRecurring && (
+                    <div
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 mb-4 text-xs font-semibold"
+                      style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 flex-shrink-0" />
+                      Most popular — steady, lasting impact
+                    </div>
+                  )}
+
                   {/* Frequency (recurring only) */}
                   {isRecurring && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                      {FREQUENCIES.map((f) => (
-                        <button
-                          key={f.value}
-                          onClick={() => setFrequency(f.value)}
-                          className="py-2 rounded-lg text-xs font-semibold transition-all"
-                          style={
-                            frequency === f.value
-                              ? { backgroundColor: "#1a7a4a", color: "white" }
-                              : { backgroundColor: "#f3f4f6", color: "#374151" }
-                          }
-                        >
-                          {f.label}
-                        </button>
-                      ))}
+                    <div className="mb-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+                        {FREQUENCIES.map((f) => (
+                          <button
+                            key={f.value}
+                            onClick={() => setFrequency(f.value)}
+                            className="py-2 rounded-lg text-xs font-semibold transition-all"
+                            style={
+                              frequency === f.value
+                                ? { backgroundColor: "#1a7a4a", color: "white" }
+                                : { backgroundColor: "#f3f4f6", color: "#374151" }
+                            }
+                          >
+                            {f.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-400 text-center">
+                        Next donation: {getNextDate(frequency, effectiveAmount)}
+                      </p>
                     </div>
                   )}
 
@@ -1007,30 +1085,18 @@ export default function PortfolioPage() {
                     </div>
                   )}
 
-                  {/* Donate / Start Recurring button */}
-                  {isRecurring ? (
-                    <button
-                      onClick={() => setCheckoutOpen(true)}
-                      disabled={!isValid || effectiveAmount < 0.50}
-                      className="w-full py-3.5 rounded-xl font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
-                      style={{ backgroundColor: "#1a7a4a" }}
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      {isValid && effectiveAmount >= 0.50
-                        ? `Give ${formatCurrency(effectiveAmount)} ${FREQUENCIES.find((f) => f.value === frequency)?.label ?? ""}`
-                        : "Set Up Recurring Giving"}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setCheckoutOpen(true)}
-                      disabled={!isValid || effectiveAmount < 0.50}
-                      className="w-full py-3.5 rounded-xl font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
-                      style={{ backgroundColor: "#1a7a4a" }}
-                    >
-                      <Lock className="w-4 h-4" />
-                      Donate {isValid && effectiveAmount >= 0.50 ? formatCurrency(effectiveAmount) : "Securely"}
-                    </button>
-                  )}
+                  {/* Review & Donate button */}
+                  <button
+                    onClick={() => setReviewOpen(true)}
+                    disabled={!isValid || effectiveAmount < 0.50}
+                    className="w-full py-3.5 rounded-xl font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: "#1a7a4a" }}
+                  >
+                    {isRecurring ? <RefreshCw className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                    {isValid && effectiveAmount >= 0.50
+                      ? `Review & ${isRecurring ? "Set Up" : "Donate"} ${formatCurrency(effectiveAmount)}`
+                      : isRecurring ? "Set Up Recurring Giving" : "Donate Securely"}
+                  </button>
                   <p className="text-xs text-gray-400 text-center mt-3 flex items-center justify-center gap-1">
                     <Lock className="w-3 h-3" />
                     Secured by Stripe · 100% tax-deductible
@@ -1253,6 +1319,95 @@ export default function PortfolioPage() {
                   </p>
                 </div>
               ) : null}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Sticky floating action bar (mobile) ────────────────────────────── */}
+      {orgs.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden border-t bg-white px-4 py-3 flex items-center gap-3" style={{ borderColor: "#e5e1d8" }}>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-400">{isRecurring ? `${FREQUENCIES.find(f => f.value === frequency)?.label} giving` : "One-time"}</p>
+            <p className="font-display text-lg font-bold" style={{ color: isValid ? "#1a7a4a" : totalPercent > 100 ? "#dc2626" : "#374151" }}>
+              {isValid ? formatCurrency(effectiveAmount) : `${totalPercent}% allocated`}
+            </p>
+          </div>
+          <button
+            onClick={() => setReviewOpen(true)}
+            disabled={!isValid || effectiveAmount < 0.50}
+            className="px-5 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:opacity-90 active:scale-95 flex items-center gap-2 flex-shrink-0"
+            style={{ backgroundColor: "#1a7a4a" }}
+          >
+            {isRecurring ? <RefreshCw className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+            Review & {isRecurring ? "Set Up" : "Donate"}
+          </button>
+        </div>
+      )}
+
+      {/* ── Review & Donate modal ───────────────────────────────────────────── */}
+      {reviewOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setReviewOpen(false)} />
+          <div className="fixed inset-x-4 bottom-4 top-auto md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md z-50 bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ border: "1px solid #e5e1d8" }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: "#e5e1d8" }}>
+              <h3 className="font-display text-lg font-semibold text-gray-900">Review Your Giving</h3>
+              <button
+                onClick={() => setReviewOpen(false)}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 overflow-y-auto max-h-[60vh]">
+              {/* Frequency badge */}
+              <div
+                className="flex items-center gap-2 rounded-lg px-3 py-2 mb-5 text-sm font-semibold"
+                style={isRecurring ? { backgroundColor: "#e8f5ee", color: "#1a7a4a" } : { backgroundColor: "#f3f4f6", color: "#374151" }}
+              >
+                {isRecurring ? <RefreshCw className="w-4 h-4 flex-shrink-0" /> : <Lock className="w-4 h-4 flex-shrink-0" />}
+                {isRecurring
+                  ? `${FREQUENCIES.find(f => f.value === frequency)?.label} recurring · next on ${getNextDate(frequency, effectiveAmount)}`
+                  : "One-time donation"}
+              </div>
+
+              {/* Breakdown */}
+              <div className="space-y-3 mb-5">
+                {orgs.filter((o) => o.percentage > 0).map((o, i) => (
+                  <div key={o.orgId} className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: GREEN_SHADES[i % GREEN_SHADES.length] }} />
+                    <span className="flex-1 text-sm text-gray-700 truncate">{o.orgName}</span>
+                    <span className="text-sm font-semibold text-gray-500 flex-shrink-0">{o.percentage}%</span>
+                    <span className="text-sm font-bold flex-shrink-0" style={{ color: "#1a7a4a" }}>
+                      {formatCurrency((effectiveAmount * o.percentage) / 100)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t font-semibold text-sm" style={{ borderColor: "#e5e1d8" }}>
+                <span className="text-gray-900">Total {isRecurring ? `/ ${FREQUENCIES.find(f => f.value === frequency)?.label.toLowerCase()}` : ""}</span>
+                <span className="text-lg font-display" style={{ color: "#1a7a4a" }}>{formatCurrency(effectiveAmount)}</span>
+              </div>
+            </div>
+
+            {/* Confirm button */}
+            <div className="px-6 py-5 border-t" style={{ borderColor: "#e5e1d8" }}>
+              <button
+                onClick={() => { setReviewOpen(false); setCheckoutOpen(true); }}
+                className="w-full py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
+                style={{ backgroundColor: "#1a7a4a" }}
+              >
+                {isRecurring ? <RefreshCw className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                Confirm & Pay {formatCurrency(effectiveAmount)}
+              </button>
+              <p className="text-xs text-gray-400 text-center mt-3 flex items-center justify-center gap-1">
+                <Lock className="w-3 h-3" />
+                Secured by Stripe · 100% tax-deductible
+              </p>
             </div>
           </div>
         </>
