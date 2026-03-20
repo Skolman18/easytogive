@@ -1091,11 +1091,20 @@ Inside the `invoice.payment_succeeded` case, find the block starting with `if (m
               // Insert receipt row
               const recurReceiptNumber = generateReceiptNumber();
               const now2 = new Date().toISOString();
+
+              // Fetch donation IDs for this recurring payment (for donation_ids column)
+              const { data: recurInserted } = await supabase
+                .from("donations")
+                .select("id")
+                .eq("stripe_payment_intent_id", piId);
+              const recurDonationIds = (recurInserted ?? []).map((r: any) => r.id);
+
               const { data: recurReceiptRow } = await supabase
                 .from("receipts")
                 .insert({
                   donor_id: meta.donorId,
                   payment_intent_id: piId,
+                  donation_ids: recurDonationIds,
                   org_id: meta.orgId ?? null,
                   type: "individual",
                   amount: invoice.amount_paid,
@@ -1261,9 +1270,10 @@ In the receipts tab section (around line 1079–1086), replace the existing PDF 
 
 // After:
                           {(() => {
+                            // Match via donation_ids (populated for all new receipts)
+                            // Falls through to browser-print fallback for pre-feature donations
                             const apiReceipt = apiReceipts.find((r) =>
-                              r.donation_ids?.includes(record.id) ||
-                              (r.type === "individual" && r.org_id === record.org_id && r.payment_intent_id && record.receipt_id?.includes(r.payment_intent_id.replace("pi_","").slice(0,12).toUpperCase()))
+                              r.donation_ids?.includes(record.id)
                             );
                             if (apiReceipt?.pdf_status === "generated") {
                               return (
