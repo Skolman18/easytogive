@@ -3,6 +3,7 @@
 import React from "react";
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase-browser";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { SUBCATEGORY_OPTIONS, CATEGORY_LABELS } from "@/lib/categories";
@@ -130,6 +131,7 @@ function PreviewSuccessScreen({ form }: { form: Record<string, string> }) {
 
 function OrgSignupInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const isPreview = searchParams.get("preview") === "true";
 
   const [form, setForm] = useState({
@@ -141,6 +143,8 @@ function OrgSignupInner() {
     category: "",
     subcategory: "",
     description: "",
+    password: "",
+    confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -250,6 +254,26 @@ function OrgSignupInner() {
         setError("Please enter a valid email address.");
         return false;
       }
+      if (!form.password) {
+        setError("Password is required.");
+        return false;
+      }
+      if (form.password.length < 8) {
+        setError("Password must be at least 8 characters.");
+        return false;
+      }
+      if (!/\d/.test(form.password)) {
+        setError("Password must contain at least one number.");
+        return false;
+      }
+      if (!/[^a-zA-Z0-9]/.test(form.password)) {
+        setError("Password must contain at least one special character.");
+        return false;
+      }
+      if (form.password !== form.confirmPassword) {
+        setError("Passwords do not match.");
+        return false;
+      }
       return true;
     }
 
@@ -329,17 +353,15 @@ function OrgSignupInner() {
   async function handleSubmit() {
     if (!validateStep(3)) return;
 
-    const effectiveSubcategory =
-      subOptions.length === 1 ? subOptions[0] : form.subcategory;
+    setLoading(true);
+    setError(null);
 
-    // Preview mode: skip real Supabase write
+    // Preview mode: skip real account creation
     if (isPreview) {
+      setLoading(false);
       setSuccess(true);
       return;
     }
-
-    setLoading(true);
-    setError(null);
 
     try {
       const res = await fetch("/api/org/apply", {
@@ -352,16 +374,33 @@ function OrgSignupInner() {
           website: form.website,
           ein: form.ein,
           category: form.category,
-          subcategory: effectiveSubcategory,
+          subcategory: form.subcategory,
           description: form.description,
+          password: form.password,
         }),
       });
       const data = await res.json();
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setSuccess(true);
+
+      if (!res.ok) {
+        setError(data.error ?? "Something went wrong. Please try again.");
+        return;
       }
+
+      // Account created — now sign in and redirect to dashboard
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (signInError) {
+        setError(
+          "Account created! Please sign in at /auth/signin to access your dashboard."
+        );
+        return;
+      }
+
+      router.push("/org/dashboard");
     } catch {
       setError("Something went wrong. Please check your connection and try again.");
     } finally {
@@ -371,47 +410,6 @@ function OrgSignupInner() {
 
   if (success && isPreview) {
     return <PreviewSuccessScreen form={form} />;
-  }
-
-  if (success) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center px-4 py-16"
-        style={{ backgroundColor: "#faf9f6" }}
-      >
-        <div className="w-full max-w-md text-center">
-          <h1 className="font-display text-3xl text-gray-900 mb-4">
-            Application submitted
-          </h1>
-          <p className="text-gray-500 mb-3">
-            We received your application for{" "}
-            <span className="font-semibold text-gray-800">{form.orgName}</span>.
-          </p>
-          <p className="text-sm text-gray-500 mb-8">
-            We&apos;ll review it and reach out within 2 business days. Once
-            approved, we&apos;ll send an invite to{" "}
-            <span className="font-medium text-gray-700">{form.email}</span> so
-            you can complete your profile.
-          </p>
-          <div className="flex flex-col gap-3">
-            <Link
-              href="/discover"
-              className="w-full py-3 rounded-xl font-semibold text-white text-center transition-all hover:opacity-90"
-              style={{ backgroundColor: "#1a7a4a" }}
-            >
-              Browse Organizations
-            </Link>
-            <Link
-              href="/"
-              className="w-full py-3 rounded-xl font-semibold text-center transition-all border"
-              style={{ color: "#374151", borderColor: "#e5e1d8" }}
-            >
-              Return to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -839,6 +837,58 @@ function OrgSignupInner() {
                       />
                     </div>
 
+                    {/* Password */}
+                    <div>
+                      <label
+                        className="block text-xs font-semibold mb-1.5"
+                        style={{ color: "#444" }}
+                      >
+                        Password
+                      </label>
+                      <input
+                        type="password"
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        required
+                        autoComplete="new-password"
+                        className="w-full px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors"
+                        style={{
+                          border: "1.5px solid #d8d4cc",
+                          borderRadius: 8,
+                          height: 42,
+                        }}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "#1a7a4a")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "#d8d4cc")}
+                        placeholder="8+ characters, number, special char"
+                      />
+                    </div>
+
+                    {/* Confirm password */}
+                    <div>
+                      <label
+                        className="block text-xs font-semibold mb-1.5"
+                        style={{ color: "#444" }}
+                      >
+                        Confirm password
+                      </label>
+                      <input
+                        type="password"
+                        value={form.confirmPassword}
+                        onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                        required
+                        autoComplete="new-password"
+                        className="w-full px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors"
+                        style={{
+                          border: "1.5px solid #d8d4cc",
+                          borderRadius: 8,
+                          height: 42,
+                        }}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "#1a7a4a")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "#d8d4cc")}
+                        placeholder="Re-enter your password"
+                      />
+                    </div>
+
                     {/* GiveButter import */}
                     <div
                       className="rounded-xl p-5"
@@ -993,7 +1043,7 @@ function OrgSignupInner() {
                   ) : isPreview ? (
                     "Submit Application (Preview)"
                   ) : (
-                    "Submit application"
+                    "Create account & submit"
                   )}
                 </button>
               )}
