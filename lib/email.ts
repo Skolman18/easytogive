@@ -241,6 +241,7 @@ export async function sendReceiptEmail({
   frequency,
   receiptUrl,
   allocations,
+  pdfBuffer,
 }: {
   to: string;
   donorName?: string | null;
@@ -253,6 +254,7 @@ export async function sendReceiptEmail({
   frequency?: string;
   receiptUrl?: string | null;
   allocations?: ReceiptAllocation[] | null;
+  pdfBuffer?: Buffer | null;
 }): Promise<void> {
   const resend = getResend();
   if (!resend) return; // silently skip if not configured
@@ -281,6 +283,15 @@ export async function sendReceiptEmail({
         receiptUrl,
         allocations,
       }),
+      attachments: pdfBuffer
+        ? [
+            {
+              filename: "receipt.pdf",
+              content: pdfBuffer,
+              contentType: "application/pdf",
+            },
+          ]
+        : undefined,
     });
   } catch (err) {
     // Log but don't throw — a failed email shouldn't break the webhook response

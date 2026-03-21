@@ -66,6 +66,19 @@ interface WatchlistOrg {
   category: string | null;
 }
 
+interface ReceiptApiRow {
+  id: string;
+  type: "individual" | "portfolio_summary";
+  receipt_number: string;
+  amount: number;
+  org_id: string | null;
+  org_name: string | null;
+  pdf_status: "pending" | "generated" | "failed";
+  donation_ids: string[];
+  payment_intent_id: string;
+  created_at: string;
+}
+
 function downloadReceiptPDF(record: DonationRecord, user: { email?: string } | null, donorName: string) {
   const win = window.open("", "_blank");
   if (!win) return;
@@ -310,6 +323,8 @@ function ProfilePageInner() {
   const [receiptsYear, setReceiptsYear] = useState<number>(2026);
   const [donationRecords, setDonationRecords] = useState<DonationRecord[]>([]);
   const [loadingReceipts, setLoadingReceipts] = useState(false);
+  const [apiReceipts, setApiReceipts] = useState<ReceiptApiRow[]>([]);
+  const [retryingReceiptId, setRetryingReceiptId] = useState<string | null>(null);
   const [selectedReceipt, setSelectedReceipt] = useState<DonationRecord | null>(null);
   const [allDonations, setAllDonations] = useState<DonationRecord[]>([]);
   const [watchlistOrgs, setWatchlistOrgs] = useState<WatchlistOrg[]>([]);
@@ -402,6 +417,32 @@ function ProfilePageInner() {
     }
   }
 
+  async function loadApiReceipts() {
+    try {
+      const res = await fetch("/api/receipts");
+      if (res.ok) {
+        const data = await res.json();
+        setApiReceipts(data);
+      }
+    } catch {
+      // silently ignore
+    }
+  }
+
+  async function handleReceiptRetry(receiptId: string) {
+    setRetryingReceiptId(receiptId);
+    try {
+      const res = await fetch(`/api/receipts/${receiptId}/retry`, { method: "POST" });
+      if (res.ok) {
+        await loadApiReceipts();
+      }
+    } catch {
+      // silently ignore
+    } finally {
+      setRetryingReceiptId(null);
+    }
+  }
+
   async function loadWatchlist(userId: string) {
     setLoadingWatchlist(true);
     const supabase = createClient() as any;
@@ -458,6 +499,14 @@ function ProfilePageInner() {
     if (user) loadDonations(user.id, receiptsYear);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, receiptsYear]);
+
+  // load API receipts when switching to receipts tab
+  useEffect(() => {
+    if (activeTab === "receipts" && user) {
+      loadApiReceipts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, user?.id]);
 
   async function loadProfile(userId: string) {
     const { data } = await (createClient() as any)
@@ -1076,14 +1125,62 @@ function ProfilePageInner() {
                               Open
                             </Link>
                           )}
-                          <button
-                            onClick={() => downloadReceiptPDF(record, user, profile.full_name)}
-                            className="flex items-center gap-1 px-3 min-h-[44px] rounded-lg text-xs font-medium transition-colors"
-                            style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
-                          >
-                            <Download className="w-3 h-3" />
-                            PDF
-                          </button>
+                          {(() => {
+                            const apiReceipt = apiReceipts.find((r) =>
+                              r.donation_ids?.includes(record.id)
+                            );
+                            if (apiReceipt?.pdf_status === "generated") {
+                              return (
+                                <a
+                                  href={`/api/receipts/${apiReceipt.id}/download`}
+                                  className="flex items-center gap-1 px-3 min-h-[44px] rounded-lg text-xs font-medium transition-colors"
+                                  style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                                >
+                                  <Download className="w-3 h-3" />
+                                  PDF
+                                </a>
+                              );
+                            }
+                            if (apiReceipt?.pdf_status === "pending") {
+                              return (
+                                <span
+                                  className="flex items-center gap-1 px-3 min-h-[44px] rounded-lg text-xs font-medium"
+                                  style={{ color: "#9ca3af" }}
+                                >
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  Generating…
+                                </span>
+                              );
+                            }
+                            if (apiReceipt?.pdf_status === "failed") {
+                              return (
+                                <button
+                                  onClick={() => handleReceiptRetry(apiReceipt.id)}
+                                  disabled={retryingReceiptId === apiReceipt.id}
+                                  className="flex items-center gap-1 px-3 min-h-[44px] rounded-lg text-xs font-medium transition-colors"
+                                  style={{ backgroundColor: "#fef3c7", color: "#92400e" }}
+                                >
+                                  {retryingReceiptId === apiReceipt.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="w-3 h-3" />
+                                  )}
+                                  Retry PDF
+                                </button>
+                              );
+                            }
+                            // Fallback: pre-feature donation or no receipt record yet
+                            return (
+                              <button
+                                onClick={() => downloadReceiptPDF(record, user, profile.full_name)}
+                                className="flex items-center gap-1 px-3 min-h-[44px] rounded-lg text-xs font-medium transition-colors"
+                                style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                              >
+                                <Download className="w-3 h-3" />
+                                PDF
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>

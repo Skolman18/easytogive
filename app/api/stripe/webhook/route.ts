@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendReceiptEmail } from "@/lib/email";
+import { generateReceiptPdf } from "@/lib/generateReceiptPdf";
 
 // Must be dynamic so Next.js doesn't buffer the body (needed for signature verification)
 export const dynamic = "force-dynamic";
@@ -46,6 +47,60 @@ async function getOrgInfo(
   } catch {
     return { name: "an organization", ein: null };
   }
+}
+
+function generateReceiptNumber(): string {
+  const ts = Date.now();
+  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `RCP-${ts}-${rand}`;
+}
+
+async function generateAndStoreReceipt(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  receiptRow: {
+    id: string;
+    donor_id: string | null;
+    receipt_number: string;
+    type: "individual" | "portfolio_summary";
+    amount: number;
+    created_at: string;
+  },
+  orgs: Array<{ name: string; ein: string | null; amount: number }>,
+  donorEmail: string,
+  donorName: string | null
+): Promise<Buffer | null> {
+  const pdfBuffer = await generateReceiptPdf({
+    receiptNumber: receiptRow.receipt_number,
+    donorName,
+    donorEmail,
+    createdAt: new Date(receiptRow.created_at),
+    type: receiptRow.type,
+    orgs,
+    totalAmount: receiptRow.amount,
+  });
+
+  // Guest donors: generate PDF but skip storage upload
+  if (!receiptRow.donor_id) {
+    await supabase
+      .from("receipts")
+      .update({ pdf_status: "generated" })
+      .eq("id", receiptRow.id);
+    return pdfBuffer;
+  }
+
+  const storagePath = `${receiptRow.donor_id}/${receiptRow.id}.pdf`;
+  const { error: uploadError } = await supabase.storage
+    .from("receipts")
+    .upload(storagePath, pdfBuffer, { contentType: "application/pdf", upsert: true });
+
+  if (uploadError) throw uploadError;
+
+  await supabase
+    .from("receipts")
+    .update({ pdf_url: storagePath, pdf_status: "generated" })
+    .eq("id", receiptRow.id);
+
+  return pdfBuffer;
 }
 
 async function incrementOrgStats(
@@ -200,29 +255,183 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Send receipt email — catch separately so email failures don't undo the recorded donation
-          if (inserted && meta.donorId) {
+          // Generate receipts + send email — inside idempotency guard, only on first delivery
+          if (inserted) {
             try {
               const primaryOrgId = meta.orgId || (allocParts[0]?.orgId ?? null);
-              const [donor, orgInfo] = await Promise.all([
-                getDonorInfo(supabase, meta.donorId),
-                primaryOrgId ? getOrgInfo(supabase, primaryOrgId) : Promise.resolve({ name: meta.orgName ?? "EasyToGive", ein: null }),
+              const now2 = new Date().toISOString();
+
+              // Fetch donor + org info
+              const [donor, primaryOrgInfo] = await Promise.all([
+                meta.donorId
+                  ? getDonorInfo(supabase, meta.donorId)
+                  : Promise.resolve({ email: null, name: null }),
+                primaryOrgId
+                  ? getOrgInfo(supabase, primaryOrgId)
+                  : Promise.resolve({ name: meta.orgName ?? "EasyToGive", ein: null }),
               ]);
+
+              // Fetch all org info for portfolio
+              const allOrgInfos: Array<{ orgId: string; name: string; ein: string | null; amountCents: number }> = [];
+              if (allocParts.length > 1) {
+                const orgFetches = allocParts.map((a: { orgId: string; amountCents: number }) =>
+                  getOrgInfo(supabase, a.orgId).then((info) => ({
+                    orgId: a.orgId,
+                    name: info.name,
+                    ein: info.ein,
+                    amountCents: a.amountCents,
+                  }))
+                );
+                allOrgInfos.push(...(await Promise.all(orgFetches)));
+              }
+
+              // Fetch donation IDs just inserted (for donation_ids column)
+              const { data: justInserted } = await supabase
+                .from("donations")
+                .select("id, org_id")
+                .eq("stripe_payment_intent_id", pi.id);
+              const donationIdMap: Record<string, string> = {};
+              for (const row of justInserted ?? []) {
+                if (row.org_id) donationIdMap[row.org_id] = row.id;
+              }
+              const allDonationIds = (justInserted ?? []).map((r: { id: string }) => r.id);
+
+              // Insert receipt rows (pdf_status: 'pending')
+              type ReceiptRow = { id: string; donor_id: string | null; receipt_number: string; type: "individual" | "portfolio_summary"; amount: number; created_at: string };
+              let portfolioReceiptRow: ReceiptRow | null = null;
+              const individualReceiptRows: (ReceiptRow | null)[] = [];
+
+              if (allocParts.length > 1) {
+                // Portfolio: 1 summary + N individual rows
+                const summaryNumber = generateReceiptNumber();
+                const { data: summaryRow } = await supabase
+                  .from("receipts")
+                  .insert({
+                    donor_id: meta.donorId ?? null,
+                    payment_intent_id: pi.id,
+                    donation_ids: allDonationIds,
+                    org_id: null,
+                    type: "portfolio_summary",
+                    amount: donationAmountCents,
+                    receipt_number: summaryNumber,
+                    pdf_status: "pending",
+                    created_at: now2,
+                  })
+                  .select("id, donor_id, receipt_number, type, amount, created_at")
+                  .single();
+
+                if (summaryRow) portfolioReceiptRow = summaryRow as ReceiptRow;
+
+                for (const orgInfo of allOrgInfos) {
+                  const donId = donationIdMap[orgInfo.orgId];
+                  const { data: indRow } = await supabase
+                    .from("receipts")
+                    .insert({
+                      donor_id: meta.donorId ?? null,
+                      payment_intent_id: pi.id,
+                      donation_ids: donId ? [donId] : null,
+                      org_id: orgInfo.orgId,
+                      type: "individual",
+                      amount: orgInfo.amountCents,
+                      receipt_number: generateReceiptNumber(),
+                      pdf_status: "pending",
+                      created_at: now2,
+                    })
+                    .select("id, donor_id, receipt_number, type, amount, created_at")
+                    .single();
+
+                  individualReceiptRows.push(indRow as ReceiptRow | null);
+                }
+              } else {
+                // Single org: 1 individual row
+                const { data: indRow } = await supabase
+                  .from("receipts")
+                  .insert({
+                    donor_id: meta.donorId ?? null,
+                    payment_intent_id: pi.id,
+                    donation_ids: allDonationIds,
+                    org_id: meta.orgId ?? null,
+                    type: "individual",
+                    amount: donationAmountCents,
+                    receipt_number: generateReceiptNumber(),
+                    pdf_status: "pending",
+                    created_at: now2,
+                  })
+                  .select("id, donor_id, receipt_number, type, amount, created_at")
+                  .single();
+
+                individualReceiptRows.push(indRow as ReceiptRow | null);
+              }
+
+              // Generate PDF and send email (failure falls back to HTML-only email)
+              let pdfBuffer: Buffer | null = null;
+              try {
+                if (donor.email) {
+                  const receiptRowForPdf = portfolioReceiptRow ?? individualReceiptRows[0];
+                  if (receiptRowForPdf) {
+                    const orgsForPdf = allocParts.length > 1
+                      ? allOrgInfos.map((o) => ({ name: o.name, ein: o.ein, amount: o.amountCents }))
+                      : [{ name: primaryOrgInfo.name, ein: primaryOrgInfo.ein, amount: donationAmountCents }];
+
+                    pdfBuffer = await generateAndStoreReceipt(
+                      supabase,
+                      receiptRowForPdf,
+                      orgsForPdf,
+                      donor.email,
+                      donor.name
+                    );
+
+                    // Generate individual PDFs for portfolio allocations (non-blocking)
+                    if (allocParts.length > 1) {
+                      Promise.all(
+                        individualReceiptRows.map((row, i) =>
+                          row
+                            ? generateAndStoreReceipt(
+                                supabase,
+                                row,
+                                [{ name: allOrgInfos[i].name, ein: allOrgInfos[i].ein, amount: allOrgInfos[i].amountCents }],
+                                donor.email!,
+                                donor.name
+                              )
+                            : Promise.resolve(null)
+                        )
+                      ).catch((err) => console.error("[receipt] individual portfolio PDFs failed:", err));
+                    }
+                  }
+                }
+              } catch (pdfErr) {
+                console.error("[receipt] PDF generation failed, falling back to HTML-only email:", pdfErr);
+                const failedIds = [portfolioReceiptRow, ...individualReceiptRows].filter(Boolean).map((r) => r!.id);
+                if (failedIds.length > 0) {
+                  await supabase.from("receipts").update({ pdf_status: "failed" }).in("id", failedIds);
+                }
+              }
+
+              // Send email (with or without PDF attachment)
               if (donor.email) {
                 const baseUrl = process.env.NEXT_PUBLIC_URL ?? "https://easytogive.online";
                 await sendReceiptEmail({
                   to: donor.email,
                   donorName: donor.name,
-                  orgName: allocParts.length > 1 ? "EasyToGive Portfolio" : orgInfo.name,
-                  orgEin: allocParts.length > 1 ? null : orgInfo.ein,
+                  orgName: allocParts.length > 1 ? "EasyToGive Portfolio" : primaryOrgInfo.name,
+                  orgEin: allocParts.length > 1 ? null : primaryOrgInfo.ein,
                   amountCents: donationAmountCents,
                   receiptId,
                   donatedAt: now,
                   receiptUrl: `${baseUrl}/receipts/${encodeURIComponent(receiptId)}`,
+                  allocations:
+                    allocParts.length > 1
+                      ? allOrgInfos.map((o) => ({
+                          orgName: o.name,
+                          orgEin: o.ein,
+                          amountCents: o.amountCents,
+                        }))
+                      : undefined,
+                  pdfBuffer,
                 });
               }
-            } catch (emailErr) {
-              console.error(`Receipt email failed for payment_intent ${pi.id}:`, emailErr);
+            } catch (receiptErr) {
+              console.error(`[receipt] receipt block failed for payment_intent ${pi.id}:`, receiptErr);
             }
           }
         }
@@ -276,13 +485,57 @@ export async function POST(req: NextRequest) {
             await incrementOrgStats(supabase, meta.orgId, invoice.amount_paid, meta.donorId || null);
           }
 
-          // Send recurring receipt email — catch separately
+          // Generate receipt + send recurring email — catch separately
           if (meta.donorId) {
             try {
               const [donor, orgInfo] = await Promise.all([
                 getDonorInfo(supabase, meta.donorId),
                 meta.orgId ? getOrgInfo(supabase, meta.orgId) : Promise.resolve({ name: "EasyToGive", ein: null }),
               ]);
+
+              // Fetch donation IDs for this recurring payment (for donation_ids column)
+              const { data: recurInserted } = await supabase
+                .from("donations")
+                .select("id")
+                .eq("stripe_payment_intent_id", piId);
+              const recurDonationIds = (recurInserted ?? []).map((r: { id: string }) => r.id);
+
+              const recurReceiptNumber = generateReceiptNumber();
+              const now2 = new Date().toISOString();
+              const { data: recurReceiptRow } = await supabase
+                .from("receipts")
+                .insert({
+                  donor_id: meta.donorId,
+                  payment_intent_id: piId,
+                  donation_ids: recurDonationIds,
+                  org_id: meta.orgId ?? null,
+                  type: "individual",
+                  amount: invoice.amount_paid,
+                  receipt_number: recurReceiptNumber,
+                  pdf_status: "pending",
+                  created_at: now2,
+                })
+                .select("id, donor_id, receipt_number, type, amount, created_at")
+                .single();
+
+              let pdfBuffer: Buffer | null = null;
+              if (donor.email && recurReceiptRow) {
+                try {
+                  pdfBuffer = await generateAndStoreReceipt(
+                    supabase,
+                    recurReceiptRow as { id: string; donor_id: string | null; receipt_number: string; type: "individual" | "portfolio_summary"; amount: number; created_at: string },
+                    [{ name: orgInfo.name, ein: orgInfo.ein, amount: invoice.amount_paid }],
+                    donor.email,
+                    donor.name
+                  );
+                } catch (pdfErr) {
+                  console.error("[receipt] recurring PDF failed:", pdfErr);
+                  if (recurReceiptRow) {
+                    await supabase.from("receipts").update({ pdf_status: "failed" }).eq("id", (recurReceiptRow as { id: string }).id);
+                  }
+                }
+              }
+
               if (donor.email) {
                 const baseUrl = process.env.NEXT_PUBLIC_URL ?? "https://easytogive.online";
                 await sendReceiptEmail({
@@ -296,6 +549,7 @@ export async function POST(req: NextRequest) {
                   isRecurring: true,
                   frequency: meta.frequency,
                   receiptUrl: `${baseUrl}/receipts/${encodeURIComponent(receiptId)}`,
+                  pdfBuffer,
                 });
               }
             } catch (emailErr) {
