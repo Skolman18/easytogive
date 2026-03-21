@@ -37,6 +37,42 @@ function getEinConfig(category: string, subcategory: string) {
   return { show: true, required: false, helper: "" };
 }
 
+// ─── Step indicator ───────────────────────────────────────────────────────────
+
+function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
+  return (
+    <div className="flex items-center mb-8">
+      {([1, 2, 3] as const).map((n, i) => (
+        <React.Fragment key={n}>
+          <div
+            className="w-7 h-7 rounded-full text-xs font-bold flex-shrink-0 transition-colors"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              ...(step >= n
+                ? { backgroundColor: "#1a7a4a", color: "white" }
+                : {
+                    border: "1.5px solid #ccc9c0",
+                    color: "#aaa",
+                    backgroundColor: "transparent",
+                  }),
+            }}
+          >
+            {n}
+          </div>
+          {i < 2 && (
+            <div
+              className="flex-1 mx-1.5"
+              style={{ height: 1, backgroundColor: "#ccc9c0" }}
+            />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 // ─── Preview success screen ───────────────────────────────────────────────────
 
 function PreviewSuccessScreen({ form }: { form: Record<string, string> }) {
@@ -139,10 +175,6 @@ function OrgSignupInner() {
       ? SUBCATEGORY_OPTIONS[form.category as TopCategory] ?? []
       : [];
 
-  // Auto-select when only one subcategory option is available
-  const autoSubcategory =
-    subOptions.length === 1 ? subOptions[0] : form.subcategory;
-
   function selectCategory(cat: string) {
     const subs = SUBCATEGORY_OPTIONS[cat as TopCategory] ?? [];
     setForm((prev) => ({
@@ -212,6 +244,10 @@ function OrgSignupInner() {
       }
       if (!form.email.trim()) {
         setError("Email address is required.");
+        return false;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        setError("Please enter a valid email address.");
         return false;
       }
       return true;
@@ -290,8 +326,7 @@ function OrgSignupInner() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit() {
     if (!validateStep(3)) return;
 
     const effectiveSubcategory =
@@ -379,38 +414,6 @@ function OrgSignupInner() {
     );
   }
 
-  const StepIndicator = () => (
-    <div className="flex items-center mb-8">
-      {([1, 2, 3] as const).map((n, i) => (
-        <React.Fragment key={n}>
-          <div
-            className="w-7 h-7 rounded-full text-xs font-bold flex-shrink-0 transition-colors"
-            style={
-              step >= n
-                ? { backgroundColor: "#1a7a4a", color: "white", display: "flex", alignItems: "center", justifyContent: "center" }
-                : {
-                    border: "1.5px solid #ccc9c0",
-                    color: "#aaa",
-                    backgroundColor: "transparent",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }
-            }
-          >
-            {n}
-          </div>
-          {i < 2 && (
-            <div
-              className="flex-1 mx-1.5"
-              style={{ height: 1, backgroundColor: "#ccc9c0" }}
-            />
-          )}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-
   return (
     <>
       {isPreview && <PreviewBanner />}
@@ -435,7 +438,7 @@ function OrgSignupInner() {
             style={{ border: "1.5px solid #e5e1d8" }}
           >
             <div className="px-10 pt-10 pb-0">
-              <StepIndicator />
+              <StepIndicator step={step} />
               {/* ── Step 1: Your Organization ─────────────────────── */}
               {step === 1 && (
                 <div>
@@ -735,6 +738,8 @@ function OrgSignupInner() {
                         maxLength={400}
                         className="w-full px-3.5 py-2.5 border rounded-lg text-sm text-gray-900 outline-none transition-colors resize-none"
                         style={{ borderColor: "#e5e1d8" }}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "#1a7a4a")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "#e5e1d8")}
                         placeholder="Describe what your organization does and who it serves…"
                       />
                     </div>
@@ -953,7 +958,7 @@ function OrgSignupInner() {
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="text-sm font-medium hover:underline"
+                  className="text-sm font-medium hover:underline min-h-[44px] flex items-center"
                   style={{ color: "#888" }}
                 >
                   ← Back
@@ -973,7 +978,7 @@ function OrgSignupInner() {
               ) : (
                 <button
                   type="button"
-                  onClick={handleSubmit as unknown as React.MouseEventHandler}
+                  onClick={handleSubmit}
                   disabled={loading}
                   className="h-11 px-7 rounded-lg font-semibold text-white text-sm transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   style={{
