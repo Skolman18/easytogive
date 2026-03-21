@@ -1,12 +1,10 @@
 "use client";
 
+import React from "react";
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Building2, Loader2, AlertCircle, CheckCircle, Clock,
-  Users, Check, Download, Sparkles,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { SUBCATEGORY_OPTIONS, CATEGORY_LABELS } from "@/lib/categories";
 import type { TopCategory } from "@/lib/categories";
 import { PreviewBanner, AdminNotesPanel } from "@/components/AdminPreviewOverlay";
@@ -17,13 +15,11 @@ const TOP_CATEGORIES: {
   value: TopCategory;
   label: string;
   sublabel: string;
-  Icon: React.ElementType;
 }[] = [
   {
     value: "community",
     label: "Community",
     sublabel: "Nonprofits, churches, food banks, schools, and more",
-    Icon: Users,
   },
 ];
 
@@ -61,12 +57,6 @@ function PreviewSuccessScreen({ form }: { form: Record<string, string> }) {
       <PreviewBanner />
       <div className="min-h-screen bg-white flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ backgroundColor: "#fef08a" }}
-          >
-            <CheckCircle className="w-10 h-10 text-yellow-600" />
-          </div>
           <h1 className="font-display text-3xl text-gray-900 mb-1 text-center">
             Preview: Application submitted
           </h1>
@@ -132,6 +122,9 @@ function OrgSignupInner() {
   const [autofilling, setAutofilling] = useState(false);
   const [autofillError, setAutofillError] = useState<string | null>(null);
 
+  // Step state for 3-step wizard
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+
   // Scroll error into view whenever it changes
   useEffect(() => {
     if (error && errorRef.current) {
@@ -157,6 +150,85 @@ function OrgSignupInner() {
       category: cat,
       subcategory: subs.length === 1 ? subs[0] : "",
     }));
+  }
+
+  function validateStep(s: 1 | 2 | 3): boolean {
+    setError(null);
+    setEinError(null);
+
+    if (s === 1) {
+      if (!form.orgName.trim()) {
+        setError("Organization name is required.");
+        return false;
+      }
+      if (form.website.trim()) {
+        try {
+          new URL(
+            form.website.trim().startsWith("http")
+              ? form.website.trim()
+              : `https://${form.website.trim()}`
+          );
+        } catch {
+          setError("Please enter a valid website URL (e.g. https://yourorg.org).");
+          return false;
+        }
+      }
+      return true;
+    }
+
+    if (s === 2) {
+      if (!form.category) {
+        setError("Please select a category.");
+        return false;
+      }
+      const effectiveSub =
+        subOptions.length === 1 ? subOptions[0] : form.subcategory;
+      if (subOptions.length > 1 && !effectiveSub) {
+        setError("Please select a subcategory.");
+        return false;
+      }
+      if (einConfig.show && form.ein.trim()) {
+        const einPattern = /^\d{2}-\d{7}$/;
+        if (!einPattern.test(form.ein.trim())) {
+          setEinError("EIN must be in the format 12-3456789.");
+          return false;
+        }
+      }
+      if (einConfig.required && !form.ein.trim()) {
+        setError("EIN is required for this organization type.");
+        return false;
+      }
+      if (!form.description.trim()) {
+        setError("Please describe your organization's mission.");
+        return false;
+      }
+      return true;
+    }
+
+    if (s === 3) {
+      if (!form.contactName.trim()) {
+        setError("Contact name is required.");
+        return false;
+      }
+      if (!form.email.trim()) {
+        setError("Email address is required.");
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  }
+
+  function handleContinue() {
+    if (!validateStep(step)) return;
+    setStep((s) => (s < 3 ? (s + 1) as 1 | 2 | 3 : s));
+  }
+
+  function handleBack() {
+    setError(null);
+    setEinError(null);
+    setStep((s) => (s > 1 ? (s - 1) as 1 | 2 | 3 : s));
   }
 
   async function handleGbImport() {
@@ -220,36 +292,10 @@ function OrgSignupInner() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.category) {
-      setError("Please select a category.");
-      return;
-    }
-    const effectiveSubcategory = autoSubcategory;
-    if (subOptions.length > 1 && !effectiveSubcategory) {
-      setError("Please select a subcategory.");
-      return;
-    }
-    if (einConfig.show && form.ein.trim()) {
-      const einPattern = /^\d{2}-\d{7}$/;
-      if (!einPattern.test(form.ein.trim())) {
-        setEinError("EIN must be in the format 12-3456789.");
-        return;
-      }
-    }
-    if (einConfig.required && !form.ein.trim()) {
-      setError("EIN is required for this organization type.");
-      return;
-    }
+    if (!validateStep(3)) return;
 
-    // Basic URL format check
-    if (form.website.trim()) {
-      try {
-        new URL(form.website.trim().startsWith("http") ? form.website.trim() : `https://${form.website.trim()}`);
-      } catch {
-        setError("Please enter a valid website URL (e.g. https://yourorg.org).");
-        return;
-      }
-    }
+    const effectiveSubcategory =
+      subOptions.length === 1 ? subOptions[0] : form.subcategory;
 
     // Preview mode: skip real Supabase write
     if (isPreview) {
@@ -276,7 +322,6 @@ function OrgSignupInner() {
         }),
       });
       const data = await res.json();
-
       if (data.error) {
         setError(data.error);
       } else {
@@ -295,44 +340,35 @@ function OrgSignupInner() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4 py-16">
+      <div
+        className="min-h-screen flex items-center justify-center px-4 py-16"
+        style={{ backgroundColor: "#faf9f6" }}
+      >
         <div className="w-full max-w-md text-center">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ backgroundColor: "#e8f5ee" }}
-          >
-            <CheckCircle className="w-10 h-10" style={{ color: "#1a7a4a" }} />
-          </div>
-          <h1 className="font-display text-3xl text-gray-900 mb-3">
-            Application submitted!
+          <h1 className="font-display text-3xl text-gray-900 mb-4">
+            Application submitted
           </h1>
           <p className="text-gray-500 mb-3">
             We received your application for{" "}
             <span className="font-semibold text-gray-800">{form.orgName}</span>.
           </p>
-          <div
-            className="flex items-center justify-center gap-2 text-sm font-medium p-3 rounded-xl mb-4"
-            style={{ backgroundColor: "#eff6ff", color: "#1d4ed8" }}
-          >
-            <Clock className="w-4 h-4" />
-            We&apos;ll review your application and get back to you within 2 business days.
-          </div>
           <p className="text-sm text-gray-500 mb-8">
-            Once approved, we&apos;ll send an invite to{" "}
-            <span className="font-medium text-gray-700">{form.email}</span>{" "}
-            so you can set up your account and complete your profile.
+            We&apos;ll review it and reach out within 2 business days. Once
+            approved, we&apos;ll send an invite to{" "}
+            <span className="font-medium text-gray-700">{form.email}</span> so
+            you can complete your profile.
           </p>
           <div className="flex flex-col gap-3">
             <Link
               href="/discover"
-              className="w-full py-3 rounded-full font-semibold text-white text-center transition-all hover:opacity-90"
+              className="w-full py-3 rounded-xl font-semibold text-white text-center transition-all hover:opacity-90"
               style={{ backgroundColor: "#1a7a4a" }}
             >
               Browse Organizations
             </Link>
             <Link
               href="/"
-              className="w-full py-3 rounded-full font-semibold text-center transition-all border"
+              className="w-full py-3 rounded-xl font-semibold text-center transition-all border"
               style={{ color: "#374151", borderColor: "#e5e1d8" }}
             >
               Return to Home
@@ -343,387 +379,637 @@ function OrgSignupInner() {
     );
   }
 
+  const StepIndicator = () => (
+    <div className="flex items-center mb-8">
+      {([1, 2, 3] as const).map((n, i) => (
+        <React.Fragment key={n}>
+          <div
+            className="w-7 h-7 rounded-full text-xs font-bold flex-shrink-0 transition-colors"
+            style={
+              step >= n
+                ? { backgroundColor: "#1a7a4a", color: "white", display: "flex", alignItems: "center", justifyContent: "center" }
+                : {
+                    border: "1.5px solid #ccc9c0",
+                    color: "#aaa",
+                    backgroundColor: "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }
+            }
+          >
+            {n}
+          </div>
+          {i < 2 && (
+            <div
+              className="flex-1 mx-1.5"
+              style={{ height: 1, backgroundColor: "#ccc9c0" }}
+            />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+
   return (
     <>
       {isPreview && <PreviewBanner />}
-      <div className="min-h-screen bg-white">
-        <div className="max-w-lg mx-auto px-4 py-16">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: "#1a7a4a" }}
-              >
-                <Building2 className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-display text-xl text-gray-900">
-                EasyToGive
-              </span>
-            </Link>
-            <h1 className="font-display text-3xl text-gray-900 mt-6 mb-1">
-              List your organization
-            </h1>
-            <p className="text-gray-500 text-sm max-w-sm mx-auto">
-              Reach thousands of motivated donors. All organizations are reviewed
-              before going live.
-            </p>
-          </div>
-
-          {/* Review notice */}
-          <div
-            className="flex items-center gap-3 p-4 rounded-xl mb-6 text-sm"
-            style={{ backgroundColor: "#eff6ff", color: "#1d4ed8" }}
-          >
-            <Clock className="w-4 h-4 flex-shrink-0" />
-            <span>
-              We&apos;ll review your application and get back to you within{" "}
-              <strong>2 business days</strong>.
+      <div
+        className="min-h-screen flex items-start justify-center px-4 py-16"
+        style={{ backgroundColor: "#faf9f6" }}
+      >
+        <div className="w-full max-w-lg">
+          {/* Brand */}
+          <Link href="/" className="block mb-8">
+            <span
+              className="font-display text-xl"
+              style={{ color: "#1a7a4a" }}
+            >
+              EasyToGive
             </span>
-          </div>
+          </Link>
 
-          {/* GiveButter import */}
+          {/* Wizard card */}
           <div
-            className="bg-white rounded-2xl border p-6 shadow-sm mb-4"
-            style={{ borderColor: "#e5e1d8" }}
+            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            style={{ border: "1.5px solid #e5e1d8" }}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <Download className="w-4 h-4" style={{ color: "#1a7a4a" }} />
-              <span className="text-sm font-semibold text-gray-900">Import from GiveButter</span>
-              <span className="text-xs text-gray-400 ml-1">(optional)</span>
-            </div>
-            <p className="text-xs text-gray-500 mb-3">
-              Already on GiveButter? Paste your API key to auto-fill this form.
-              Find it in GiveButter → Settings → API.
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="password"
-                value={gbApiKey}
-                onChange={(e) => { setGbApiKey(e.target.value); setGbError(null); setGbSuccess(false); }}
-                onKeyDown={(e) => e.key === "Enter" && handleGbImport()}
-                disabled={gbImporting}
-                placeholder="Your GiveButter API key"
-                className="flex-1 px-3 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
-                style={{ borderColor: gbError ? "#fca5a5" : "#e5e1d8" }}
-              />
-              <button
-                type="button"
-                onClick={handleGbImport}
-                disabled={gbImporting || !gbApiKey.trim()}
-                className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap min-h-[44px]"
-                style={{ backgroundColor: "#1a7a4a" }}
-              >
-                {gbImporting ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Importing…
-                  </>
-                ) : "Import"}
-              </button>
-            </div>
-            {gbError && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 mt-2 p-2.5 rounded-lg text-xs"
-                style={{ backgroundColor: "#fef2f2", color: "#dc2626" }}
-              >
-                <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                {gbError}
-              </div>
-            )}
-            {gbSuccess && (
-              <div
-                className="flex items-center gap-2 mt-2 p-2.5 rounded-lg text-xs font-medium"
-                style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
-              >
-                <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                Imported successfully — review the fields below and fill in anything missing.
-              </div>
-            )}
-          </div>
+            <div className="px-10 pt-10 pb-0">
+              <StepIndicator />
+              {/* ── Step 1: Your Organization ─────────────────────── */}
+              {step === 1 && (
+                <div>
+                  <h2
+                    className="font-display text-2xl mb-1"
+                    style={{ color: "#1a1a18" }}
+                  >
+                    Your organization
+                  </h2>
+                  <p className="text-sm mb-7" style={{ color: "#888" }}>
+                    Start with the basics.
+                  </p>
 
-          <div
-            className="bg-white rounded-2xl border p-8 shadow-sm"
-            style={{ borderColor: "#e5e1d8" }}
-          >
-            <form onSubmit={handleSubmit} className="space-y-5">
-
-              {/* Org name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Organization name
-                </label>
-                <input
-                  type="text"
-                  value={form.orgName}
-                  onChange={(e) => setForm({ ...form, orgName: e.target.value })}
-                  required
-                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
-                  style={{ borderColor: "#e5e1d8" }}
-                  placeholder="Green Future Foundation"
-                />
-              </div>
-
-              {/* Contact name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Your name (primary contact)
-                </label>
-                <input
-                  type="text"
-                  value={form.contactName}
-                  onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-                  required
-                  autoComplete="name"
-                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
-                  style={{ borderColor: "#e5e1d8" }}
-                  placeholder="Jane Smith"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Email address
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  required
-                  autoComplete="email"
-                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
-                  style={{ borderColor: "#e5e1d8" }}
-                  placeholder="jane@yourorg.org"
-                />
-              </div>
-
-              {/* Website */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Website <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.website}
-                  onChange={(e) => setForm({ ...form, website: e.target.value })}
-                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
-                  style={{ borderColor: "#e5e1d8" }}
-                  placeholder="https://yourorg.org"
-                />
-              </div>
-
-              {/* ── Category — step 1: three cards ──────────────────────────── */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
-                </label>
-                <div className="grid grid-cols-1 gap-3">
-                  {TOP_CATEGORIES.map(({ value, label, sublabel, Icon }) => {
-                    const selected = form.category === value;
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => selectCategory(value)}
-                        className="relative rounded-xl border p-4 text-left transition-all focus:outline-none"
+                  <div className="space-y-5">
+                    {/* Org name */}
+                    <div>
+                      <label
+                        className="block text-xs font-semibold mb-1.5"
+                        style={{ color: "#444" }}
+                      >
+                        Organization name
+                      </label>
+                      <input
+                        type="text"
+                        value={form.orgName}
+                        onChange={(e) => setForm({ ...form, orgName: e.target.value })}
+                        required
+                        className="w-full px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors"
                         style={{
-                          borderColor: selected ? "#1a7a4a" : "#e5e1d8",
-                          backgroundColor: selected ? "#e8f5ee" : "white",
-                          borderWidth: selected ? 2 : 1,
+                          border: "1.5px solid #d8d4cc",
+                          borderRadius: 8,
+                          height: 42,
+                        }}
+                        onFocus={(e) =>
+                          (e.currentTarget.style.borderColor = "#1a7a4a")
+                        }
+                        onBlur={(e) =>
+                          (e.currentTarget.style.borderColor = "#d8d4cc")
+                        }
+                        placeholder="Green Future Foundation"
+                      />
+                    </div>
+
+                    {/* Website */}
+                    <div>
+                      <label
+                        className="block text-xs font-semibold mb-1.5"
+                        style={{ color: "#444" }}
+                      >
+                        Website{" "}
+                        <span className="font-normal" style={{ color: "#aaa" }}>
+                          (optional)
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        value={form.website}
+                        onChange={(e) => setForm({ ...form, website: e.target.value })}
+                        className="w-full px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors"
+                        style={{
+                          border: "1.5px solid #d8d4cc",
+                          borderRadius: 8,
+                          height: 42,
+                        }}
+                        onFocus={(e) =>
+                          (e.currentTarget.style.borderColor = "#1a7a4a")
+                        }
+                        onBlur={(e) =>
+                          (e.currentTarget.style.borderColor = "#d8d4cc")
+                        }
+                        placeholder="https://yourorg.org"
+                      />
+                    </div>
+
+                    {/* Error */}
+                    {error && (
+                      <div
+                        ref={errorRef}
+                        role="alert"
+                        className="px-3.5 py-2.5 rounded-lg text-sm"
+                        style={{
+                          backgroundColor: "#fef2f2",
+                          color: "#dc2626",
+                          border: "1px solid #fca5a5",
                         }}
                       >
-                        {selected && (
-                          <div
-                            className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: "#1a7a4a" }}
-                          >
-                            <Check className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                        <Icon
-                          className="w-5 h-5 mb-2"
-                          style={{ color: selected ? "#1a7a4a" : "#6b7280" }}
-                        />
-                        <div
-                          className="text-sm font-semibold mb-0.5"
-                          style={{ color: selected ? "#1a7a4a" : "#111827" }}
-                        >
-                          {label}
-                        </div>
-                        <div className="text-xs text-gray-500 leading-snug">{sublabel}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                        {error}
+                      </div>
+                    )}
+                  </div>
 
-              {/* ── Subcategory — step 2 ─────────────────────────────────────── */}
-              {form.category && subOptions.length > 1 && (
-                <div
-                  className="space-y-1"
-                  style={{
-                    animation: "fadeSlideIn 0.2s ease-out",
-                  }}
-                >
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Subcategory
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {subOptions.map((sub) => {
-                      const selected = form.subcategory === sub;
-                      return (
-                        <button
-                          key={sub}
-                          type="button"
-                          onClick={() => setForm({ ...form, subcategory: sub })}
-                          className="px-3.5 py-2 rounded-lg border text-sm font-medium transition-all"
+                  {/* Review notice */}
+                  <p
+                    className="text-xs mt-6 mb-2 leading-relaxed"
+                    style={{ color: "#aaa" }}
+                  >
+                    <strong style={{ color: "#777" }}>
+                      Applications are reviewed within 2–3 business days.
+                    </strong>{" "}
+                    We verify 501(c)(3) status before activation.
+                  </p>
+                </div>
+              )}
+
+              {/* ── Step 2: Your Mission ───────────────────────────── */}
+              {step === 2 && (
+                <div>
+                  <h2
+                    className="font-display text-2xl mb-1"
+                    style={{ color: "#1a1a18" }}
+                  >
+                    Your mission
+                  </h2>
+                  <p className="text-sm mb-7" style={{ color: "#888" }}>
+                    What you do and who you serve.
+                  </p>
+
+                  <div className="space-y-5">
+                    {/* Category */}
+                    <div>
+                      <label
+                        className="block text-xs font-semibold mb-2"
+                        style={{ color: "#444" }}
+                      >
+                        Category
+                      </label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {TOP_CATEGORIES.map(({ value, label, sublabel }) => {
+                          const selected = form.category === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => selectCategory(value)}
+                              className="relative rounded-xl border p-4 text-left transition-all focus:outline-none"
+                              style={{
+                                borderColor: selected ? "#1a7a4a" : "#e5e1d8",
+                                backgroundColor: selected ? "#e8f5ee" : "white",
+                                borderWidth: selected ? 2 : 1,
+                              }}
+                            >
+                              <div
+                                className="text-sm font-semibold mb-0.5"
+                                style={{ color: selected ? "#1a7a4a" : "#111827" }}
+                              >
+                                {label}
+                              </div>
+                              <div className="text-xs text-gray-500 leading-snug">
+                                {sublabel}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Subcategory */}
+                    {form.category && subOptions.length > 1 && (
+                      <div>
+                        <label
+                          className="block text-xs font-semibold mb-2"
+                          style={{ color: "#444" }}
+                        >
+                          Subcategory
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {subOptions.map((sub) => {
+                            const selected = form.subcategory === sub;
+                            return (
+                              <button
+                                key={sub}
+                                type="button"
+                                onClick={() => setForm({ ...form, subcategory: sub })}
+                                className="px-3.5 py-2 rounded-lg border text-sm font-medium transition-all"
+                                style={{
+                                  borderColor: selected ? "#1a7a4a" : "#e5e1d8",
+                                  backgroundColor: selected ? "#e8f5ee" : "white",
+                                  color: selected ? "#1a7a4a" : "#374151",
+                                }}
+                              >
+                                {CATEGORY_LABELS[sub] ?? sub}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* EIN — conditional on category */}
+                    {form.category && einConfig.show && (
+                      <div>
+                        <label
+                          className="block text-xs font-semibold mb-1.5"
+                          style={{ color: "#444" }}
+                        >
+                          EIN{" "}
+                          {einConfig.required ? (
+                            <span className="font-normal" style={{ color: "#aaa" }}>
+                              (Tax ID, format: 12-3456789)
+                            </span>
+                          ) : (
+                            <span className="font-normal" style={{ color: "#aaa" }}>
+                              (optional)
+                            </span>
+                          )}
+                        </label>
+                        {einConfig.helper && (
+                          <p className="text-xs mb-1.5" style={{ color: "#aaa" }}>
+                            {einConfig.helper}
+                          </p>
+                        )}
+                        <input
+                          type="text"
+                          value={form.ein}
+                          onChange={(e) => {
+                            setForm({ ...form, ein: e.target.value });
+                            setEinError(null);
+                          }}
+                          required={einConfig.required}
+                          className="w-full px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors"
                           style={{
-                            borderColor: selected ? "#1a7a4a" : "#e5e1d8",
-                            backgroundColor: selected ? "#e8f5ee" : "white",
-                            color: selected ? "#1a7a4a" : "#374151",
+                            border: `1.5px solid ${einError ? "#fca5a5" : "#d8d4cc"}`,
+                            borderRadius: 8,
+                            height: 42,
+                          }}
+                          onFocus={(e) =>
+                            (e.currentTarget.style.borderColor = einError
+                              ? "#fca5a5"
+                              : "#1a7a4a")
+                          }
+                          onBlur={(e) =>
+                            (e.currentTarget.style.borderColor = einError
+                              ? "#fca5a5"
+                              : "#d8d4cc")
+                          }
+                          placeholder="12-3456789"
+                        />
+                        {einError && (
+                          <p className="text-xs mt-1" style={{ color: "#dc2626" }}>
+                            {einError}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label
+                          className="block text-xs font-semibold"
+                          style={{ color: "#444" }}
+                        >
+                          Brief description of your mission
+                        </label>
+                        <div className="flex items-center gap-2">
+                          {form.website.trim() && (
+                            <button
+                              type="button"
+                              onClick={handleAutofill}
+                              disabled={autofilling}
+                              className="text-xs font-semibold transition-opacity hover:opacity-75 disabled:opacity-50"
+                              style={{ color: "#1a7a4a" }}
+                            >
+                              {autofilling ? (
+                                <span className="flex items-center gap-1">
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  Filling…
+                                </span>
+                              ) : (
+                                "Fill with AI"
+                              )}
+                            </button>
+                          )}
+                          <span
+                            className="text-xs"
+                            style={{
+                              color:
+                                form.description.length > 380 ? "#dc2626" : "#9ca3af",
+                            }}
+                          >
+                            {form.description.length}/400
+                          </span>
+                        </div>
+                      </div>
+                      {autofillError && (
+                        <p className="text-xs mb-1.5 font-medium" style={{ color: "#dc2626" }}>
+                          {autofillError}
+                        </p>
+                      )}
+                      <textarea
+                        value={form.description}
+                        onChange={(e) =>
+                          setForm({ ...form, description: e.target.value.slice(0, 400) })
+                        }
+                        required
+                        rows={4}
+                        maxLength={400}
+                        className="w-full px-3.5 py-2.5 border rounded-lg text-sm text-gray-900 outline-none transition-colors resize-none"
+                        style={{ borderColor: "#e5e1d8" }}
+                        placeholder="Describe what your organization does and who it serves…"
+                      />
+                    </div>
+
+                    {/* Error */}
+                    {error && (
+                      <div
+                        ref={errorRef}
+                        role="alert"
+                        className="px-3.5 py-2.5 rounded-lg text-sm"
+                        style={{
+                          backgroundColor: "#fef2f2",
+                          color: "#dc2626",
+                          border: "1px solid #fca5a5",
+                        }}
+                      >
+                        {error}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Step 3: Contact & Connect ──────────────────────── */}
+              {step === 3 && (
+                <div>
+                  <h2
+                    className="font-display text-2xl mb-1"
+                    style={{ color: "#1a1a18" }}
+                  >
+                    Contact & connect
+                  </h2>
+                  <p className="text-sm mb-7" style={{ color: "#888" }}>
+                    Who we&apos;ll be in touch with.
+                  </p>
+
+                  <div className="space-y-5">
+                    {/* Contact name */}
+                    <div>
+                      <label
+                        className="block text-xs font-semibold mb-1.5"
+                        style={{ color: "#444" }}
+                      >
+                        Your name (primary contact)
+                      </label>
+                      <input
+                        type="text"
+                        value={form.contactName}
+                        onChange={(e) =>
+                          setForm({ ...form, contactName: e.target.value })
+                        }
+                        required
+                        autoComplete="name"
+                        className="w-full px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors"
+                        style={{
+                          border: "1.5px solid #d8d4cc",
+                          borderRadius: 8,
+                          height: 42,
+                        }}
+                        onFocus={(e) =>
+                          (e.currentTarget.style.borderColor = "#1a7a4a")
+                        }
+                        onBlur={(e) =>
+                          (e.currentTarget.style.borderColor = "#d8d4cc")
+                        }
+                        placeholder="Jane Smith"
+                      />
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label
+                        className="block text-xs font-semibold mb-1.5"
+                        style={{ color: "#444" }}
+                      >
+                        Email address
+                      </label>
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        required
+                        autoComplete="email"
+                        className="w-full px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors"
+                        style={{
+                          border: "1.5px solid #d8d4cc",
+                          borderRadius: 8,
+                          height: 42,
+                        }}
+                        onFocus={(e) =>
+                          (e.currentTarget.style.borderColor = "#1a7a4a")
+                        }
+                        onBlur={(e) =>
+                          (e.currentTarget.style.borderColor = "#d8d4cc")
+                        }
+                        placeholder="jane@yourorg.org"
+                      />
+                    </div>
+
+                    {/* GiveButter import */}
+                    <div
+                      className="rounded-xl p-5"
+                      style={{ border: "1px solid #e5e1d8", backgroundColor: "#faf9f6" }}
+                    >
+                      <p
+                        className="text-xs font-semibold mb-0.5"
+                        style={{ color: "#444" }}
+                      >
+                        Import from GiveButter{" "}
+                        <span className="font-normal" style={{ color: "#aaa" }}>
+                          (optional)
+                        </span>
+                      </p>
+                      <p className="text-xs mb-3" style={{ color: "#888" }}>
+                        Already on GiveButter? Paste your API key to auto-fill this
+                        form. Find it in GiveButter → Settings → API.
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="password"
+                          value={gbApiKey}
+                          onChange={(e) => {
+                            setGbApiKey(e.target.value);
+                            setGbError(null);
+                            setGbSuccess(false);
+                          }}
+                          onKeyDown={(e) => e.key === "Enter" && handleGbImport()}
+                          disabled={gbImporting}
+                          placeholder="Your GiveButter API key"
+                          className="flex-1 px-3 py-2 border rounded-lg text-sm text-gray-900 outline-none transition-colors"
+                          style={{
+                            borderColor: gbError ? "#fca5a5" : "#d8d4cc",
+                            height: 42,
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleGbImport}
+                          disabled={gbImporting || !gbApiKey.trim()}
+                          className="px-4 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                          style={{ backgroundColor: "#1a7a4a", height: 42 }}
+                        >
+                          {gbImporting ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              Importing…
+                            </>
+                          ) : (
+                            "Import"
+                          )}
+                        </button>
+                      </div>
+                      {gbError && (
+                        <p
+                          className="text-xs mt-2 px-3 py-2 rounded-lg"
+                          style={{
+                            backgroundColor: "#fef2f2",
+                            color: "#dc2626",
+                            border: "1px solid #fca5a5",
                           }}
                         >
-                          {CATEGORY_LABELS[sub] ?? sub}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                          {gbError}
+                        </p>
+                      )}
+                      {gbSuccess && (
+                        <p
+                          className="text-xs mt-2 px-3 py-2 rounded-lg font-medium"
+                          style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                        >
+                          Imported successfully — review the fields and fill in anything
+                          missing.
+                        </p>
+                      )}
+                    </div>
 
-              {/* EIN — only show after category is selected */}
-              {form.category && einConfig.show && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    EIN{" "}
-                    {einConfig.required ? (
-                      <span className="text-gray-400 font-normal">(Tax ID, format: 12-3456789)</span>
-                    ) : (
-                      <span className="text-gray-400 font-normal">(optional)</span>
-                    )}
-                  </label>
-                  {einConfig.helper && (
-                    <p className="text-xs text-gray-400 mb-1.5">{einConfig.helper}</p>
-                  )}
-                  <input
-                    type="text"
-                    value={form.ein}
-                    onChange={(e) => {
-                      setForm({ ...form, ein: e.target.value });
-                      setEinError(null);
-                    }}
-                    required={einConfig.required}
-                    className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors"
-                    style={{ borderColor: einError ? "#fca5a5" : "#e5e1d8" }}
-                    placeholder="12-3456789"
-                  />
-                  {einError && (
-                    <p className="text-xs mt-1" style={{ color: "#dc2626" }}>{einError}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Description */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Brief description of your mission
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {form.website.trim() && (
-                      <button
-                        type="button"
-                        onClick={handleAutofill}
-                        disabled={autofilling}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
-                        style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
+                    {/* Error */}
+                    {error && (
+                      <div
+                        ref={errorRef}
+                        role="alert"
+                        className="px-3.5 py-2.5 rounded-lg text-sm"
+                        style={{
+                          backgroundColor: "#fef2f2",
+                          color: "#dc2626",
+                          border: "1px solid #fca5a5",
+                        }}
                       >
-                        {autofilling
-                          ? <><Loader2 className="w-3 h-3 animate-spin" />Filling…</>
-                          : <><Sparkles className="w-3 h-3" />AI Fill</>
-                        }
-                      </button>
+                        {error}
+                      </div>
                     )}
-                    <span
-                      className="text-xs"
-                      style={{ color: form.description.length > 380 ? "#dc2626" : "#9ca3af" }}
-                    >
-                      {form.description.length}/400
-                    </span>
+
+                    {/* Sign-in link — non-preview only */}
+                    {!isPreview && (
+                      <p className="text-center text-sm text-gray-500">
+                        Already listed?{" "}
+                        <Link
+                          href="/auth/signin"
+                          className="font-medium hover:underline"
+                          style={{ color: "#1a7a4a" }}
+                        >
+                          Sign in
+                        </Link>
+                      </p>
+                    )}
                   </div>
                 </div>
-                {autofillError && (
-                  <p className="text-xs mb-1.5 font-medium" style={{ color: "#dc2626" }}>{autofillError}</p>
-                )}
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, 400) })}
-                  required
-                  rows={4}
-                  maxLength={400}
-                  className="w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:border-green-600 transition-colors resize-none"
-                  style={{ borderColor: "#e5e1d8" }}
-                  placeholder="Describe what your organization does and who it serves…"
-                />
-              </div>
-
-              {error && (
-                <div
-                  ref={errorRef}
-                  role="alert"
-                  className="flex items-start gap-2.5 p-3 rounded-lg border text-sm"
-                  style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#dc2626" }}
-                >
-                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                  {error}
-                </div>
               )}
+            </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-full font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                style={{ backgroundColor: isPreview ? "#b45309" : "#1a7a4a" }}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Submitting application…
-                  </>
-                ) : isPreview ? (
-                  "Submit Application (Preview)"
-                ) : (
-                  "Submit Application"
-                )}
-              </button>
-            </form>
-
-            {!isPreview && (
-              <p className="text-center text-sm text-gray-500 mt-6">
-                Already listed?{" "}
-                <Link
-                  href="/auth/signin"
-                  className="font-medium hover:underline"
-                  style={{ color: "#1a7a4a" }}
+            {/* Footer with Back/Continue/Submit */}
+            <div
+              className="flex items-center justify-between px-10 py-6 mt-2"
+              style={{ borderTop: "1px solid #ece8e0" }}
+            >
+              {step > 1 ? (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="text-sm font-medium hover:underline"
+                  style={{ color: "#888" }}
                 >
-                  Sign in
-                </Link>
-              </p>
-            )}
+                  ← Back
+                </button>
+              ) : (
+                <div />
+              )}
+              {step < 3 ? (
+                <button
+                  type="button"
+                  onClick={handleContinue}
+                  className="h-11 px-7 rounded-lg font-semibold text-white text-sm transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: "#1a7a4a" }}
+                >
+                  Continue →
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmit as unknown as React.MouseEventHandler}
+                  disabled={loading}
+                  className="h-11 px-7 rounded-lg font-semibold text-white text-sm transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  style={{
+                    backgroundColor: isPreview ? "#b45309" : "#1a7a4a",
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Submitting…
+                    </>
+                  ) : isPreview ? (
+                    "Submit Application (Preview)"
+                  ) : (
+                    "Submit application"
+                  )}
+                </button>
+              )}
+            </div>
           </div>
 
-          {!isPreview && (
+          {/* Legal footer — Step 3 non-preview only */}
+          {step === 3 && !isPreview && (
             <p className="text-center text-xs text-gray-400 mt-5">
               By submitting you agree to our{" "}
-              <a href="/terms" className="underline hover:text-gray-600">Terms of Service</a>
-              {" "}and{" "}
-              <a href="/privacy" className="underline hover:text-gray-600">Privacy Policy</a>.
+              <a href="/terms" className="underline hover:text-gray-600">
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a href="/privacy" className="underline hover:text-gray-600">
+                Privacy Policy
+              </a>
+              .
             </p>
           )}
         </div>
-
       </div>
       {isPreview && <AdminNotesPanel />}
     </>
