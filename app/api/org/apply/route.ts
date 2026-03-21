@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
   const userId = authData.user.id;
 
   // Step 3: Insert org_applications
-  const { error: appError } = await supabase.from("org_applications").insert({
+  const { data: appData, error: appError } = await supabase.from("org_applications").insert({
     org_name: org_name.trim().slice(0, 200),
     contact_name: contact_name.trim().slice(0, 200),
     email: normalizedEmail.slice(0, 200),
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     subcategory: (subcategory ?? "").trim().slice(0, 50),
     description: description.trim().slice(0, 2000),
     status: "pending",
-  });
+  }).select("id").single();
 
   if (appError) {
     console.error("org_applications insert error:", appError);
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
   if (orgError) {
     console.error("organizations insert error:", orgError);
     await supabase.auth.admin.deleteUser(userId);
-    await supabase.from("org_applications").delete().eq("email", normalizedEmail).eq("status", "pending");
+    if (appData?.id) await supabase.from("org_applications").delete().eq("id", appData.id);
     return NextResponse.json({ error: "Failed to create organization profile. Please try again." }, { status: 500 });
   }
 
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
   if (userError) {
     console.error("users insert error:", userError);
     await supabase.auth.admin.deleteUser(userId);
-    await supabase.from("org_applications").delete().eq("email", normalizedEmail).eq("status", "pending");
+    if (appData?.id) await supabase.from("org_applications").delete().eq("id", appData.id);
     await supabase.from("organizations").delete().eq("id", orgSlug);
     return NextResponse.json({ error: "Failed to set up account. Please try again." }, { status: 500 });
   }
