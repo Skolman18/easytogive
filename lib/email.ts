@@ -260,6 +260,64 @@ export async function sendReceiptEmail({
   if (!resend) return; // silently skip if not configured
 
   const isPortfolio = allocations && allocations.length > 1;
+
+  // date and freqLabel are declared inside receiptHtml() — redeclare here for plain-text use
+  const date = new Date(donatedAt).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const freqLabel = frequency
+    ? frequency.charAt(0).toUpperCase() + frequency.slice(1)
+    : "Recurring";
+  const firstName = donorName ? donorName.split(" ")[0] : "there";
+
+  const text = isPortfolio
+    ? [
+        `Hi ${firstName},`,
+        ``,
+        `Thank you for your portfolio donation of ${formatCents(amountCents)} across ${allocations!.length} organizations.`,
+        ``,
+        allocations!.map((a) => `${a.orgName}: ${formatCents(a.amountCents)}`).join("\n"),
+        ``,
+        `Date: ${date}`,
+        `Receipt ID: ${receiptId}`,
+        ``,
+        `No goods or services were provided in exchange for this contribution.`,
+        ``,
+        `EasyToGive · easytogive.online`,
+      ].join("\n")
+    : isRecurring
+    ? [
+        `Hi ${firstName},`,
+        ``,
+        `Your recurring gift to ${orgName} has been set up.`,
+        ``,
+        `Amount per period: ${formatCents(amountCents)}`,
+        `Frequency: ${freqLabel}`,
+        `Date: ${date}`,
+        `Receipt ID: ${receiptId}`,
+        ``,
+        `To cancel your recurring gift, visit: https://easytogive.online/profile`,
+        ``,
+        `EasyToGive · easytogive.online`,
+      ].join("\n")
+    : [
+        `Hi ${firstName},`,
+        ``,
+        `Thank you for your donation to ${orgName}.`,
+        ...(orgEin ? [`EIN: ${orgEin}`] : []),
+        ``,
+        `Amount: ${formatCents(amountCents)}`,
+        `Date: ${date}`,
+        `Receipt ID: ${receiptId}`,
+        ...(receiptUrl ? [``, `View your receipt online: ${receiptUrl}`] : []),
+        ``,
+        `No goods or services were provided in exchange for this contribution. This donation may be tax-deductible to the extent permitted by law.`,
+        ``,
+        `EasyToGive · easytogive.online`,
+      ].join("\n");
+
   const subject = isRecurring
     ? `Recurring giving confirmed — ${orgName} [${receiptId}]`
     : isPortfolio
@@ -274,6 +332,7 @@ export async function sendReceiptEmail({
       headers: {
         "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
       },
+      text,
       html: receiptHtml({
         donorName,
         orgName,
