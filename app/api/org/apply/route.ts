@@ -64,12 +64,12 @@ export async function POST(req: NextRequest) {
   // Validate required fields
   if (!org_name?.trim()) return NextResponse.json({ error: "Organization name is required." }, { status: 400 });
   if (!contact_name?.trim()) return NextResponse.json({ error: "Contact name is required." }, { status: 400 });
-  if (!email?.trim() || !email.includes("@")) return NextResponse.json({ error: "A valid email address is required." }, { status: 400 });
+  if (!email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return NextResponse.json({ error: "A valid email address is required." }, { status: 400 });
   if (!description?.trim()) return NextResponse.json({ error: "A brief description of your mission is required." }, { status: 400 });
   if (!category?.trim()) return NextResponse.json({ error: "Category is required." }, { status: 400 });
   if (!VALID_CATEGORIES.includes(category.trim())) return NextResponse.json({ error: "Invalid category." }, { status: 400 });
 
-  // Validate password
+  // Step 1: Validate password server-side
   const passwordError = validatePassword(password ?? "");
   if (passwordError) return NextResponse.json({ error: passwordError }, { status: 400 });
 
@@ -116,7 +116,8 @@ export async function POST(req: NextRequest) {
 
   if (appError) {
     console.error("org_applications insert error:", appError);
-    await supabase.auth.admin.deleteUser(userId);
+    const { error: rollbackAuthErr } = await supabase.auth.admin.deleteUser(userId);
+    if (rollbackAuthErr) console.error("Rollback failed — auth user orphaned:", userId, rollbackAuthErr.message);
     return NextResponse.json({ error: "Failed to submit application. Please try again." }, { status: 500 });
   }
 
@@ -154,8 +155,12 @@ export async function POST(req: NextRequest) {
 
   if (orgError) {
     console.error("organizations insert error:", orgError);
-    await supabase.auth.admin.deleteUser(userId);
-    if (appData?.id) await supabase.from("org_applications").delete().eq("id", appData.id);
+    const { error: rollbackAuthErr2 } = await supabase.auth.admin.deleteUser(userId);
+    if (rollbackAuthErr2) console.error("Rollback failed — auth user orphaned:", userId, rollbackAuthErr2.message);
+    if (appData?.id) {
+      const { error: rollbackAppErr } = await supabase.from("org_applications").delete().eq("id", appData.id);
+      if (rollbackAppErr) console.error("Rollback failed — org_applications orphaned:", appData.id, rollbackAppErr.message);
+    }
     return NextResponse.json({ error: "Failed to create organization profile. Please try again." }, { status: 500 });
   }
 
@@ -169,9 +174,14 @@ export async function POST(req: NextRequest) {
 
   if (userError) {
     console.error("users insert error:", userError);
-    await supabase.auth.admin.deleteUser(userId);
-    if (appData?.id) await supabase.from("org_applications").delete().eq("id", appData.id);
-    await supabase.from("organizations").delete().eq("id", orgSlug);
+    const { error: rollbackAuthErr3 } = await supabase.auth.admin.deleteUser(userId);
+    if (rollbackAuthErr3) console.error("Rollback failed — auth user orphaned:", userId, rollbackAuthErr3.message);
+    if (appData?.id) {
+      const { error: rollbackAppErr2 } = await supabase.from("org_applications").delete().eq("id", appData.id);
+      if (rollbackAppErr2) console.error("Rollback failed — org_applications orphaned:", appData.id, rollbackAppErr2.message);
+    }
+    const { error: rollbackOrgErr } = await supabase.from("organizations").delete().eq("id", orgSlug);
+    if (rollbackOrgErr) console.error("Rollback failed — organizations orphaned:", orgSlug, rollbackOrgErr.message);
     return NextResponse.json({ error: "Failed to set up account. Please try again." }, { status: 500 });
   }
 
