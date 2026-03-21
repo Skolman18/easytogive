@@ -407,6 +407,8 @@ export async function sendDigestEmail({
 </body>
 </html>`;
 
+  const text = `EasyToGive Inbox Digest\n\n${digest}\n\nOpen inbox: https://easytogive.online/admin/email`;
+
   try {
     await resend.emails.send({
       from: FROM,
@@ -415,6 +417,7 @@ export async function sendDigestEmail({
       headers: {
         "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
       },
+      text,
       html,
     });
   } catch (err) {
@@ -502,6 +505,20 @@ export async function sendImpactUpdateEmail({
 </body>
 </html>`;
 
+  const firstName = donorName ? donorName.split(" ")[0] : "there";
+  const text = [
+    `Hi ${firstName},`,
+    ``,
+    `${orgName} just shared a new impact update.`,
+    ...(statHighlight ? [``, statHighlight] : []),
+    ...(summary ? [``, summary] : []),
+    ``,
+    `See the full update: ${orgUrl}`,
+    `View all your impact updates: ${walletUrl}`,
+    ``,
+    `EasyToGive · easytogive.online`,
+  ].join("\n");
+
   try {
     await resend.emails.send({
       from: FROM,
@@ -510,6 +527,7 @@ export async function sendImpactUpdateEmail({
       headers: {
         "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
       },
+      text,
       html,
     });
   } catch (err) {
@@ -586,6 +604,19 @@ export async function sendApprovalEmail({
 </body>
 </html>`;
 
+  const firstName = contactName ? contactName.split(" ")[0] : "there";
+  const text = [
+    `Hi ${firstName},`,
+    ``,
+    `${orgName} has been listed on EasyToGive.`,
+    ``,
+    `Create your account at: ${signupUrl}`,
+    ``,
+    `Use this email address when signing up: ${to}`,
+    ``,
+    `EasyToGive · easytogive.online`,
+  ].join("\n");
+
   try {
     await resend.emails.send({
       from: FROM,
@@ -594,6 +625,7 @@ export async function sendApprovalEmail({
       headers: {
         "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
       },
+      text,
       html,
     });
   } catch (err) {
@@ -658,6 +690,17 @@ export async function sendGoLiveEmail({
 </body>
 </html>`;
 
+  const text = [
+    `${orgName} is now live on EasyToGive.`,
+    ``,
+    `Your organization has been approved and is now visible to donors.`,
+    ``,
+    `Go to your dashboard: ${dashboardUrl}`,
+    `View your public page: ${orgUrl}`,
+    ``,
+    `EasyToGive · receipts@easytogive.online`,
+  ].join("\n");
+
   try {
     await resend.emails.send({
       from: FROM,
@@ -666,6 +709,7 @@ export async function sendGoLiveEmail({
       headers: {
         "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
       },
+      text,
       html,
     });
   } catch (err) {
