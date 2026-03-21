@@ -271,6 +271,9 @@ export async function sendReceiptEmail({
       from: FROM,
       to: [to],
       subject,
+      headers: {
+        "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
+      },
       html: receiptHtml({
         donorName,
         orgName,
@@ -346,7 +349,15 @@ export async function sendDigestEmail({
 </html>`;
 
   try {
-    await resend.emails.send({ from: FROM, to: [to], subject, html });
+    await resend.emails.send({
+      from: FROM,
+      to: [to],
+      subject,
+      headers: {
+        "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
+      },
+      html,
+    });
   } catch (err) {
     console.error("Failed to send digest email:", err);
   }
@@ -437,6 +448,9 @@ export async function sendImpactUpdateEmail({
       from: FROM,
       to: [to],
       subject: `${orgName} just shared an impact update`,
+      headers: {
+        "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
+      },
       html,
     });
   } catch (err) {
@@ -518,6 +532,9 @@ export async function sendApprovalEmail({
       from: FROM,
       to: [to],
       subject: `Welcome to EasyToGive — ${orgName} is ready`,
+      headers: {
+        "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
+      },
       html,
     });
   } catch (err) {
@@ -587,6 +604,9 @@ export async function sendGoLiveEmail({
       from: FROM,
       to: [to],
       subject: `${orgName} is now live on EasyToGive`,
+      headers: {
+        "List-Unsubscribe": "<mailto:receipts@easytogive.online?subject=unsubscribe>",
+      },
       html,
     });
   } catch (err) {
