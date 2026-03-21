@@ -468,21 +468,6 @@ function OrgDashboardInner() {
           </div>
         )}
 
-        {/* Profile visibility notice */}
-        {org && !org.visible && userEmail !== ADMIN_EMAIL && (
-          <div
-            className="rounded-xl p-4 flex items-start gap-3"
-            style={{ backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}
-          >
-            <AlertTriangle className="w-5 h-5 flex-shrink-0 text-yellow-600 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-gray-900">Your profile is not yet public</p>
-              <p className="text-xs text-gray-600 mt-0.5">
-                Complete your profile below and contact us to make your page visible to donors.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Stripe return banners */}
         {stripeResult === "success" && !stripeBannerDismissed && (
