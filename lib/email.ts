@@ -524,3 +524,72 @@ export async function sendApprovalEmail({
     console.error("Failed to send approval email:", err);
   }
 }
+
+export async function sendGoLiveEmail({
+  to,
+  orgName,
+  orgId,
+}: {
+  to: string;
+  orgName: string;
+  orgId: string;
+}): Promise<void> {
+  const resend = getResend();
+  if (!resend) return;
+
+  const dashboardUrl = "https://easytogive.online/org/dashboard";
+  const orgUrl = `https://easytogive.online/org/${orgId}`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#faf9f6;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f6;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:white;border-radius:16px;border:1px solid #e5e1d8;overflow:hidden;">
+        <tr>
+          <td style="background:#1a7a4a;padding:28px 32px;text-align:center;">
+            <p style="margin:0;color:white;font-size:22px;font-weight:700;">EasyToGive</p>
+            <p style="margin:6px 0 0;color:#bbf7d0;font-size:13px;">You're live!</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 32px 24px;">
+            <p style="margin:0 0 16px;color:#111827;font-size:16px;font-weight:700;">${orgName} is now live on EasyToGive</p>
+            <p style="margin:0 0 24px;color:#374151;font-size:14px;line-height:1.7;">
+              Your organization has been approved and is now visible to donors on EasyToGive.
+              Donors can find your page and start giving today.
+            </p>
+            <div style="margin-bottom:24px;">
+              <a href="${dashboardUrl}" style="display:inline-block;background:#1a7a4a;color:white;text-decoration:none;font-size:14px;font-weight:600;padding:12px 24px;border-radius:8px;">
+                Go to your dashboard →
+              </a>
+            </div>
+            <p style="margin:0;color:#6b7280;font-size:13px;">
+              You can also view your public page at:
+              <a href="${orgUrl}" style="color:#1a7a4a;text-decoration:none;">${orgUrl}</a>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f9fafb;padding:14px 32px;border-top:1px solid #e5e1d8;text-align:center;">
+            <p style="margin:0;color:#9ca3af;font-size:11px;">EasyToGive · receipts@easytogive.online</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: [to],
+      subject: `${orgName} is now live on EasyToGive`,
+      html,
+    });
+  } catch (err) {
+    console.error("Failed to send go-live email:", err);
+  }
+}
