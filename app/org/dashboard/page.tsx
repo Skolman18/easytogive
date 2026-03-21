@@ -394,6 +394,7 @@ function OrgDashboardInner() {
 
   const org = selectedOrg ?? orgs[0];
   const isConnected = org?.stripe_onboarding_complete ?? false;
+  const isAdmin = userEmail === ADMIN_EMAIL;
 
   const previewLabel = org ? `Viewing as ${org.name}` : undefined;
 
@@ -448,6 +449,24 @@ function OrgDashboardInner() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        {/* Pending review banner — shown when org is not yet visible to donors */}
+        {!org.visible && !isAdmin && (
+          <div
+            className="mb-6 px-5 py-4 rounded-xl text-sm leading-relaxed"
+            style={{
+              backgroundColor: "#faf9f6",
+              border: "1px solid #e5e1d8",
+              color: "#1a1a18",
+            }}
+          >
+            <p className="font-semibold mb-1">Your application is under review</p>
+            <p style={{ color: "#5c5b56" }}>
+              Your profile won&apos;t appear publicly until we approve it. You can set
+              up everything now — we&apos;ll let you know when you&apos;re live.
+            </p>
+          </div>
+        )}
 
         {/* Profile visibility notice */}
         {org && !org.visible && userEmail !== ADMIN_EMAIL && (
