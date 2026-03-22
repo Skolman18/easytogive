@@ -138,6 +138,14 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
       ? { backgroundColor: "#1a7a4a", color: "white" }
       : { backgroundColor: "#f5f4f0", color: "#5c5b56", border: "1px solid #e8e5de" };
 
+  function handleCardClick(orgId: string) {
+    fetch(`/api/org/${orgId}/track`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_type: "card_click" }),
+    }).catch(() => {});
+  }
+
   return (
     <div style={{ backgroundColor: "#faf9f6" }} className="min-h-screen">
       {/* Page header — warm, seamless from nav */}
@@ -386,6 +394,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
                 key={org.id}
                 org={org}
                 displaySettings={displaySettingsMap?.[org.id]}
+                onCardClick={() => handleCardClick(org.id)}
               />
             ))}
           </div>
