@@ -24,6 +24,7 @@ import {
   MousePointerClick,
   Eye,
   BarChart2,
+  Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { ADMIN_EMAIL } from "@/lib/admin";
@@ -108,6 +109,7 @@ function OrgDashboardInner() {
   const [analyticsRange, setAnalyticsRange] = useState<AnalyticsRange>("7d");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -234,6 +236,7 @@ function OrgDashboardInner() {
   }
 
   async function loadAnalytics(orgId: string, range: AnalyticsRange) {
+    setAnalyticsError(false);
     setAnalyticsLoading(true);
     try {
       const supabase = createClient() as any;
@@ -307,6 +310,15 @@ function OrgDashboardInner() {
       });
     } catch (err) {
       console.error("loadAnalytics failed:", err);
+      setAnalyticsError(true);
+      setAnalytics({
+        cardClicks: 0,
+        profileViews: 0,
+        donations: 0,
+        prevCardClicks: 0,
+        prevProfileViews: 0,
+        prevDonations: 0,
+      });
     }
     setAnalyticsLoading(false);
   }
@@ -737,7 +749,7 @@ function OrgDashboardInner() {
                   },
                   {
                     label: "Donations",
-                    icon: <DollarSign className="w-4 h-4 text-gray-400" />,
+                    icon: <Heart className="w-4 h-4 text-gray-400" />,
                     value: analytics.donations,
                     prev: analytics.prevDonations,
                   },
@@ -747,7 +759,7 @@ function OrgDashboardInner() {
                   return (
                     <div key={stat.label} className="rounded-xl border p-4" style={{ borderColor: "#e5e1d8" }}>
                       <div className="flex items-center gap-1.5 mb-1">{stat.icon}</div>
-                      <div className="font-display text-2xl text-gray-900">{stat.value.toLocaleString()}</div>
+                      <div className="font-display text-2xl text-gray-900">{analyticsError ? "—" : stat.value.toLocaleString()}</div>
                       <div className="text-xs font-medium text-gray-500 mt-0.5">{stat.label}</div>
                       {showDelta && (
                         <div
