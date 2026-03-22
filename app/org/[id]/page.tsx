@@ -26,6 +26,7 @@ import EditableField from "@/components/EditableField";
 import OrgImpactFeed from "@/components/OrgImpactFeed";
 import OrgVideoEmbed from "@/components/OrgVideoEmbed";
 import OrgBookmarkShare from "@/components/OrgBookmarkShare";
+import ProfileViewTracker from "@/components/ProfileViewTracker";
 import { createClient } from "@/lib/supabase-server";
 import { CATEGORY_LABELS } from "@/lib/categories";
 
@@ -220,6 +221,7 @@ export default async function OrgPage({
 
   return (
     <div style={{ backgroundColor: "#faf9f6" }}>
+      <ProfileViewTracker orgId={org.id} />
       {/* Admin edit bar */}
       <OrgAdminBar orgId={id} orgName={org.name} />
 
