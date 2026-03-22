@@ -21,6 +21,9 @@ import {
   Clock,
   ShieldCheck,
   Wand2,
+  MousePointerClick,
+  Eye,
+  BarChart2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { ADMIN_EMAIL } from "@/lib/admin";
@@ -90,6 +93,21 @@ function OrgDashboardInner() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [autofilling, setAutofilling] = useState(false);
   const [autofillError, setAutofillError] = useState<string | null>(null);
+
+  type AnalyticsRange = "24h" | "7d" | "30d" | "90d" | "all";
+
+  interface AnalyticsData {
+    cardClicks: number;
+    profileViews: number;
+    donations: number;
+    prevCardClicks: number;
+    prevProfileViews: number;
+    prevDonations: number;
+  }
+
+  const [analyticsRange, setAnalyticsRange] = useState<AnalyticsRange>("7d");
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -163,10 +181,18 @@ function OrgDashboardInner() {
   useEffect(() => {
     if (selectedOrg) {
       setOrgStats(null);
+      setAnalytics(null);
       loadOrgStats(createClient() as any, selectedOrg.id);
       loadImpactUpdates(selectedOrg.id);
+      loadAnalytics(selectedOrg.id, analyticsRange);
     }
   }, [selectedOrg?.id]); // eslint-disable-line
+
+  useEffect(() => {
+    if (selectedOrg) {
+      loadAnalytics(selectedOrg.id, analyticsRange);
+    }
+  }, [analyticsRange]); // eslint-disable-line
 
   async function loadImpactUpdates(orgId: string) {
     setImpactLoading(true);
@@ -205,6 +231,84 @@ function OrgDashboardInner() {
     } catch (err) {
       console.error("loadOrgStats failed:", err);
     }
+  }
+
+  async function loadAnalytics(orgId: string, range: AnalyticsRange) {
+    setAnalyticsLoading(true);
+    try {
+      const supabase = createClient() as any;
+      const now = new Date();
+
+      const msMap: Record<AnalyticsRange, number> = {
+        "24h": 24 * 60 * 60 * 1000,
+        "7d": 7 * 24 * 60 * 60 * 1000,
+        "30d": 30 * 24 * 60 * 60 * 1000,
+        "90d": 90 * 24 * 60 * 60 * 1000,
+        "all": 0,
+      };
+
+      const periodMs = msMap[range];
+      const currentStart = range === "all" ? null : new Date(now.getTime() - periodMs).toISOString();
+      const prevStart = range === "all" ? null : new Date(now.getTime() - periodMs * 2).toISOString();
+      const prevEnd = currentStart;
+
+      // Current period events
+      let eventsQuery = supabase
+        .from("org_events")
+        .select("event_type")
+        .eq("org_id", orgId);
+      if (currentStart) eventsQuery = eventsQuery.gte("created_at", currentStart);
+      const { data: events } = await eventsQuery;
+
+      // Previous period events (skip for "all")
+      let prevEvents: { event_type: string }[] = [];
+      if (range !== "all" && prevStart && prevEnd) {
+        const { data } = await supabase
+          .from("org_events")
+          .select("event_type")
+          .eq("org_id", orgId)
+          .gte("created_at", prevStart)
+          .lt("created_at", prevEnd);
+        prevEvents = data ?? [];
+      }
+
+      // Current period donations
+      let donationsQuery = supabase
+        .from("donations")
+        .select("id")
+        .eq("org_id", orgId);
+      if (currentStart) donationsQuery = donationsQuery.gte("donated_at", currentStart);
+      const { data: donations } = await donationsQuery;
+
+      // Previous period donations
+      let prevDonationCount = 0;
+      if (range !== "all" && prevStart && prevEnd) {
+        const { data } = await supabase
+          .from("donations")
+          .select("id")
+          .eq("org_id", orgId)
+          .gte("donated_at", prevStart)
+          .lt("donated_at", prevEnd);
+        prevDonationCount = data?.length ?? 0;
+      }
+
+      const cardClicks = (events ?? []).filter((e: any) => e.event_type === "card_click").length;
+      const profileViews = (events ?? []).filter((e: any) => e.event_type === "profile_view").length;
+      const prevCardClicks = prevEvents.filter((e) => e.event_type === "card_click").length;
+      const prevProfileViews = prevEvents.filter((e) => e.event_type === "profile_view").length;
+
+      setAnalytics({
+        cardClicks,
+        profileViews,
+        donations: donations?.length ?? 0,
+        prevCardClicks,
+        prevProfileViews,
+        prevDonations: prevDonationCount,
+      });
+    } catch (err) {
+      console.error("loadAnalytics failed:", err);
+    }
+    setAnalyticsLoading(false);
   }
 
   async function verifyAccountStatus(accountId: string) {
@@ -581,6 +685,87 @@ function OrgDashboardInner() {
             </div>
           );
         })()}
+
+        {/* Analytics */}
+        <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: "#e5e1d8" }}>
+          <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "#f0ede6", backgroundColor: "#faf9f6" }}>
+            <div className="flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-gray-500" />
+              <h2 className="font-display text-gray-900">Analytics</h2>
+            </div>
+            <div className="flex items-center gap-1">
+              {(["24h", "7d", "30d", "90d", "all"] as AnalyticsRange[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setAnalyticsRange(r)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors min-h-[32px]"
+                  style={{
+                    backgroundColor: analyticsRange === r ? "#1a7a4a" : "transparent",
+                    color: analyticsRange === r ? "white" : "#5c5b56",
+                  }}
+                >
+                  {r === "all" ? "All time" : r}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="p-6">
+            {analyticsLoading || !analytics ? (
+              <div className="grid grid-cols-3 gap-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="rounded-xl border p-4 animate-pulse" style={{ borderColor: "#e5e1d8" }}>
+                    <div className="h-6 w-16 rounded bg-gray-100 mb-1.5" />
+                    <div className="h-3 w-20 rounded bg-gray-100 mb-1" />
+                    <div className="h-3 w-12 rounded bg-gray-100" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  {
+                    label: "Card Clicks",
+                    icon: <MousePointerClick className="w-4 h-4 text-gray-400" />,
+                    value: analytics.cardClicks,
+                    prev: analytics.prevCardClicks,
+                  },
+                  {
+                    label: "Profile Views",
+                    icon: <Eye className="w-4 h-4 text-gray-400" />,
+                    value: analytics.profileViews,
+                    prev: analytics.prevProfileViews,
+                  },
+                  {
+                    label: "Donations",
+                    icon: <DollarSign className="w-4 h-4 text-gray-400" />,
+                    value: analytics.donations,
+                    prev: analytics.prevDonations,
+                  },
+                ].map((stat) => {
+                  const delta = stat.value - stat.prev;
+                  const showDelta = analyticsRange !== "all";
+                  return (
+                    <div key={stat.label} className="rounded-xl border p-4" style={{ borderColor: "#e5e1d8" }}>
+                      <div className="flex items-center gap-1.5 mb-1">{stat.icon}</div>
+                      <div className="font-display text-2xl text-gray-900">{stat.value.toLocaleString()}</div>
+                      <div className="text-xs font-medium text-gray-500 mt-0.5">{stat.label}</div>
+                      {showDelta && (
+                        <div
+                          className="text-xs font-medium mt-1"
+                          style={{
+                            color: delta > 0 ? "#1a7a4a" : delta < 0 ? "#dc2626" : "#9b9990",
+                          }}
+                        >
+                          {delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : "0"} vs prior period
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Donation Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
