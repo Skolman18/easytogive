@@ -215,8 +215,6 @@ export default async function OrgPage({
     // Silently fall back
   }
 
-  // Whether to show the logo avatar (only if it differs from the cover)
-  const showLogoAvatar = org.imageUrl && org.imageUrl !== org.coverUrl;
   const hasCover = !!org.coverUrl;
 
   return (
@@ -262,42 +260,31 @@ export default async function OrgPage({
           <OrgBookmarkShare orgId={id} orgName={org.name} />
         </div>
 
-        {/* Bottom-left: category pill + org logo avatar */}
-        <div className="absolute bottom-0 left-4 md:left-8 pb-4 flex items-end gap-3">
-          {/* Logo avatar — only shown when logo differs from cover */}
-          {showLogoAvatar && (
-            <div
-              className="w-10 h-10 md:w-16 md:h-16 rounded-xl overflow-hidden border-2 border-white flex-shrink-0 bg-white"
-              style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}
-            >
-              <Image src={org.imageUrl} alt={`${org.name} logo`} fill sizes="64px" className="object-cover" />
-            </div>
-          )}
-          <div className="flex items-center gap-2 pb-1">
+        {/* Bottom-left: category pill + badges */}
+        <div className="absolute bottom-0 left-4 md:left-8 pb-4 flex items-center gap-2">
+          <span
+            className="px-3 py-1 rounded-full text-xs font-semibold"
+            style={{ backgroundColor: "rgba(255,255,255,0.92)", color: "#374151" }}
+          >
+            {categoryLabel}
+          </span>
+          {org.verified && (
             <span
-              className="px-3 py-1 rounded-full text-xs font-semibold"
-              style={{ backgroundColor: "rgba(255,255,255,0.92)", color: "#374151" }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white"
+              style={{ backgroundColor: "#1a7a4a" }}
             >
-              {categoryLabel}
+              <CheckCircle className="w-3.5 h-3.5" />
+              Verified
             </span>
-            {org.verified && (
-              <span
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-                style={{ backgroundColor: "#1a7a4a" }}
-              >
-                <CheckCircle className="w-3.5 h-3.5" />
-                Verified
-              </span>
-            )}
-            {(org as any).givebutterConnected && (
-              <span
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-                style={{ backgroundColor: "#fef9c3", color: "#854d0e", border: "1px solid #fde68a" }}
-              >
-                GiveButter Connected
-              </span>
-            )}
-          </div>
+          )}
+          {(org as any).givebutterConnected && (
+            <span
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: "#fef9c3", color: "#854d0e", border: "1px solid #fde68a" }}
+            >
+              GiveButter Connected
+            </span>
+          )}
         </div>
       </div>
 
@@ -307,27 +294,45 @@ export default async function OrgPage({
           {/* ── Main content ── */}
           <div className="lg:col-span-2 space-y-6 order-1 lg:order-none">
 
-            {/* Header: name, tagline, meta */}
+            {/* Header: logo + name + tagline + meta */}
             <div>
-              <div className="flex items-start gap-3 mb-1 flex-wrap">
-                <EditableField
-                  orgId={supabaseOrg ? id : undefined}
-                  field="name"
-                  value={org.name}
-                  as="h1"
-                  className="font-display text-[22px] md:text-3xl font-bold text-gray-900 leading-tight"
-                />
-              </div>
+              <div className="flex items-start gap-4 md:gap-5 mb-4">
+                {/* Org logo */}
+                {org.imageUrl && (
+                  <div
+                    className="relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden flex-shrink-0 bg-white border"
+                    style={{ borderColor: "#e5e1d8", boxShadow: "0 1px 6px rgba(0,0,0,0.08)" }}
+                  >
+                    <Image
+                      src={org.imageUrl}
+                      alt={`${org.name} logo`}
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
+                  </div>
+                )}
 
-              {org.tagline?.trim() && (
-                <EditableField
-                  orgId={supabaseOrg ? id : undefined}
-                  field="tagline"
-                  value={org.tagline}
-                  as="p"
-                  className="text-sm md:text-lg text-gray-500 mb-3 leading-snug"
-                />
-              )}
+                {/* Name + tagline */}
+                <div className="min-w-0 flex-1 pt-1">
+                  <EditableField
+                    orgId={supabaseOrg ? id : undefined}
+                    field="name"
+                    value={org.name}
+                    as="h1"
+                    className="font-display text-[22px] md:text-3xl font-bold text-gray-900 leading-tight"
+                  />
+                  {org.tagline?.trim() && (
+                    <EditableField
+                      orgId={supabaseOrg ? id : undefined}
+                      field="tagline"
+                      value={org.tagline}
+                      as="p"
+                      className="text-sm md:text-base text-gray-500 mt-1 leading-snug"
+                    />
+                  )}
+                </div>
+              </div>
 
               {/* Meta row */}
               <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-gray-500">
@@ -377,7 +382,6 @@ export default async function OrgPage({
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
-                {/* EIN inline — only when available */}
                 {org.ein && org.ein !== "Pending" && org.ein.trim() && (
                   <span className="text-gray-400">EIN {org.ein}</span>
                 )}
