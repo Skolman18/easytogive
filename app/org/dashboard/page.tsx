@@ -305,14 +305,7 @@ function OrgDashboardInner() {
     } catch (err) {
       console.error("loadAnalytics failed:", err);
       setAnalyticsError("Could not load analytics");
-      setAnalytics({
-        cardClicks: 0,
-        profileViews: 0,
-        donations: 0,
-        prevCardClicks: 0,
-        prevProfileViews: 0,
-        prevDonations: 0,
-      });
+      // analytics stays null
     }
     setAnalyticsLoading(false);
   }
@@ -716,7 +709,7 @@ function OrgDashboardInner() {
             </div>
           </div>
           <div className="p-6">
-            {analyticsLoading || !analytics ? (
+            {analyticsLoading ? (
               <div className="grid grid-cols-3 gap-4">
                 {[0, 1, 2].map((i) => (
                   <div key={i} className="rounded-xl border p-4 animate-pulse" style={{ borderColor: "#e5e1d8" }}>
@@ -726,7 +719,9 @@ function OrgDashboardInner() {
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : analyticsError !== null ? (
+              <p className="text-sm py-2" style={{ color: "#9b9990" }}>{analyticsError}</p>
+            ) : analytics ? (
               <div className="grid grid-cols-3 gap-4">
                 {[
                   {
@@ -753,7 +748,7 @@ function OrgDashboardInner() {
                   return (
                     <div key={stat.label} className="rounded-xl border p-4" style={{ borderColor: "#e5e1d8" }}>
                       <div className="flex items-center gap-1.5 mb-1">{stat.icon}</div>
-                      <div className="font-display text-2xl text-gray-900">{analyticsError !== null ? "—" : stat.value.toLocaleString()}</div>
+                      <div className="font-display text-2xl text-gray-900">{stat.value.toLocaleString()}</div>
                       <div className="text-xs font-medium text-gray-500 mt-0.5">{stat.label}</div>
                       {showDelta && (
                         <div
@@ -769,10 +764,7 @@ function OrgDashboardInner() {
                   );
                 })}
               </div>
-            )}
-            {analyticsError !== null && (
-              <p className="text-xs mt-3" style={{ color: "#9b9990" }}>{analyticsError}</p>
-            )}
+            ) : null}
           </div>
         </div>
 

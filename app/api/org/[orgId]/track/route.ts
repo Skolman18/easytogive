@@ -32,6 +32,11 @@ export async function POST(
 
   const { orgId } = await params;
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(orgId)) {
+    return NextResponse.json({ error: "Invalid orgId" }, { status: 400 });
+  }
+
   // Skip if org owner or admin
   try {
     const supabaseAuth = await createServerClient();
