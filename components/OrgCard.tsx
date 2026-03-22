@@ -19,6 +19,7 @@ interface OrgCardProps {
   org: Organization;
   compact?: boolean;
   displaySettings?: OrgDisplaySettings;
+  onCardClick?: () => void;
 }
 
 function AddToPortfolioButton({ orgId }: { orgId: string }) {
@@ -79,6 +80,7 @@ export default function OrgCard({
   org,
   compact = false,
   displaySettings,
+  onCardClick,
 }: OrgCardProps) {
   const [storyOpen, setStoryOpen] = useState(false);
   const progress = getProgressPercent(org.raised, org.goal);
@@ -107,7 +109,7 @@ export default function OrgCard({
       style={{ borderColor: "#e5e1d8" }}
     >
       {/* Main card content — wrapped in Link */}
-      <Link href={`/org/${org.id}`} className="flex-1 flex flex-col">
+      <Link href={`/org/${org.id}`} className="flex-1 flex flex-col" onClick={() => onCardClick?.()}>
         {/* Image */}
         <div
           className="relative h-28 md:h-32 overflow-hidden flex-shrink-0"
