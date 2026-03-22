@@ -1,0 +1,51 @@
+<h2>How should the form be structured?</h2>
+<p class="subtitle">Right now it's a single scrollable page. Which approach feels most professional for an org applying to a donation platform?</p>
+
+<div class="cards">
+  <div class="card" data-choice="single" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; background: #faf9f6; border-bottom: 1px solid #e5e1d8;">
+      <div style="max-width: 320px; margin: 0 auto;">
+        <div style="height: 10px; background: #1a7a4a; border-radius: 3px; margin-bottom: 16px; width: 40%;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 10px;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 10px; width: 75%;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 20px; width: 85%;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 10px;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 10px; width: 60%;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 20px;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 10px;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 10px; width: 70%;"></div>
+        <div style="margin-top: 20px; height: 32px; background: #1a7a4a; border-radius: 4px; width: 100%;"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Refined Single Page</h3>
+      <p>Same structure, dramatically better typography, spacing, and visual weight. No icons. Clean section headers. Feels like a proper application form.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="twostep" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; background: #faf9f6; border-bottom: 1px solid #e5e1d8;">
+      <div style="max-width: 320px; margin: 0 auto;">
+        <div style="display: flex; gap: 6px; margin-bottom: 20px; align-items: center;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #1a7a4a; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 600; flex-shrink: 0;">1</div>
+          <div style="flex: 1; height: 2px; background: #e5e1d8;"></div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #e5e1d8; display: flex; align-items: center; justify-content: center; color: #999; font-size: 11px; font-weight: 600; flex-shrink: 0;">2</div>
+          <div style="flex: 1; height: 2px; background: #e5e1d8;"></div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #e5e1d8; display: flex; align-items: center; justify-content: center; color: #999; font-size: 11px; font-weight: 600; flex-shrink: 0;">3</div>
+        </div>
+        <div style="height: 12px; background: #1a7a4a; border-radius: 3px; margin-bottom: 16px; width: 55%;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 10px;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 10px; width: 75%;"></div>
+        <div style="height: 8px; background: #e5e1d8; border-radius: 2px; margin-bottom: 20px;"></div>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <div style="flex: 1; height: 32px; background: #e5e1d8; border-radius: 4px;"></div>
+          <div style="flex: 1; height: 32px; background: #1a7a4a; border-radius: 4px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Multi-Step Wizard</h3>
+      <p>Break into 3 focused steps: Basic Info → Mission & Category → Connect GiveButter. Progress bar at top. Each step is short and purposeful.</p>
+    </div>
+  </div>
+</div>

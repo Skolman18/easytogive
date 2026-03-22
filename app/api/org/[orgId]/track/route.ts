@@ -9,7 +9,7 @@ type EventType = (typeof VALID_EVENTS)[number];
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { orgId: string } }
+  { params }: { params: Promise<{ orgId: string }> }
 ) {
   // Rate limit by IP
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -30,7 +30,7 @@ export async function POST(
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { orgId } = params;
+  const { orgId } = await params;
 
   // Skip if org owner or admin
   try {

@@ -1,0 +1,9 @@
+{"type":"server-started","port":64675,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:64675","screen_dir":"/Users/sethmitzel/easytogive/.superpowers/brainstorm/48718-1774115269"}
+{"type":"screen-added","file":"/Users/sethmitzel/easytogive/.superpowers/brainstorm/48718-1774115269/structure.html"}
+{"source":"user-event","type":"click","text":"1\n          \n          2\n          \n          3\n        \n        \n        \n        \n        \n        \n          \n          \n        \n      \n    \n    \n      B — Multi-Step Wizard\n      Break into 3 focused steps: Basic Info → Mission & Category → Connect GiveButter. Progress bar at top. Each step is short and purposeful.","choice":"twostep","id":null,"timestamp":1774115330880}
+{"source":"user-event","type":"click","text":"A — Refined Single Page\n      Same structure, dramatically better typography, spacing, and visual weight. No icons. Clean section headers. Feels like a proper application form.","choice":"single","id":null,"timestamp":1774115332936}
+{"source":"user-event","type":"click","text":"1\n          \n          2\n          \n          3\n        \n        \n        \n        \n        \n        \n          \n          \n        \n      \n    \n    \n      B — Multi-Step Wizard\n      Break into 3 focused steps: Basic Info → Mission & Category → Connect GiveButter. Progress bar at top. Each step is short and purposeful.","choice":"twostep","id":null,"timestamp":1774115339331}
+{"type":"screen-added","file":"/Users/sethmitzel/easytogive/.superpowers/brainstorm/48718-1774115269/visual-tone.html"}
+{"type":"screen-added","file":"/Users/sethmitzel/easytogive/.superpowers/brainstorm/48718-1774115269/steps.html"}
+{"type":"screen-added","file":"/Users/sethmitzel/easytogive/.superpowers/brainstorm/48718-1774115269/mockup-step1.html"}
+{"type":"server-stopped","reason":"idle timeout"}
