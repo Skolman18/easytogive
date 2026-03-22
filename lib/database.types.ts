@@ -147,6 +147,26 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["admin_logs"]["Row"], "id" | "created_at">;
         Update: Partial<Database["public"]["Tables"]["admin_logs"]["Insert"]>;
       };
+      org_events: {
+        Row: {
+          id: string;
+          org_id: string;
+          event_type: "card_click" | "profile_view";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          event_type: "card_click" | "profile_view";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          event_type?: "card_click" | "profile_view";
+          created_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
