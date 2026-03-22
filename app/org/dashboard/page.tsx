@@ -109,7 +109,7 @@ function OrgDashboardInner() {
   const [analyticsRange, setAnalyticsRange] = useState<AnalyticsRange>("7d");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [analyticsError, setAnalyticsError] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -179,7 +179,7 @@ function OrgDashboardInner() {
     }
   }, [stripeResult, selectedOrg?.stripe_account_id]); // eslint-disable-line
 
-  // Reload stats + impact updates when org changes
+  // Reload stats + impact updates when org changes or analytics range changes
   useEffect(() => {
     if (selectedOrg) {
       setOrgStats(null);
@@ -188,13 +188,7 @@ function OrgDashboardInner() {
       loadImpactUpdates(selectedOrg.id);
       loadAnalytics(selectedOrg.id, analyticsRange);
     }
-  }, [selectedOrg?.id]); // eslint-disable-line
-
-  useEffect(() => {
-    if (selectedOrg) {
-      loadAnalytics(selectedOrg.id, analyticsRange);
-    }
-  }, [analyticsRange]); // eslint-disable-line
+  }, [selectedOrg?.id, analyticsRange]); // eslint-disable-line
 
   async function loadImpactUpdates(orgId: string) {
     setImpactLoading(true);
@@ -236,7 +230,7 @@ function OrgDashboardInner() {
   }
 
   async function loadAnalytics(orgId: string, range: AnalyticsRange) {
-    setAnalyticsError(false);
+    setAnalyticsError(null);
     setAnalyticsLoading(true);
     try {
       const supabase = createClient() as any;
@@ -310,7 +304,7 @@ function OrgDashboardInner() {
       });
     } catch (err) {
       console.error("loadAnalytics failed:", err);
-      setAnalyticsError(true);
+      setAnalyticsError("Could not load analytics");
       setAnalytics({
         cardClicks: 0,
         profileViews: 0,
@@ -710,7 +704,7 @@ function OrgDashboardInner() {
                 <button
                   key={r}
                   onClick={() => setAnalyticsRange(r)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors min-h-[32px]"
+                  className="px-2.5 py-2.5 rounded-lg text-xs font-medium transition-colors min-h-[44px]"
                   style={{
                     backgroundColor: analyticsRange === r ? "#1a7a4a" : "transparent",
                     color: analyticsRange === r ? "white" : "#5c5b56",
@@ -759,7 +753,7 @@ function OrgDashboardInner() {
                   return (
                     <div key={stat.label} className="rounded-xl border p-4" style={{ borderColor: "#e5e1d8" }}>
                       <div className="flex items-center gap-1.5 mb-1">{stat.icon}</div>
-                      <div className="font-display text-2xl text-gray-900">{analyticsError ? "—" : stat.value.toLocaleString()}</div>
+                      <div className="font-display text-2xl text-gray-900">{analyticsError !== null ? "—" : stat.value.toLocaleString()}</div>
                       <div className="text-xs font-medium text-gray-500 mt-0.5">{stat.label}</div>
                       {showDelta && (
                         <div
@@ -775,6 +769,9 @@ function OrgDashboardInner() {
                   );
                 })}
               </div>
+            )}
+            {analyticsError !== null && (
+              <p className="text-xs mt-3" style={{ color: "#9b9990" }}>{analyticsError}</p>
             )}
           </div>
         </div>
