@@ -1,23 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle, Lightbulb, Sparkles } from "lucide-react";
+import { CheckCircle, Lightbulb } from "lucide-react";
 import type { PortfolioAnalysis } from "@/app/api/ai/portfolio-analysis/route";
 
 interface Props {
   userId: string | null;
 }
 
-function AiBadge() {
-  return (
-    <span
-      className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded"
-      style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a", borderRadius: "4px" }}
-    >
-      AI
-    </span>
-  );
-}
 
 function SkeletonCard() {
   return (
@@ -96,10 +86,8 @@ export default function PortfolioHealthCard({ userId }: Props) {
             <p className="font-semibold text-gray-900 text-sm leading-tight">
               {analysis!.headline}
             </p>
-            <AiBadge />
           </div>
-          <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-            <Sparkles className="w-3 h-3" style={{ color: "#1a7a4a" }} />
+          <p className="text-xs text-gray-500 mt-0.5">
             Portfolio health analysis
           </p>
         </div>

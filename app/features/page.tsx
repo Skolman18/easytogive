@@ -5,7 +5,7 @@ import {
   FileText,
   Target,
   Repeat,
-  Sparkles,
+  Wand2,
   Building2,
   ShieldCheck,
   BarChart2,
@@ -61,7 +61,7 @@ const ORG_FEATURES = [
     desc: "Every organization is reviewed before going live. Our verified badge signals to donors that your organization is legitimate — so they give without hesitation.",
   },
   {
-    Icon: Sparkles,
+    Icon: Wand2,
     title: "AI-Powered Profile",
     desc: "Paste your website URL and our AI fills in your name, mission, location, and tags automatically. Building a compelling profile takes minutes, not hours.",
   },

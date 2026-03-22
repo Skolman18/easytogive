@@ -11,7 +11,7 @@ import {
   ExternalLink,
   CheckCircle,
   ShieldCheck,
-  Sparkles,
+  Star,
   Quote,
   Tag,
 } from "lucide-react";
@@ -522,7 +522,7 @@ export default async function OrgPage({
         {displaySettings.show_recommendations && recommendedOrgs.length > 0 && (
           <div className="pb-12">
             <div className="flex items-center gap-2 mb-6">
-              <Sparkles className="w-5 h-5" style={{ color: "#1a7a4a" }} />
+              <Star className="w-5 h-5" style={{ color: "#1a7a4a" }} />
               <h2 className="font-display text-2xl font-bold text-gray-900">
                 We Recommend
               </h2>

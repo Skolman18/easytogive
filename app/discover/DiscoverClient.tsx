@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Search, X, SlidersHorizontal, ChevronDown, Sparkles } from "lucide-react";
+import { Search, X, SlidersHorizontal, ChevronDown, Filter } from "lucide-react";
 import OrgCard from "@/components/OrgCard";
 import type { OrgDisplaySettings } from "@/components/OrgCard";
 import { CATEGORIES, SUBCATEGORY_OPTIONS, CATEGORY_LABELS, CAUSE_TO_CATEGORY } from "@/lib/categories";
@@ -194,7 +194,7 @@ export default function DiscoverClient({ organizations, displaySettingsMap }: Pr
             style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a" }}
           >
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 flex-shrink-0" />
+              <Filter className="w-4 h-4 flex-shrink-0" />
               <span className="font-medium">Showing causes matched to your interests</span>
             </div>
             <button

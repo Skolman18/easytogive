@@ -319,7 +319,7 @@ export default function HomeClient({
               settingKey="hero_headline"
               value={siteSettings?.hero_headline ?? "Give the Way\nYou Invest"}
               as="h1"
-              className="font-display text-[36px] md:text-[56px] lg:text-[68px] text-gray-900 leading-[1.05] mb-4 tracking-tight"
+              className="font-hero text-[36px] md:text-[56px] lg:text-[68px] text-gray-900 leading-[1.05] mb-4 tracking-tight"
             />
 
             <EditableField

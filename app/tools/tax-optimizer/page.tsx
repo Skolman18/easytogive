@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-browser";
 import {
-  Sparkles, Calculator, Loader2, AlertCircle, ChevronDown,
+  Calculator, Loader2, AlertCircle, ChevronDown,
   ChevronUp, Heart, ArrowRight, RotateCcw, ShieldCheck,
 } from "lucide-react";
 import type { TaxOptimizerRequest } from "@/app/api/ai/tax-optimizer/route";
@@ -279,7 +279,7 @@ export default function TaxOptimizerPage() {
               className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: "#1a7a4a" }}
             >
-              <Sparkles className="w-5 h-5 text-white" />
+              <Calculator className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="font-display text-2xl font-bold text-gray-900 leading-tight">
@@ -538,7 +538,7 @@ export default function TaxOptimizerPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4" />
+                    <Calculator className="w-4 h-4" />
                     {mode === "calculate" ? "Calculate My Savings" : "Find My Giving Target"}
                   </>
                 )}
@@ -569,7 +569,7 @@ export default function TaxOptimizerPage() {
                   className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
                   style={{ backgroundColor: "#e8f5ee" }}
                 >
-                  <Sparkles className="w-7 h-7" style={{ color: "#1a7a4a" }} />
+                  <Calculator className="w-7 h-7" style={{ color: "#1a7a4a" }} />
                 </div>
                 <p className="font-semibold text-gray-700 mb-1">
                   Your personalized tax analysis
@@ -611,7 +611,7 @@ export default function TaxOptimizerPage() {
                   style={{ borderColor: "#e5e1d8", backgroundColor: "#faf9f6" }}
                 >
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" style={{ color: "#1a7a4a" }} />
+                    <Calculator className="w-4 h-4" style={{ color: "#1a7a4a" }} />
                     <span className="text-sm font-semibold text-gray-900">
                       {mode === "calculate" ? "Your Tax Savings Analysis" : "Your Giving Target"}
                     </span>

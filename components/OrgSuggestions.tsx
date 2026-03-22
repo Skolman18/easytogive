@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Sparkles, Building2, Plus } from "lucide-react";
+import { Star, Building2, Plus } from "lucide-react";
 import type { OrgSuggestion } from "@/app/api/ai/org-suggestions/route";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -25,16 +25,6 @@ interface Props {
   onAddOrg?: (org: { id: string; name: string; category: string; image_url: string | null; location: string }) => void;
 }
 
-function AiBadge() {
-  return (
-    <span
-      className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded"
-      style={{ backgroundColor: "#e8f5ee", color: "#1a7a4a", borderRadius: "4px" }}
-    >
-      AI
-    </span>
-  );
-}
 
 function SkeletonCard() {
   return (
@@ -101,9 +91,8 @@ export default function OrgSuggestions({ userId, currentOrgIds, onAddOrg }: Prop
       return (
         <div className="mt-10">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-4 h-4" style={{ color: "#1a7a4a" }} />
+            <Star className="w-4 h-4" style={{ color: "#1a7a4a" }} />
             <h2 className="font-display text-lg font-bold text-gray-900">Suggested for you</h2>
-            <AiBadge />
           </div>
           <div
             className="rounded-xl border p-5 text-sm text-gray-500"
@@ -124,9 +113,8 @@ export default function OrgSuggestions({ userId, currentOrgIds, onAddOrg }: Prop
     <div className="mt-10">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4" style={{ color: "#1a7a4a" }} />
+          <Star className="w-4 h-4" style={{ color: "#1a7a4a" }} />
           <h2 className="font-display text-lg font-bold text-gray-900">Suggested for you</h2>
-          <AiBadge />
         </div>
         <span className="text-xs text-gray-400">Based on your giving history</span>
       </div>

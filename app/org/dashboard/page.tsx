@@ -20,7 +20,7 @@ import {
   TrendingUp,
   Clock,
   ShieldCheck,
-  Sparkles,
+  Wand2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { ADMIN_EMAIL } from "@/lib/admin";
@@ -949,7 +949,7 @@ function OrgDashboardInner() {
                 >
                   {autofilling
                     ? <><Loader2 className="w-4 h-4 animate-spin" />Reading site…</>
-                    : <><Sparkles className="w-4 h-4" />AI Fill</>
+                    : <><Wand2 className="w-4 h-4" />AI Fill</>
                   }
                 </button>
               </div>

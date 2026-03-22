@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, Building2 } from "lucide-react";
+import { Heart, Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 
 interface ImpactItem {
@@ -56,7 +56,7 @@ function FeedHeader() {
   return (
     <div className="mb-4">
       <div className="flex items-center gap-2 mb-0.5">
-        <Sparkles className="w-4 h-4 flex-shrink-0" style={{ color: "#1a7a4a" }} />
+        <Heart className="w-4 h-4 flex-shrink-0" style={{ color: "#1a7a4a" }} />
         <h2 className="font-display text-xl md:text-2xl text-gray-900">
           Where your money went
         </h2>
@@ -141,7 +141,7 @@ export default function ImpactFeed({ userId, donatedOrgIds }: Props) {
           className="rounded-xl md:rounded-2xl border bg-white p-6 text-center"
           style={{ borderColor: "#e5e1d8" }}
         >
-          <Sparkles
+          <Heart
             className="w-8 h-8 mx-auto mb-3"
             style={{ color: "#1a7a4a", opacity: 0.35 }}
           />
